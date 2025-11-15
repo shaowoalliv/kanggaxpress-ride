@@ -7,9 +7,23 @@ import { ThemedCard } from '@/components/ui/ThemedCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
+import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
 import { driversService } from '@/services/drivers';
+import { kycService } from '@/services/kyc';
 import { RideType } from '@/types';
+import { DocType, ParsedData } from '@/types/kyc';
 import { toast } from 'sonner';
+import { Camera } from 'lucide-react';
+
+interface StagedKyc {
+  doc_type: DocType;
+  parsed: ParsedData;
+  confidence: number;
+  status: 'PENDING' | 'REVIEW';
+  image_path: string;
+}
 
 export default function DriverSetup() {
   const { user, profile } = useAuth();
@@ -20,6 +34,34 @@ export default function DriverSetup() {
   const [vehicleColor, setVehicleColor] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // OCR state
+  const [stagedKyc, setStagedKyc] = useState<Record<DocType, StagedKyc | null>>({
+    DRIVER_LICENSE: null,
+    OR: null,
+    CR: null,
+    SELFIE: null,
+    GOVT_ID: null,
+    PRIVATE_ID: null,
+  });
+  const [reviewModal, setReviewModal] = useState<{
+    open: boolean;
+    docType: DocType;
+    imageUrl: string;
+    imageBlob: Blob | null;
+    parsed: any;
+    avgConfidence: number;
+  }>({
+    open: false,
+    docType: 'DRIVER_LICENSE',
+    imageUrl: '',
+    imageBlob: null,
+    parsed: {},
+    avgConfidence: 0,
+  });
+  const [confirmLowConfidence, setConfirmLowConfidence] = useState(false);
+
+  const OCR_MIN = Number(import.meta.env.VITE_OCR_CONFIDENCE_MIN ?? 0.65);
 
   useEffect(() => {
     if (!user || profile?.role !== 'driver') {
@@ -27,12 +69,112 @@ export default function DriverSetup() {
     }
   }, [user, profile, navigate]);
 
+  const handleOcrComplete = (docType: DocType) => (
+    parsed: ParsedData,
+    imageUrl: string,
+    imageBlob: Blob,
+    avgConfidence: number
+  ) => {
+    setReviewModal({
+      open: true,
+      docType,
+      imageUrl,
+      imageBlob,
+      parsed,
+      avgConfidence,
+    });
+  };
+
+  const handleOcrAccept = async (finalParsed: any) => {
+    if (!user || !reviewModal.imageBlob) return;
+
+    try {
+      const docType = reviewModal.docType;
+      const avgConfidence = reviewModal.avgConfidence;
+      
+      // Upload image
+      const imagePath = await kycService.uploadDocumentImage(
+        user.id,
+        docType,
+        reviewModal.imageBlob
+      );
+
+      const status = docType !== 'SELFIE' && avgConfidence < OCR_MIN ? 'REVIEW' : 'PENDING';
+
+      setStagedKyc(prev => ({
+        ...prev,
+        [docType]: {
+          doc_type: docType,
+          parsed: finalParsed,
+          confidence: avgConfidence,
+          status,
+          image_path: imagePath,
+        },
+      }));
+
+      // Autofill form fields
+      if (docType === 'DRIVER_LICENSE' && finalParsed.license_no) {
+        setLicenseNumber(finalParsed.license_no);
+      }
+      if (docType === 'CR') {
+        if (finalParsed.plate_no) setVehiclePlate(finalParsed.plate_no);
+        if (finalParsed.vehicle_brand || finalParsed.series_model) {
+          setVehicleModel(`${finalParsed.vehicle_brand || ''} ${finalParsed.series_model || ''}`.trim());
+        }
+        if (finalParsed.color) setVehicleColor(finalParsed.color);
+      }
+
+      toast.success(`${docType} captured and autofilled`);
+      setReviewModal(prev => ({ ...prev, open: false }));
+    } catch (error) {
+      console.error('OCR accept error:', error);
+      toast.error('Failed to save document');
+    }
+  };
+
+  const allRequiredCaptured = () => {
+    return !!(
+      stagedKyc.DRIVER_LICENSE &&
+      stagedKyc.OR &&
+      stagedKyc.CR &&
+      stagedKyc.SELFIE
+    );
+  };
+
+  const anyLowConfidence = () => {
+    const docs = [stagedKyc.DRIVER_LICENSE, stagedKyc.OR, stagedKyc.CR];
+    return docs.some(doc => doc && doc.confidence < OCR_MIN);
+  };
+
+  const canSubmit = () => {
+    if (!allRequiredCaptured()) return false;
+    if (anyLowConfidence() && !confirmLowConfidence) return false;
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !canSubmit()) return;
 
     try {
       setLoading(true);
+
+      // Insert KYC documents
+      for (const docType of ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'] as DocType[]) {
+        const doc = stagedKyc[docType];
+        if (doc) {
+          await kycService.createKycDocument({
+            user_id: user!.id,
+            doc_type: doc.doc_type,
+            parsed: doc.parsed,
+            confidence: doc.confidence,
+            status: doc.status,
+            image_path: doc.image_path,
+          });
+        }
+      }
+
+      // Create driver profile
       await driversService.createDriverProfile(profile.id, {
         vehicle_type: vehicleType,
         vehicle_plate: vehiclePlate.trim(),
@@ -40,7 +182,8 @@ export default function DriverSetup() {
         vehicle_color: vehicleColor.trim() || undefined,
         license_number: licenseNumber.trim() || undefined,
       });
-      toast.success('Driver profile created!');
+
+      toast.success('Driver profile submitted for review!');
       navigate('/driver/dashboard');
     } catch (error) {
       console.error('Error creating profile:', error);
@@ -52,16 +195,45 @@ export default function DriverSetup() {
 
   return (
     <PageLayout>
-      <div className="flex-1 px-4 py-6 max-w-md mx-auto">
+      <div className="flex-1 px-4 py-6 max-w-4xl mx-auto">
         <div className="space-y-6">
           <div className="text-center">
             <h1 className="text-3xl font-heading font-bold">Complete Your Driver Profile</h1>
-            <p className="text-muted-foreground mt-2">Add your vehicle details to start driving</p>
+            <p className="text-muted-foreground mt-2">Scan your documents and add vehicle details</p>
           </div>
 
+          {/* OCR Capture Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-heading font-semibold">Required Documents</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <OcrCaptureCard
+                docType="DRIVER_LICENSE"
+                onOcrComplete={handleOcrComplete('DRIVER_LICENSE')}
+              />
+              <OcrCaptureCard
+                docType="OR"
+                onOcrComplete={handleOcrComplete('OR')}
+              />
+              <OcrCaptureCard
+                docType="CR"
+                onOcrComplete={handleOcrComplete('CR')}
+              />
+              <OcrCaptureCard
+                docType="SELFIE"
+                onOcrComplete={handleOcrComplete('SELFIE')}
+              />
+            </div>
+          </div>
+
+          {/* Form Section */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <ThemedCard>
               <div className="space-y-4">
+                <h3 className="text-lg font-heading font-semibold">Vehicle Details</h3>
+                
                 <div className="space-y-2">
                   <Label>Vehicle Type</Label>
                   <RadioGroup value={vehicleType} onValueChange={(v) => setVehicleType(v as RideType)}>
@@ -117,12 +289,42 @@ export default function DriverSetup() {
               </div>
             </ThemedCard>
 
-            <PrimaryButton type="submit" isLoading={loading}>
-              Complete Setup
+            {/* Low confidence warning */}
+            {anyLowConfidence() && (
+              <ThemedCard className="border-amber-500">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="confirm-low"
+                    checked={confirmLowConfidence}
+                    onCheckedChange={(checked) => setConfirmLowConfidence(!!checked)}
+                  />
+                  <Label htmlFor="confirm-low" className="text-sm cursor-pointer">
+                    Some scans need manual review — I confirm details are correct.
+                  </Label>
+                </div>
+              </ThemedCard>
+            )}
+
+            <PrimaryButton
+              type="submit"
+              isLoading={loading}
+              disabled={!canSubmit()}
+            >
+              {allRequiredCaptured() ? 'Submit for Review' : 'Complete All Document Scans First'}
             </PrimaryButton>
           </form>
         </div>
       </div>
+
+      <OcrReviewModal
+        open={reviewModal.open}
+        onClose={() => setReviewModal(prev => ({ ...prev, open: false }))}
+        imageUrl={reviewModal.imageUrl}
+        parsed={reviewModal.parsed}
+        docType={reviewModal.docType}
+        avgConfidence={reviewModal.avgConfidence}
+        onAccept={handleOcrAccept}
+      />
     </PageLayout>
   );
 }
