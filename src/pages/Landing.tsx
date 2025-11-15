@@ -12,11 +12,21 @@ export default function Landing() {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      // Redirect logged-in users to their dashboard
-      if (profile.role === 'driver') {
-        navigate('/driver/dashboard');
-      } else {
-        navigate('/passenger/book-ride');
+      // Redirect logged-in users to their dashboard based on role
+      switch (profile.role) {
+        case 'driver':
+          navigate('/driver/dashboard');
+          break;
+        case 'courier':
+          navigate('/courier/dashboard');
+          break;
+        case 'sender':
+          navigate('/sender/dashboard');
+          break;
+        case 'passenger':
+        default:
+          navigate('/passenger/book-ride');
+          break;
       }
     }
   }, [user, profile, loading, navigate]);

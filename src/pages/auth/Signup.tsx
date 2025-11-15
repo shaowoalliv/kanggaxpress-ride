@@ -40,10 +40,20 @@ export default function Signup() {
 
   // Redirect if already logged in
   if (user && profile) {
-    if (profile.role === 'driver') {
-      navigate('/driver/dashboard');
-    } else {
-      navigate('/passenger/book-ride');
+    switch (profile.role) {
+      case 'driver':
+        navigate('/driver/dashboard');
+        break;
+      case 'courier':
+        navigate('/courier/dashboard');
+        break;
+      case 'sender':
+        navigate('/sender/dashboard');
+        break;
+      case 'passenger':
+      default:
+        navigate('/passenger/book-ride');
+        break;
     }
     return null;
   }
@@ -113,19 +123,46 @@ export default function Signup() {
             <div className="space-y-2">
               <Label>I want to</Label>
               <RadioGroup value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                <div className="flex items-center space-x-2 p-4 rounded-lg border border-border hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="passenger" id="passenger" />
-                  <Label htmlFor="passenger" className="cursor-pointer flex-1">
-                    <span className="font-medium">Book Rides</span>
-                    <p className="text-sm text-muted-foreground">As a passenger</p>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-4 rounded-lg border border-border hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="driver" id="driver" />
-                  <Label htmlFor="driver" className="cursor-pointer flex-1">
-                    <span className="font-medium">Drive & Earn</span>
-                    <p className="text-sm text-muted-foreground">As a driver</p>
-                  </Label>
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg border border-border hover:bg-muted/50">
+                    <p className="font-semibold text-sm mb-2">🚗 Ride Services</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 pl-2">
+                        <RadioGroupItem value="passenger" id="passenger" />
+                        <Label htmlFor="passenger" className="cursor-pointer flex-1">
+                          <span className="font-medium">Book Rides</span>
+                          <p className="text-xs text-muted-foreground">Request transport</p>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 pl-2">
+                        <RadioGroupItem value="driver" id="driver" />
+                        <Label htmlFor="driver" className="cursor-pointer flex-1">
+                          <span className="font-medium">Drive & Earn</span>
+                          <p className="text-xs text-muted-foreground">Provide rides</p>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg border border-border hover:bg-muted/50">
+                    <p className="font-semibold text-sm mb-2">📦 Delivery Services</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 pl-2">
+                        <RadioGroupItem value="sender" id="sender" />
+                        <Label htmlFor="sender" className="cursor-pointer flex-1">
+                          <span className="font-medium">Send Packages</span>
+                          <p className="text-xs text-muted-foreground">Request delivery</p>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 pl-2">
+                        <RadioGroupItem value="courier" id="courier" />
+                        <Label htmlFor="courier" className="cursor-pointer flex-1">
+                          <span className="font-medium">Deliver & Earn</span>
+                          <p className="text-xs text-muted-foreground">Provide delivery</p>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </RadioGroup>
             </div>
