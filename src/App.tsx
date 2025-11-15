@@ -19,6 +19,8 @@ import MyDeliveries from "./pages/sender/MyDeliveries";
 import CourierDashboard from "./pages/courier/Dashboard";
 import CourierSetup from "./pages/courier/Setup";
 import HeroAnim from "./pages/qa/HeroAnim";
+import QAState from "./pages/qa/QAState";
+import QASOT from "./pages/qa/QASOT";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const App = () => (
             
             {/* QA Routes */}
             <Route path="/qa/hero-anim" element={<HeroAnim />} />
+            <Route path="/qa/state" element={<QAState />} />
+            <Route path="/qa/sot" element={<QASOT />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
