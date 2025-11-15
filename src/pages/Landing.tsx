@@ -140,6 +140,18 @@ export default function Landing() {
             </div>
           </div>
         </div>
+
+        {/* Footer with Admin Link */}
+        <footer className="py-4 px-4 text-center border-t border-border">
+          <p className="text-xs text-muted-foreground">
+            &copy; 2025 KanggaXpress. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            <a href="/admin-sign-in" className="hover:text-primary transition-colors">
+              Admin
+            </a>
+          </p>
+        </footer>
       </section>
     </PageLayout>
   );

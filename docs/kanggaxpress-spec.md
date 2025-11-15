@@ -4,6 +4,58 @@ This document serves as the authoritative Source of Truth for the KanggaXpress a
 
 ---
 
+## Phase 3.3 — Driver & Courier OCR Autofill + Admin Previews (Completed)
+**spec_id**: kanggaxpress-v2.3.5  
+**date**: 2025-11-15
+
+### Overview
+Wired OCR → Review → Autofill into Driver and Courier setup pages with enforced confidence threshold (VITE_OCR_CONFIDENCE_MIN). Integrated image upload to Supabase Storage (`kyc` bucket) with signed-URL previews in Admin and owner-only in /account/kyc.
+
+### Driver & Courier Setup
+- Four capture sections: DRIVER_LICENSE, OR, CR, SELFIE
+- On OCR complete → OcrReviewModal with parsed data + avgConfidence
+- On Accept:
+  - Upload image via `kycService.uploadDocumentImage(file, userId, docType)` → `image_path`
+  - Stage `stagedKyc[docType]` with `{ doc_type, parsed, confidence, status, image_path }`
+  - Autofill form fields (license_number, vehicle_plate, vehicle_model, vehicle_color)
+- Submit gating:
+  - Require all 4 documents captured
+  - Enable Submit if avgConfidence ≥ OCR_MIN; otherwise require confirmation checkbox
+- On Submit → insert kyc_documents rows, show success toast, route to dashboard
+
+### Admin KYC Enhancements
+- Image previews: 64×64 thumbnails via `kycService.getSignedUrl(image_path, 60)`
+- JSON drawer: View formatted parsed data
+- Approve/Reject: Update status with optional rejection reason
+- Filters: Multi-select chips for status and doc_type, search box
+
+### User Menu & KYC Status
+- Link to /account/kyc from user/profile menu (all roles)
+- Show doc cards with status chips and tiny previews (owner-signed URL)
+- For REJECTED docs: "Fix & Re-upload" → capture + review; on Accept, insert new row
+
+### QA Extensions
+- /qa/ocr: "Hydrate Driver Setup" & "Hydrate Courier Setup" demos (0.58 blocked, 0.76 allowed)
+- /qa/kyc-admin: "Show previews" toggle; PASS if ≥1 thumbnail renders
+- /qa/state additions:
+  - `onboarding.driver_ocr_wired=true`
+  - `onboarding.courier_ocr_wired=true`
+  - `kyc.storage_bucket_present=true`
+  - `admin.kyc_previews_enabled=true`
+
+### Security Notes
+- Never log secrets; do not print signed URLs to public logs
+- All admin routes: `noindex,nofollow`
+- Admin remains password-only (no Google)
+
+---
+
+## Phase 3 — Camera + OCR + KYC (Completed)
+**spec_id**: kanggaxpress-v2.3.3-final  
+**date**: 2025-11-15
+
+
+
 ## Phase 3 — Camera + OCR + KYC (Completed)
 **spec_id**: kanggaxpress-v2.3.3-final  
 **date**: 2025-11-15

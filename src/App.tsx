@@ -28,6 +28,7 @@ import RoutingPhase1 from "./pages/qa/RoutingPhase1";
 import AdminSmoke from "./pages/qa/AdminSmoke";
 import QAOOCR from "./pages/qa/OCR";
 import QAKYCAdmin from "./pages/qa/KYCAdmin";
+import QAMapsKeys from "./pages/qa/MapsKeys";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
