@@ -90,7 +90,7 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "float": "float 7s ease-in-out infinite",
+        "float": "float 7s cubic-bezier(0.45, 0, 0.55, 1) infinite",
       },
     },
   },
