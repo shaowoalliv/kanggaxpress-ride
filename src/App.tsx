@@ -7,8 +7,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
-import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
+import ChooseRole from "./pages/ChooseRole";
+import Auth from "./pages/auth/Auth";
+import LoginRedirect from "./pages/auth/LoginRedirect";
+import SignupRedirect from "./pages/auth/SignupRedirect";
 import BookRide from "./pages/passenger/BookRide";
 import MyRides from "./pages/passenger/MyRides";
 import DriverDashboard from "./pages/driver/Dashboard";
@@ -21,6 +23,7 @@ import CourierSetup from "./pages/courier/Setup";
 import HeroAnim from "./pages/qa/HeroAnim";
 import QAState from "./pages/qa/QAState";
 import QASOT from "./pages/qa/QASOT";
+import RoutingPhase1 from "./pages/qa/RoutingPhase1";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,8 +38,12 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/choose-role" element={<ChooseRole />} />
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Legacy redirects */}
+            <Route path="/login" element={<LoginRedirect />} />
+            <Route path="/signup" element={<SignupRedirect />} />
             
             {/* Passenger Routes */}
             <Route path="/passenger/book-ride" element={<BookRide />} />
@@ -59,6 +66,7 @@ const App = () => (
             <Route path="/qa/hero-anim" element={<HeroAnim />} />
             <Route path="/qa/state" element={<QAState />} />
             <Route path="/qa/sot" element={<QASOT />} />
+            <Route path="/qa/routing-phase1" element={<RoutingPhase1 />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

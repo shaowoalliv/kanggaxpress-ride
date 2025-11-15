@@ -94,11 +94,32 @@ export default function Landing() {
           </div>
 
           {/* CTA Buttons */}
-          <div className="space-y-3">
-            <PrimaryButton onClick={() => navigate('/signup')}>
+          <div className="space-y-3 w-full">
+            <button
+              type="button"
+              data-testid="get-started-btn"
+              onClick={(e) => {
+                e?.preventDefault?.();
+                e?.stopPropagation?.();
+                try {
+                  navigate('/choose-role');
+                } catch (err) {
+                  console.error('Navigation error:', err);
+                }
+                setTimeout(() => {
+                  if (window.location.pathname !== '/choose-role') {
+                    window.location.href = '/choose-role';
+                  }
+                }, 400);
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-12 px-8"
+            >
               Get Started
-            </PrimaryButton>
-            <SecondaryButton onClick={() => navigate('/login')}>
+            </button>
+            <SecondaryButton
+              onClick={() => navigate('/auth')}
+              className="w-full"
+            >
               Sign In
             </SecondaryButton>
           </div>
@@ -110,14 +131,14 @@ export default function Landing() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => navigate('/signup?role=driver')}
+                onClick={() => navigate('/auth?role=driver')}
                 className="text-sm text-secondary font-medium hover:underline"
               >
                 Become a Driver →
               </button>
               <span className="text-muted-foreground">|</span>
               <button
-                onClick={() => navigate('/signup?role=courier')}
+                onClick={() => navigate('/auth?role=courier')}
                 className="text-sm text-secondary font-medium hover:underline"
               >
                 Become a Courier →

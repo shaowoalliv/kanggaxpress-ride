@@ -206,6 +206,46 @@ Implemented comprehensive state reporting and compliance checking to provide vis
 
 ---
 
+---
+
+## spec_id: kanggaxpress-v2.3.1
+**Date:** 2025-11-15  
+**Section:** Phase 1 — Routing & Choose Role
+
+### Choose Role Flow
+- Landing "Get Started" button navigates to `/choose-role` using `navigate()` with 400ms fallback to `window.location.href`
+- `/choose-role` page displays three role cards: Passenger, Driver, Courier
+- Each card links to `/auth?role={passenger|driver|courier}`
+- Alternative "Sender" link available at bottom
+
+### Auth Interstitial
+- Route: `/auth` with role-aware tabs (Login | Register)
+- Role selector allows switching between passenger, driver, courier, sender
+- Role updates URL query parameter
+- Login tab: email/password with show/hide toggle, "Forgot password?" placeholder
+- Register tab: minimal fields (name, email, phone, password) with role-specific context
+- Post-login routing:
+  - passenger → `/passenger/book-ride`
+  - driver → `/driver/dashboard`
+  - courier → `/courier/dashboard`
+  - sender → `/sender/dashboard`
+
+### Legacy Route Redirects
+- `/login` → client redirect to `/auth` (preserves role param)
+- `/signup` → client redirect to `/auth` (preserves role param)
+
+### PWA Install Prompt
+- Deferred to `/choose-role` page only
+- Shows ≥800ms post-render for non-blocking UX
+- Respects `pwa-install-dismissed` localStorage flag
+
+### QA Page
+- Route: `/qa/routing-phase1` (noindex, nofollow)
+- Displays PASS/FAIL status for all Phase 1 requirements
+- Manual test links for CTA, role cards, and legacy redirects
+
+---
+
 ## Version History
 
 | Version | Date | Description |
@@ -214,6 +254,7 @@ Implemented comprehensive state reporting and compliance checking to provide vis
 | v2.0.8 | 2025-11-14 | PWA implementation with install prompt |
 | v2.0.10 | 2025-11-15 | Carabao logo animation system |
 | v2.1.0 | 2025-11-15 | State reporting & SOT compliance |
+| v2.3.1 | 2025-11-15 | Phase 1 routing & choose-role flow |
 
 ---
 
