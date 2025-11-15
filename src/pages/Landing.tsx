@@ -94,7 +94,7 @@ export default function Landing() {
           </div>
 
           {/* CTA Button */}
-          <div className="w-full">
+          <div className="w-full pt-4">
             <button
               type="button"
               data-testid="get-started-btn"
@@ -112,7 +112,7 @@ export default function Landing() {
                   }
                 }, 400);
               }}
-              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-12 px-8"
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-lg font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 h-16 px-10"
             >
               Get Started
             </button>
