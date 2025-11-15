@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
+import { DevPreviewBanner } from "@/components/DevPreviewBanner";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
@@ -29,6 +31,8 @@ import AdminSmoke from "./pages/qa/AdminSmoke";
 import QAOOCR from "./pages/qa/OCR";
 import QAKYCAdmin from "./pages/qa/KYCAdmin";
 import QAMapsKeys from "./pages/qa/MapsKeys";
+import DevPreview from "./pages/qa/DevPreview";
+import PreviewTest from "./pages/qa/PreviewTest";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
@@ -49,13 +53,28 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <InstallPromptBanner />
+const App = () => {
+  // Keyboard shortcut: Ctrl/Cmd + Alt + D to open dev preview
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'd') {
+        e.preventDefault();
+        window.location.href = '/qa/dev-preview';
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <InstallPromptBanner />
+          <DevPreviewBanner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -113,6 +132,9 @@ const App = () => (
             <Route path="/qa/admin-smoke" element={<AdminSmoke />} />
             <Route path="/qa/ocr" element={<QAOOCR />} />
             <Route path="/qa/kyc-admin" element={<QAKYCAdmin />} />
+            <Route path="/qa/maps-keys" element={<QAMapsKeys />} />
+            <Route path="/qa/dev-preview" element={<DevPreview />} />
+            <Route path="/qa/preview" element={<PreviewTest />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -120,6 +142,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

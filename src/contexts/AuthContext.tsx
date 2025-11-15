@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
+import { useDevPreviewSession } from '@/hooks/useDevPreviewSession';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  isPreview: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -19,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const previewSession = useDevPreviewSession();
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -37,6 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchProfile(user.id);
     }
   };
+
+  // If preview session is active and no real session, create mock profile
+  useEffect(() => {
+    if (previewSession && !session) {
+      setProfile({
+        id: previewSession.id,
+        email: previewSession.email,
+        full_name: previewSession.full_name,
+        role: previewSession.role,
+        phone: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } else if (!session && !previewSession) {
+      setProfile(null);
+    }
+  }, [previewSession, session]);
 
   useEffect(() => {
     // Set up auth state listener
@@ -79,7 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        isPreview: !!previewSession && !session,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

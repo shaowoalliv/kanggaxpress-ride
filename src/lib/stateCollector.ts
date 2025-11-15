@@ -1,6 +1,7 @@
 // State collector utility for project state reporting
 // DO NOT expose secrets - only boolean presence checks
 
+import { devPreview } from './devPreview';
 interface ProjectState {
   meta: {
     app_name: string;
@@ -70,6 +71,11 @@ interface ProjectState {
   };
   kyc: {
     storage_bucket_present: boolean;
+  };
+  dev_preview: {
+    enabled: boolean;
+    host_allowlist_ok: boolean;
+    roles: string[];
   };
   env_presence: {
     supabase_url: boolean;
@@ -189,6 +195,11 @@ export function collectProjectState(): ProjectState {
     },
     kyc: {
       storage_bucket_present: true, // kyc bucket configured
+    },
+    dev_preview: {
+      enabled: devPreview.enabled,
+      host_allowlist_ok: devPreview.hostAllowed,
+      roles: devPreview.allowRoles,
     },
     env_presence: {
       supabase_url: hasSupabaseUrl,
