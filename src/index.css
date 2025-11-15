@@ -10,8 +10,8 @@ All colors MUST be HSL.
   :root {
     /* KanggaXpress Brand Colors */
     --primary-yellow: 45 100% 58%;        /* #FFC727 */
-    --dark-brown: 25 35% 22%;             /* Rich carabao brown */
-    --medium-brown: 25 30% 40%;           /* Medium carabao brown */
+    --dark-brown: 15 100% 15%;            /* #4c1300 */
+    --medium-brown: 15 100% 15%;          /* #4c1300 */
     --backdrop-yellow: 45 99% 51%;        /* #FFC003 - Main backdrop */
     
     /* Semantic tokens */
