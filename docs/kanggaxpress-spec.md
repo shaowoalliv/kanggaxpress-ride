@@ -4,6 +4,74 @@ This document serves as the authoritative Source of Truth for the KanggaXpress a
 
 ---
 
+## Phase 3.6 — Dev Preview Mode (No-Login Browse) (Completed)
+**spec_id**: kanggaxpress-v2.3.6  
+**date**: 2025-11-15
+
+### Overview
+Dev Preview Mode bypasses authentication for non-admin routes on allowed development hosts, with a role switcher and global banner. Enables rapid UI/UX review without repeated login during development.
+
+### Environment Flags
+```env
+VITE_DEV_PREVIEW_ON=true
+VITE_DEV_PREVIEW_ALLOW_ROLES=passenger,driver,courier
+VITE_DEV_PREVIEW_BLOCK_ADMIN=true
+VITE_DEV_PREVIEW_DOMAINS=localhost:*,127.0.0.1:*,*.lovable.dev,*.lovable.app
+VITE_DEV_PREVIEW_BADGE=Dev Preview (No Login)
+```
+
+### Host Allowlist Guard
+- Utility: `src/lib/devPreview.ts`
+- Only enables bypass if `VITE_DEV_PREVIEW_ON=true` AND host matches allowlist
+- Wildcard support: `localhost:*`, `*.lovable.dev`
+- Admin routes (`/admin*`) never bypass when `VITE_DEV_PREVIEW_BLOCK_ADMIN=true`
+
+### Preview Session Shim
+- Hook: `src/hooks/useDevPreviewSession.ts`
+- Reads `localStorage` key `kx_dev_preview` → `{ role: 'passenger'|'driver'|'courier' }`
+- Returns synthetic preview session (UI-only, no real Supabase session)
+- Integrated into `AuthContext`: provides mock profile when preview active
+
+### Role Switcher + Banner
+- Page: `/qa/dev-preview` (noindex)
+  - Role buttons: Passenger | Driver | Courier
+  - "Clear Preview" button
+  - Security notice and configuration display
+- Component: `DevPreviewBanner`
+  - Fixed top banner (amber bg)
+  - Shows: "Dev Preview (No Login) — viewing as {role}"
+  - Visible only when preview session active
+- Keyboard shortcut: **Ctrl/Cmd + Alt + D** → opens `/qa/dev-preview`
+
+### Routing & Auth Integration
+- Landing "Get Started" → `/choose-role` (Phase 1 rule maintained)
+- Protected non-admin pages: if not authed && preview session exists → render with mock identity
+- Admin routes always require real authentication (bypass blocked)
+
+### Mock Data Safety
+- Components receive minimal mock profile when preview active
+- Server mutations disabled in preview mode (show toast: "Read-only in Dev Preview")
+- No real Supabase writes when `isPreview=true`
+
+### QA Pages
+- `/qa/dev-preview` - Role switcher and configuration
+- `/qa/preview` - Test results (host allowed, preview enabled, role set, bypass working, admin blocked)
+- `/qa/state` - Includes `dev_preview` object with enabled/host_allowlist_ok/roles
+
+### Security Notes
+- Preview active ONLY if host matches `VITE_DEV_PREVIEW_DOMAINS` AND `VITE_DEV_PREVIEW_ON=true`
+- Admin & production builds MUST keep preview OFF
+- No secrets printed to console
+- All admin routes (`/admin*`) remain protected (no bypass)
+
+---
+
+## Phase 3.3 — Driver & Courier OCR Autofill + Admin Previews (Completed)
+**spec_id**: kanggaxpress-v2.3.5  
+**date**: 2025-11-15
+
+
+
 ## Phase 3.3 — Driver & Courier OCR Autofill + Admin Previews (Completed)
 **spec_id**: kanggaxpress-v2.3.5  
 **date**: 2025-11-15
