@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Car, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { KanggaLogo } from '@/components/KanggaLogo';
 
 export function AppHeader() {
   const { user, profile, signOut } = useAuth();
@@ -15,13 +16,13 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border/50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <Car className="h-8 w-8 text-primary" />
+        <Link to="/" className="flex items-center gap-3">
+          <KanggaLogo width={48} height={48} className="w-10 h-10 sm:w-12 sm:h-12" />
           <div className="flex flex-col">
-            <span className="font-heading font-bold text-lg text-foreground leading-tight">
+            <span className="font-heading font-bold text-base sm:text-lg text-foreground leading-tight">
               KanggaXpress
             </span>
-            <span className="text-[10px] text-muted-foreground leading-none">
+            <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-none">
               Rooted in Tradition
             </span>
           </div>
