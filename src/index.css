@@ -12,13 +12,13 @@ All colors MUST be HSL.
     --primary-yellow: 45 100% 58%;        /* #FFC727 */
     --dark-brown: 16 45% 25%;             /* #4E342E */
     --medium-brown: 16 25% 45%;           /* #795548 */
-    --background-light: 48 100% 95%;      /* #FFF9E6 */
+    --backdrop-yellow: 45 99% 51%;        /* #FFC003 - Main backdrop */
     
     /* Semantic tokens */
-    --background: 48 100% 95%;
-    --foreground: 16 45% 25%;
+    --background: 45 99% 51%;              /* Backdrop yellow #FFC003 */
+    --foreground: 16 45% 25%;              /* Dark text on yellow */
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%;                     /* White cards */
     --card-foreground: 16 45% 25%;
 
     --popover: 0 0% 100%;
