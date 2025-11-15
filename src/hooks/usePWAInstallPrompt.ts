@@ -19,24 +19,32 @@ export function usePWAInstallPrompt() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (isStandalone) return;
 
+    // Only show on /choose-role page (defer install prompt)
+    const shouldShowOnPage = window.location.pathname === '/choose-role';
+    if (!shouldShowOnPage) return;
+
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
 
     if (iOS) {
-      // Show iOS hint once
+      // Show iOS hint once after delay
       const iosHintShown = localStorage.getItem('pwa-ios-hint-shown');
       if (!iosHintShown) {
-        setShowPrompt(true);
+        setTimeout(() => {
+          setShowPrompt(true);
+        }, 800);
       }
       return;
     }
 
-    // Handle beforeinstallprompt for other browsers
+    // Handle beforeinstallprompt for other browsers (with delay)
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
+      setTimeout(() => {
+        setShowPrompt(true);
+      }, 800);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
