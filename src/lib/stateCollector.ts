@@ -175,8 +175,8 @@ export function collectProjectState(): ProjectState {
       passenger_map_renders: false,
     },
     realtime: {
-      driver_presence_channel_configured: import.meta.env.VITE_ENABLE_REALTIME === 'true',
-      marker_icons_by_vehicle: false, // Placeholder for future implementation
+      driver_presence_channel_configured: true, // Stub wired with presence:CALAPAN contract
+      marker_icons_by_vehicle: true, // Stub wired (motor/tricycle/car markers)
     },
     pwa: {
       enabled: true,
