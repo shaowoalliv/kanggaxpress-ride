@@ -1,0 +1,26 @@
+:root {
+  --carabao-amplitude: 8px;             /* float height */
+  --carabao-duration: 3.4s;             /* cycle length */
+  --carabao-ease: cubic-bezier(.45,0,.55,1); /* smooth in/out */
+}
+
+@keyframes carabao-float {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(calc(-1 * var(--carabao-amplitude))); 
+  }
+}
+
+.carabao-anim {
+  animation: carabao-float var(--carabao-duration) var(--carabao-ease) infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carabao-anim { 
+    animation: none; 
+    transform: translateY(0); 
+  }
+}
