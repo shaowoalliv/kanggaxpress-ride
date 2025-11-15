@@ -23,10 +23,20 @@ export default function Login() {
 
   // Redirect if already logged in
   if (user && profile) {
-    if (profile.role === 'driver') {
-      navigate('/driver/dashboard');
-    } else {
-      navigate('/passenger/book-ride');
+    switch (profile.role) {
+      case 'driver':
+        navigate('/driver/dashboard');
+        break;
+      case 'courier':
+        navigate('/courier/dashboard');
+        break;
+      case 'sender':
+        navigate('/sender/dashboard');
+        break;
+      case 'passenger':
+      default:
+        navigate('/passenger/book-ride');
+        break;
     }
     return null;
   }

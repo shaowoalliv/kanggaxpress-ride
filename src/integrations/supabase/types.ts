@@ -14,6 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      courier_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_available: boolean | null
+          license_number: string | null
+          rating: number | null
+          total_deliveries: number | null
+          updated_at: string | null
+          user_id: string
+          vehicle_color: string | null
+          vehicle_model: string | null
+          vehicle_plate: string
+          vehicle_type: Database["public"]["Enums"]["ride_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          license_number?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string | null
+          user_id: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate: string
+          vehicle_type: Database["public"]["Enums"]["ride_type"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          license_number?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string | null
+          user_id?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string
+          vehicle_type?: Database["public"]["Enums"]["ride_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_orders: {
+        Row: {
+          assigned_at: string | null
+          cod_amount: number | null
+          courier_id: string | null
+          created_at: string | null
+          delivered_at: string | null
+          dropoff_address: string
+          id: string
+          package_description: string
+          package_size: Database["public"]["Enums"]["package_size"]
+          picked_up_at: string | null
+          pickup_address: string
+          receiver_name: string
+          receiver_phone: string
+          sender_id: string
+          status: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          cod_amount?: number | null
+          courier_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          dropoff_address: string
+          id?: string
+          package_description: string
+          package_size: Database["public"]["Enums"]["package_size"]
+          picked_up_at?: string | null
+          pickup_address: string
+          receiver_name: string
+          receiver_phone: string
+          sender_id: string
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          cod_amount?: number | null
+          courier_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          dropoff_address?: string
+          id?: string
+          package_description?: string
+          package_size?: Database["public"]["Enums"]["package_size"]
+          picked_up_at?: string | null
+          pickup_address?: string
+          receiver_name?: string
+          receiver_phone?: string
+          sender_id?: string
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_orders_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "courier_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_profiles: {
         Row: {
           created_at: string | null
@@ -177,6 +302,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      delivery_status:
+        | "requested"
+        | "assigned"
+        | "picked_up"
+        | "in_transit"
+        | "delivered"
+        | "cancelled"
+      package_size: "small" | "medium" | "large"
       ride_status:
         | "requested"
         | "accepted"
@@ -184,7 +317,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       ride_type: "motor" | "tricycle" | "car"
-      user_role: "passenger" | "driver"
+      user_role: "passenger" | "driver" | "sender" | "courier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -312,6 +445,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      delivery_status: [
+        "requested",
+        "assigned",
+        "picked_up",
+        "in_transit",
+        "delivered",
+        "cancelled",
+      ],
+      package_size: ["small", "medium", "large"],
       ride_status: [
         "requested",
         "accepted",
@@ -320,7 +462,7 @@ export const Constants = {
         "cancelled",
       ],
       ride_type: ["motor", "tricycle", "car"],
-      user_role: ["passenger", "driver"],
+      user_role: ["passenger", "driver", "sender", "courier"],
     },
   },
 } as const

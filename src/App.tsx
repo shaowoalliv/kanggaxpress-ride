@@ -11,6 +11,11 @@ import BookRide from "./pages/passenger/BookRide";
 import MyRides from "./pages/passenger/MyRides";
 import DriverDashboard from "./pages/driver/Dashboard";
 import DriverSetup from "./pages/driver/Setup";
+import SenderDashboard from "./pages/sender/Dashboard";
+import CreateDelivery from "./pages/sender/CreateDelivery";
+import MyDeliveries from "./pages/sender/MyDeliveries";
+import CourierDashboard from "./pages/courier/Dashboard";
+import CourierSetup from "./pages/courier/Setup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,10 +31,24 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            
+            {/* Passenger Routes */}
             <Route path="/passenger/book-ride" element={<BookRide />} />
             <Route path="/passenger/my-rides" element={<MyRides />} />
+            
+            {/* Driver Routes */}
             <Route path="/driver/dashboard" element={<DriverDashboard />} />
             <Route path="/driver/setup" element={<DriverSetup />} />
+            
+            {/* Sender Routes */}
+            <Route path="/sender/dashboard" element={<SenderDashboard />} />
+            <Route path="/sender/create-delivery" element={<CreateDelivery />} />
+            <Route path="/sender/my-deliveries" element={<MyDeliveries />} />
+            
+            {/* Courier Routes */}
+            <Route path="/courier/dashboard" element={<CourierDashboard />} />
+            <Route path="/courier/setup" element={<CourierSetup />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

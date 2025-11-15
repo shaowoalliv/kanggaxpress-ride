@@ -1,6 +1,8 @@
-export type UserRole = 'passenger' | 'driver';
+export type UserRole = 'passenger' | 'driver' | 'sender' | 'courier';
 export type RideType = 'motor' | 'tricycle' | 'car';
 export type RideStatus = 'requested' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+export type PackageSize = 'small' | 'medium' | 'large';
+export type DeliveryStatus = 'requested' | 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
 
 export interface Profile {
   id: string;
@@ -49,4 +51,43 @@ export interface Ride {
 export interface RideWithDetails extends Ride {
   passenger?: Profile;
   driver?: DriverProfile;
+}
+
+export interface CourierProfile {
+  id: string;
+  user_id: string;
+  vehicle_type: RideType;
+  vehicle_plate: string;
+  vehicle_model: string | null;
+  vehicle_color: string | null;
+  license_number: string | null;
+  is_available: boolean;
+  rating: number;
+  total_deliveries: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeliveryOrder {
+  id: string;
+  sender_id: string;
+  courier_id: string | null;
+  pickup_address: string;
+  dropoff_address: string;
+  package_description: string;
+  package_size: PackageSize;
+  cod_amount: number | null;
+  receiver_name: string;
+  receiver_phone: string;
+  status: DeliveryStatus;
+  created_at: string;
+  updated_at: string;
+  assigned_at: string | null;
+  picked_up_at: string | null;
+  delivered_at: string | null;
+}
+
+export interface DeliveryOrderWithDetails extends DeliveryOrder {
+  sender?: Profile;
+  courier?: CourierProfile;
 }
