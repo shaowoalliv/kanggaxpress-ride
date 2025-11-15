@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import { Car, MapPin, Shield, Zap } from 'lucide-react';
+import { KanggaLogo } from '@/components/KanggaLogo';
+import { MapPin, Shield, Zap, Package } from 'lucide-react';
 
 export default function Landing() {
   const { user, profile, loading } = useAuth();
@@ -48,47 +49,47 @@ export default function Landing() {
         <div className="max-w-md w-full space-y-8">
           {/* Logo & Branding */}
           <div className="space-y-2">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary mb-4">
-              <Car className="w-10 h-10 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center mb-4">
+              <KanggaLogo width={120} height={120} className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32" />
             </div>
-            <h1 className="text-5xl font-heading font-bold text-foreground">
+            <h1 className="text-4xl sm:text-5xl font-heading font-bold text-foreground">
               KanggaXpress
             </h1>
-            <p className="text-xl text-secondary font-heading font-medium">
+            <p className="text-xl sm:text-2xl text-secondary font-heading font-medium">
               Rooted in Tradition
             </p>
           </div>
 
           {/* Value Proposition */}
-          <p className="text-lg text-muted-foreground">
-            Community-first mobility rooted in Filipino culture. Affordable rides, trusted drivers.
+          <p className="text-base sm:text-lg text-muted-foreground px-4">
+            Community-first mobility & delivery rooted in Filipino culture. Affordable rides, trusted drivers & couriers.
           </p>
 
           {/* Features */}
-          <div className="grid grid-cols-2 gap-4 py-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 py-6 px-2">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               </div>
-              <p className="text-sm font-medium">Easy Booking</p>
+              <p className="text-xs sm:text-sm font-medium text-center">Easy Booking</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               </div>
-              <p className="text-sm font-medium">Safe Rides</p>
+              <p className="text-xs sm:text-sm font-medium text-center">Safe & Secure</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               </div>
-              <p className="text-sm font-medium">Fast Pickup</p>
+              <p className="text-xs sm:text-sm font-medium text-center">Fast Service</p>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Package className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               </div>
-              <p className="text-sm font-medium">Multiple Options</p>
+              <p className="text-xs sm:text-sm font-medium text-center">Rides & Delivery</p>
             </div>
           </div>
 
@@ -102,17 +103,26 @@ export default function Landing() {
             </SecondaryButton>
           </div>
 
-          {/* Driver CTA */}
+          {/* Driver/Courier CTA */}
           <div className="pt-6 border-t border-border">
             <p className="text-sm text-muted-foreground mb-3">
-              Want to drive and earn?
+              Want to drive or deliver and earn?
             </p>
-            <button
-              onClick={() => navigate('/signup?role=driver')}
-              className="text-secondary font-medium hover:underline"
-            >
-              Become a Driver →
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate('/signup?role=driver')}
+                className="text-sm text-secondary font-medium hover:underline"
+              >
+                Become a Driver →
+              </button>
+              <span className="text-muted-foreground">|</span>
+              <button
+                onClick={() => navigate('/signup?role=courier')}
+                className="text-sm text-secondary font-medium hover:underline"
+              >
+                Become a Courier →
+              </button>
+            </div>
           </div>
         </div>
       </section>
