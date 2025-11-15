@@ -33,18 +33,23 @@ export function useAdminAuth() {
         const hasAdminRole = !!roles;
         setIsAdmin(hasAdminRole);
 
-        // Check allowlist
-        const email = user.email?.toLowerCase() || '';
-        const primaryEmail = import.meta.env.VITE_ADMIN_PRIMARY_EMAIL?.toLowerCase();
-        const allowedEmails = import.meta.env.ADMIN_ALLOWED_EMAILS?.toLowerCase().split(',').map((e: string) => e.trim()) || [];
-        const allowedDomains = import.meta.env.ADMIN_ALLOWED_DOMAINS?.toLowerCase().split(',').map((d: string) => d.trim()) || [];
+        // If user has admin role, they're automatically allowed
+        // Otherwise, check allowlist as fallback
+        if (hasAdminRole) {
+          setIsAllowed(true);
+        } else {
+          const email = user.email?.toLowerCase() || '';
+          const primaryEmail = import.meta.env.VITE_ADMIN_PRIMARY_EMAIL?.toLowerCase();
+          const allowedEmails = import.meta.env.ADMIN_ALLOWED_EMAILS?.toLowerCase().split(',').map((e: string) => e.trim()) || [];
+          const allowedDomains = import.meta.env.ADMIN_ALLOWED_DOMAINS?.toLowerCase().split(',').map((d: string) => d.trim()) || [];
 
-        const isPrimaryEmail = primaryEmail && email === primaryEmail;
-        const isAllowedEmail = allowedEmails.includes(email);
-        const isAllowedDomain = allowedDomains.some((domain: string) => email.endsWith(`@${domain}`));
+          const isPrimaryEmail = primaryEmail && email === primaryEmail;
+          const isAllowedEmail = allowedEmails.includes(email);
+          const isAllowedDomain = allowedDomains.some((domain: string) => email.endsWith(`@${domain}`));
 
-        const allowlistCheck = isPrimaryEmail || isAllowedEmail || isAllowedDomain;
-        setIsAllowed(allowlistCheck);
+          const allowlistCheck = isPrimaryEmail || isAllowedEmail || isAllowedDomain;
+          setIsAllowed(allowlistCheck);
+        }
       } catch (error) {
         console.error('Admin check error:', error);
         setIsAdmin(false);
