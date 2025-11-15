@@ -17,7 +17,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 bg-card border-b border-border/50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <KanggaLogo width={48} height={48} className="w-10 h-10 sm:w-12 sm:h-12" />
+          <KanggaLogo width={96} height={96} className="w-20 h-20 sm:w-24 sm:h-24" />
           <div className="flex flex-col">
             <span className="font-heading font-bold text-base sm:text-lg text-foreground leading-tight">
               KanggaXpress
