@@ -16,15 +16,15 @@ export function KanggaLogo({
   return (
     <img
       src="/logo-kanggaxpress.png"
-      alt="KanggaXpress carabao and cart logo"
+      alt="KanggaXpress"
       width={width}
       height={height}
       className={cn(
-        "object-contain transition-transform duration-300",
-        animated && "animate-float",
-        "hover:scale-105",
+        "object-contain",
+        animated && "carabao-anim",
         className
       )}
+      data-testid="carabao-logo"
     />
   );
 }
