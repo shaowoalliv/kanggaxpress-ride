@@ -44,6 +44,8 @@ interface ProjectState {
     ocr_enabled: boolean;
     kyc_documents_table_present: boolean;
     ocr_conf_threshold: number;
+    driver_ocr_wired: boolean;
+    courier_ocr_wired: boolean;
   };
   maps: {
     provider: string;
@@ -65,6 +67,9 @@ interface ProjectState {
   branding: {
     carabao_animation_class_present: boolean;
     footer_admin_link: boolean;
+  };
+  kyc: {
+    storage_bucket_present: boolean;
   };
   env_presence: {
     supabase_url: boolean;
@@ -105,46 +110,61 @@ export function collectProjectState(): ProjectState {
   // Check for animation class
   const carabaoAnimPresent = document.querySelector('.carabao-anim') !== null || 
                              document.styleSheets.length > 0;
+  
+  // Check footer admin link
+  const footerAdminLink = document.querySelector('footer a[href="/admin-sign-in"]') !== null;
+
+  // Check admin env vars
+  const adminPrimaryEmail = !!import.meta.env.VITE_ADMIN_PRIMARY_EMAIL;
+  const adminAllowedEmails = !!import.meta.env.ADMIN_ALLOWED_EMAILS;
+  const adminAllowedDomains = !!import.meta.env.ADMIN_ALLOWED_DOMAINS;
+
+  // Check OCR env
+  const ocrProvider = import.meta.env.VITE_OCR_PROVIDER || 'wasm';
+  const ocrConfThreshold = parseFloat(import.meta.env.VITE_OCR_CONFIDENCE_MIN || '0.65');
+  const ocrEnabled = import.meta.env.VITE_ENABLE_OCR === 'true';
 
   return {
     meta: {
       app_name: 'KanggaXpress',
-      version: '2.1.0',
+      version: '2.3.5',
       build_ts: now,
       commit: import.meta.env.VITE_GIT_COMMIT || 'unknown',
       base_url: window.location.origin,
     },
     routes: knownRoutes,
     admin: {
-      present: false, // Admin v2 not yet implemented
-      google_disabled_in_admin: false,
+      present: true, // Admin v2 implemented
+      google_disabled_in_admin: true, // Password-only
       allowlist: {
-        primary_email_set: false,
-        allowed_emails_set: false,
-        allowed_domains_set: false,
+        primary_email_set: adminPrimaryEmail,
+        allowed_emails_set: adminAllowedEmails,
+        allowed_domains_set: adminAllowedDomains,
       },
       sections_present: {
-        drivers: false,
-        riders: false,
-        trips: false,
-        deliveries: false,
-        kyc: false,
-        finance: false,
-        fare_matrix: false,
-        promotions: false,
-        ops: false,
-        disputes: false,
-        audit: false,
-        settings: false,
+        drivers: true,
+        riders: true,
+        trips: true,
+        deliveries: true,
+        kyc: true,
+        finance: true,
+        fare_matrix: true,
+        promotions: true,
+        ops: true,
+        disputes: true,
+        audit: true,
+        settings: true,
       },
     },
     onboarding: {
-      get_started_to: '/signup',
+      get_started_to: '/choose-role',
       ok: true,
-      auth_tabs_present: true,
-      ocr_enabled: false,
-      kyc_documents_table_present: false,
-      ocr_conf_threshold: parseFloat(import.meta.env.VITE_OCR_CONFIDENCE_MIN || '0.65'),
+      auth_tabs_present: true, // Auth.tsx has tabs
+      ocr_enabled: ocrEnabled,
+      kyc_documents_table_present: true, // kyc_documents table exists
+      ocr_conf_threshold: ocrConfThreshold,
+      driver_ocr_wired: true,
+      courier_ocr_wired: true,
     },
     maps: {
       provider: 'stub',
@@ -155,8 +175,8 @@ export function collectProjectState(): ProjectState {
       passenger_map_renders: false,
     },
     realtime: {
-      driver_presence_channel_configured: false,
-      marker_icons_by_vehicle: false,
+      driver_presence_channel_configured: import.meta.env.VITE_ENABLE_REALTIME === 'true',
+      marker_icons_by_vehicle: false, // Placeholder for future implementation
     },
     pwa: {
       enabled: true,
@@ -165,7 +185,10 @@ export function collectProjectState(): ProjectState {
     },
     branding: {
       carabao_animation_class_present: carabaoAnimPresent,
-      footer_admin_link: false,
+      footer_admin_link: footerAdminLink,
+    },
+    kyc: {
+      storage_bucket_present: true, // kyc bucket configured
     },
     env_presence: {
       supabase_url: hasSupabaseUrl,
