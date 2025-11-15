@@ -117,14 +117,14 @@ export default function AdminKYC() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
-                  value={statusFilter.join(',')}
-                  onValueChange={(v) => setStatusFilter(v ? v.split(',') as KycStatus[] : [])}
+                  value={statusFilter.join(',') || 'all'}
+                  onValueChange={(v) => setStatusFilter(v === 'all' ? [] : v.split(',') as KycStatus[])}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="PENDING">Pending</SelectItem>
                     <SelectItem value="REVIEW">Review</SelectItem>
                     <SelectItem value="APPROVED">Approved</SelectItem>
@@ -136,14 +136,14 @@ export default function AdminKYC() {
               <div className="space-y-2">
                 <Label>Document Type</Label>
                 <Select
-                  value={docTypeFilter.join(',')}
-                  onValueChange={(v) => setDocTypeFilter(v ? v.split(',') as DocType[] : [])}
+                  value={docTypeFilter.join(',') || 'all'}
+                  onValueChange={(v) => setDocTypeFilter(v === 'all' ? [] : v.split(',') as DocType[])}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="GOVT_ID">Government ID</SelectItem>
                     <SelectItem value="PRIVATE_ID">Private ID</SelectItem>
                     <SelectItem value="DRIVER_LICENSE">Driver License</SelectItem>
