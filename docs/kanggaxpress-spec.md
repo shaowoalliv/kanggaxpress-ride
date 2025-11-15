@@ -246,6 +246,94 @@ Implemented comprehensive state reporting and compliance checking to provide vis
 
 ---
 
+## spec_id: kanggaxpress-v2.3.2
+**Date:** 2025-11-15  
+**Section:** Phase 2 — Admin v2 + Pricing
+
+### Admin Authentication
+- Password-only admin sign-in at `/admin-sign-in` (NO Google button)
+- Role-based access control using `kx_admin` role in `user_roles` table
+- Security definer function `has_role()` prevents RLS recursion
+- Allowlist gating based on environment variables:
+  - `VITE_ADMIN_PRIMARY_EMAIL` (primary admin email)
+  - `ADMIN_ALLOWED_EMAILS` (comma-separated list)
+  - `ADMIN_ALLOWED_DOMAINS` (comma-separated domains)
+- AdminGate component enforces access control
+- Post-login redirect to `/admin`
+
+### Admin Dashboard
+- Route: `/admin` with nested layout (header + sidebar + outlet)
+- All admin routes include `<meta name="robots" content="noindex,nofollow" />`
+- Dashboard sections (sidebar navigation):
+  - Dashboard (home)
+  - Drivers
+  - Riders
+  - Trips
+  - Deliveries
+  - **Pricing** (fully implemented)
+  - KYC
+  - Finance
+  - Fare Matrix
+  - Promotions
+  - Ops
+  - Disputes
+  - Audit
+  - Settings
+
+### Pricing Page
+- Route: `/admin/pricing` (protected by AdminGate)
+- Region selector (default: CALAPAN)
+- Service tabs: TRICYCLE | MOTORCYCLE | CAR | SEND_PACKAGE
+- Configuration fields per service/region:
+  - Base Fare (PHP)
+  - Per-KM Rate (PHP/km)
+  - Per-Minute Rate (PHP/min)
+  - Minimum Fare (PHP)
+  - Application Use Rate:
+    - Type: FLAT (₱) | PCT (%)
+    - Value: number
+- Live Preview panel:
+  - Input: distance (km), time (minutes)
+  - Output: Estimated Fare, Platform Fee, Driver Take
+- Save button upserts to `fare_configs` table
+
+### Database Schema
+- **user_roles table:**
+  - Columns: id, user_id (FK to auth.users), role (app_role enum), created_at
+  - Unique constraint on (user_id, role)
+  - RLS: Users view own roles; admins manage all
+- **fare_configs table:**
+  - Columns: id, region_code, service_type, base_fare, per_km, per_min, min_fare, platform_fee_type, platform_fee_value, updated_by, updated_at
+  - Unique constraint on (region_code, service_type)
+  - RLS: Anyone can view; admins can manage
+  - Trigger: auto-update updated_at and updated_by
+  - Default configs inserted for CALAPAN region
+
+### Fare Estimation Helper
+- Function: `estimateFare(config, distance_km, time_min)`
+- Located: `src/lib/fareEstimator.ts`
+- Logic:
+  - subtotal = base + (per_km × distance) + (per_min × time)
+  - Apply min_fare if subtotal < min_fare
+  - Platform fee:
+    - FLAT: fixed amount
+    - PCT: percentage of subtotal (rounded)
+  - Driver take = subtotal - platform_fee
+- Returns: { subtotal, platformFee, total, driverTake }
+
+### QA Page
+- Route: `/qa/admin-smoke` (noindex, nofollow)
+- Validates:
+  - Admin sign-in page renders (no Google button)
+  - Allowlist configuration presence (booleans only)
+  - AdminGate blocks non-admin users
+  - Pricing page loads and saves configs
+  - Preview calculator math is correct
+  - All admin routes have noindex meta tags
+- Manual test links for sign-in, dashboard, pricing, settings
+
+---
+
 ## Version History
 
 | Version | Date | Description |
@@ -255,6 +343,7 @@ Implemented comprehensive state reporting and compliance checking to provide vis
 | v2.0.10 | 2025-11-15 | Carabao logo animation system |
 | v2.1.0 | 2025-11-15 | State reporting & SOT compliance |
 | v2.3.1 | 2025-11-15 | Phase 1 routing & choose-role flow |
+| v2.3.2 | 2025-11-15 | Phase 2 Admin v2 + Pricing |
 
 ---
 

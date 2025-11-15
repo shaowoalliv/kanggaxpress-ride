@@ -192,6 +192,48 @@ export type Database = {
           },
         ]
       }
+      fare_configs: {
+        Row: {
+          base_fare: number
+          id: string
+          min_fare: number
+          per_km: number
+          per_min: number
+          platform_fee_type: string
+          platform_fee_value: number
+          region_code: string
+          service_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_fare?: number
+          id?: string
+          min_fare?: number
+          per_km?: number
+          per_min?: number
+          platform_fee_type?: string
+          platform_fee_value?: number
+          region_code?: string
+          service_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_fare?: number
+          id?: string
+          min_fare?: number
+          per_km?: number
+          per_min?: number
+          platform_fee_type?: string
+          platform_fee_value?: number
+          region_code?: string
+          service_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -294,14 +336,42 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "kx_admin" | "kx_moderator"
       delivery_status:
         | "requested"
         | "assigned"
@@ -445,6 +515,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["kx_admin", "kx_moderator"],
       delivery_status: [
         "requested",
         "assigned",
