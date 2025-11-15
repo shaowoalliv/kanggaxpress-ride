@@ -234,6 +234,42 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_documents: {
+        Row: {
+          confidence: number
+          created_at: string
+          doc_type: string
+          id: string
+          image_path: string | null
+          parsed: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          doc_type: string
+          id?: string
+          image_path?: string | null
+          parsed: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          doc_type?: string
+          id?: string
+          image_path?: string | null
+          parsed?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
