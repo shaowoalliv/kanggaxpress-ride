@@ -45,56 +45,56 @@ export default function Landing() {
   return (
     <PageLayout showHeader={false}>
       {/* Hero Section */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 py-12 text-center">
-        <div className="max-w-md w-full space-y-8">
+      <section className="flex-1 flex flex-col items-center justify-center px-4 py-4 text-center min-h-screen">
+        <div className="max-w-md w-full space-y-4">
           {/* Logo & Branding */}
-          <div className="space-y-2">
-            <div className="inline-flex items-center justify-center mb-4">
-              <KanggaLogo width={240} height={240} className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64" />
+          <div className="space-y-1">
+            <div className="inline-flex items-center justify-center">
+              <KanggaLogo width={120} height={120} className="w-24 h-24" />
             </div>
-            <h1 className="text-4xl sm:text-5xl font-heading font-bold text-foreground">
+            <h1 className="text-2xl font-heading font-bold text-foreground">
               KanggaXpress
             </h1>
-            <p className="text-xl sm:text-2xl text-secondary font-heading font-medium">
+            <p className="text-lg text-secondary font-heading font-medium">
               Rooted in Tradition
             </p>
           </div>
 
           {/* Value Proposition */}
-          <p className="text-base sm:text-lg text-muted-foreground px-4">
-            Community-first mobility & delivery rooted in Filipino culture. Affordable rides, trusted drivers & couriers.
+          <p className="text-sm text-muted-foreground px-2">
+            Community-first mobility & delivery rooted in Filipino culture
           </p>
 
           {/* Features */}
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 py-6 px-2">
-            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                <MapPin className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+          <div className="grid grid-cols-2 gap-2 py-3">
+            <div className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <MapPin className="w-6 h-6 text-primary-foreground" />
               </div>
-              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Easy Booking</p>
+              <p className="text-xs font-semibold text-foreground">Easy Booking</p>
             </div>
-            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+            <div className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-primary-foreground" />
               </div>
-              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Safe & Secure</p>
+              <p className="text-xs font-semibold text-foreground">Safe & Secure</p>
             </div>
-            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+            <div className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Zap className="w-6 h-6 text-primary-foreground" />
               </div>
-              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Fast Service</p>
+              <p className="text-xs font-semibold text-foreground">Fast Service</p>
             </div>
-            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                <Package className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+            <div className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Package className="w-6 h-6 text-primary-foreground" />
               </div>
-              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Rides & Delivery</p>
+              <p className="text-xs font-semibold text-foreground">Rides & Delivery</p>
             </div>
           </div>
 
           {/* CTA Button */}
-          <div className="w-full pt-4">
+          <div className="w-full pt-2">
             <button
               type="button"
               data-testid="get-started-btn"
@@ -112,28 +112,28 @@ export default function Landing() {
                   }
                 }, 400);
               }}
-              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-lg font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 h-16 px-10"
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 h-14 px-8"
             >
               Get Started
             </button>
           </div>
 
           {/* Driver/Courier CTA */}
-          <div className="pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">
+          <div className="pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground mb-2">
               Want to drive or deliver and earn?
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() => navigate('/auth?role=driver')}
-                className="text-sm text-secondary font-medium hover:underline"
+                className="text-xs text-secondary font-medium hover:underline"
               >
                 Become a Driver →
               </button>
               <span className="text-muted-foreground">|</span>
               <button
                 onClick={() => navigate('/auth?role=courier')}
-                className="text-sm text-secondary font-medium hover:underline"
+                className="text-xs text-secondary font-medium hover:underline"
               >
                 Become a Courier →
               </button>
