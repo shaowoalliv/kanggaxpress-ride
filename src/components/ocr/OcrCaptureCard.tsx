@@ -12,12 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 
 interface OcrCaptureCardProps {
   docType: DocType;
-  label: string;
-  onCapture: (data: ParsedData, confidence: number, imageDataUrl: string) => void;
+  label?: string;
+  onCapture?: (data: ParsedData, confidence: number, imageDataUrl: string) => void;
+  onOcrComplete?: (parsed: ParsedData, imageUrl: string, imageBlob: Blob, avgConfidence: number) => void;
   required?: boolean;
 }
 
-export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptureCardProps) {
+export function OcrCaptureCard({ docType, label, onCapture, onOcrComplete, required }: OcrCaptureCardProps) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -101,12 +102,20 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
       const acceptable = isConfidenceAcceptable(result.confidence);
       setStatus(acceptable ? 'PENDING' : 'REVIEW');
 
-      // Open review modal instead of auto-capturing
-      setShowReviewModal(true);
+      // Convert dataURL to Blob
+      const blob = await fetch(imageDataUrl).then(r => r.blob());
+
+      // Use onOcrComplete if provided, otherwise use legacy onCapture
+      if (onOcrComplete) {
+        onOcrComplete(normalized, imageDataUrl, blob, result.confidence);
+      } else {
+        // Open review modal for legacy usage
+        setShowReviewModal(true);
+      }
 
       toast({
         title: 'Document Scanned',
-        description: 'Review and confirm the extracted data',
+        description: onOcrComplete ? 'Review the extracted data' : 'Review and confirm the extracted data',
       });
     } catch (error: any) {
       toast({
@@ -120,7 +129,7 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
   };
 
   const handleAcceptReview = (finalParsed: ParsedData) => {
-    if (preview && confidence !== null) {
+    if (preview && confidence !== null && onCapture) {
       onCapture(finalParsed, confidence, preview);
       toast({
         title: 'Data Accepted',

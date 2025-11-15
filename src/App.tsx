@@ -20,6 +20,7 @@ import CreateDelivery from "./pages/sender/CreateDelivery";
 import MyDeliveries from "./pages/sender/MyDeliveries";
 import CourierDashboard from "./pages/courier/Dashboard";
 import CourierSetup from "./pages/courier/Setup";
+import KycStatus from "./pages/account/KycStatus";
 import HeroAnim from "./pages/qa/HeroAnim";
 import QAState from "./pages/qa/QAState";
 import QASOT from "./pages/qa/QASOT";
@@ -80,6 +81,9 @@ const App = () => (
             {/* Courier Routes */}
             <Route path="/courier/dashboard" element={<CourierDashboard />} />
             <Route path="/courier/setup" element={<CourierSetup />} />
+            
+            {/* Account Routes */}
+            <Route path="/account/kyc" element={<KycStatus />} />
             
             {/* Admin Routes */}
             <Route path="/admin-sign-in" element={<AdminSignIn />} />
