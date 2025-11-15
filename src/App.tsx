@@ -70,13 +70,13 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <InstallPromptBanner />
-          <DevPreviewBanner />
         <BrowserRouter>
-          <Routes>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <InstallPromptBanner />
+            <DevPreviewBanner />
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/choose-role" element={<ChooseRole />} />
             <Route path="/auth" element={<Auth />} />
@@ -137,11 +137,11 @@ const App = () => {
             <Route path="/qa/preview" element={<PreviewTest />} />
             
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
