@@ -70,6 +70,19 @@ export default function DriverDashboard() {
         !driverProfile.is_available
       );
       setDriverProfile(updated);
+      
+      // Realtime presence channel stub (baseline wiring)
+      // Contract: presence:CALAPAN channel
+      if (updated.is_available && import.meta.env.VITE_ENABLE_REALTIME === 'true') {
+        console.log('[Realtime] Publishing driver presence to presence:CALAPAN', {
+          driver_id: profile.id,
+          vehicle_type: driverProfile.vehicle_type,
+          location: 'stub_lat_lng',
+          online_at: new Date().toISOString(),
+        });
+        // TODO: Actual Supabase Realtime publish when configured
+      }
+      
       toast.success(
         updated.is_available ? 'You are now available for rides' : 'You are now offline'
       );

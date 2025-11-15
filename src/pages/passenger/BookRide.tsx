@@ -34,6 +34,14 @@ export default function BookRide() {
     } else if (profile?.role === 'driver') {
       navigate('/driver/dashboard');
     }
+
+    // Realtime presence subscriber stub (baseline wiring)
+    // Contract: presence:CALAPAN channel
+    if (import.meta.env.VITE_ENABLE_REALTIME === 'true') {
+      console.log('[Realtime] Subscribing to presence:CALAPAN for driver markers');
+      // TODO: Actual Supabase Realtime subscribe when configured
+      // On message: render green markers by vehicle_type (motor/tricycle/car)
+    }
   }, [user, profile, navigate]);
 
   const selectedOption = rideOptions.find(opt => opt.type === selectedType);
