@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { performOcr, isConfidenceAcceptable } from '@/lib/ocrProvider';
+import { mapFieldsToSchema } from '@/lib/ocr/fieldMaps';
+import { OcrReviewModal } from './OcrReviewModal';
 import { DocType, ParsedData, KycStatus } from '@/types/kyc';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,6 +23,8 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
   const [preview, setPreview] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
   const [status, setStatus] = useState<KycStatus>('PENDING');
+  const [parsedData, setParsedData] = useState<ParsedData | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -89,18 +93,20 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
 
     try {
       const result = await performOcr(imageDataUrl, docType);
+      const normalized = mapFieldsToSchema(docType, result.parsed);
+      
       setConfidence(result.confidence);
+      setParsedData(normalized);
       
       const acceptable = isConfidenceAcceptable(result.confidence);
       setStatus(acceptable ? 'PENDING' : 'REVIEW');
 
-      onCapture(result.parsed, result.confidence, imageDataUrl);
+      // Open review modal instead of auto-capturing
+      setShowReviewModal(true);
 
       toast({
         title: 'Document Scanned',
-        description: acceptable 
-          ? 'Document processed successfully'
-          : 'Low confidence - please review fields',
+        description: 'Review and confirm the extracted data',
       });
     } catch (error: any) {
       toast({
@@ -113,13 +119,36 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
     }
   };
 
+  const handleAcceptReview = (finalParsed: ParsedData) => {
+    if (preview && confidence !== null) {
+      onCapture(finalParsed, confidence, preview);
+      toast({
+        title: 'Data Accepted',
+        description: 'Fields have been autofilled',
+      });
+    }
+  };
+
   const handleRescan = () => {
     setPreview(null);
     setConfidence(null);
     setStatus('PENDING');
+    setParsedData(null);
   };
 
   return (
+    <>
+      {parsedData && preview && confidence !== null && (
+        <OcrReviewModal
+          open={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          docType={docType}
+          imageUrl={preview}
+          parsed={parsedData}
+          avgConfidence={confidence}
+          onAccept={handleAcceptReview}
+        />
+      )}
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -217,5 +246,6 @@ export function OcrCaptureCard({ docType, label, onCapture, required }: OcrCaptu
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

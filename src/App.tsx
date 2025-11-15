@@ -25,6 +25,8 @@ import QAState from "./pages/qa/QAState";
 import QASOT from "./pages/qa/QASOT";
 import RoutingPhase1 from "./pages/qa/RoutingPhase1";
 import AdminSmoke from "./pages/qa/AdminSmoke";
+import QAOOCR from "./pages/qa/OCR";
+import QAKYCAdmin from "./pages/qa/KYCAdmin";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
@@ -104,6 +106,8 @@ const App = () => (
             <Route path="/qa/sot" element={<QASOT />} />
             <Route path="/qa/routing-phase1" element={<RoutingPhase1 />} />
             <Route path="/qa/admin-smoke" element={<AdminSmoke />} />
+            <Route path="/qa/ocr" element={<QAOOCR />} />
+            <Route path="/qa/kyc-admin" element={<QAKYCAdmin />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

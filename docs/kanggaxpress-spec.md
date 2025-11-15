@@ -4,6 +4,41 @@ This document serves as the authoritative Source of Truth for the KanggaXpress a
 
 ---
 
+## Phase 3 — Camera + OCR + KYC (Completed)
+**spec_id**: kanggaxpress-v2.3.3-final  
+**date**: 2025-11-15
+
+### Overview
+Integrated camera capture and OCR (tesseract.js) across all registration flows with confidence-based gating, field autofill, and admin review queue.
+
+### Components & Services
+- **OcrReviewModal**: Editable fields, confidence meter, threshold-based Accept gating
+- **OcrCaptureCard**: Camera/file capture with review modal integration
+- **fieldMaps.ts**: Normalizes OCR output to strict JSONB schemas
+- **kycService**: CRUD operations for kyc_documents table
+
+### Database
+- **kyc_documents** table with JSONB parsed field, confidence score, status (PENDING/REVIEW/APPROVED/REJECTED)
+- **RLS**: Owners read/write PENDING/REVIEW only; kx_admin full access
+
+### Document Schemas (lower_snake_case)
+- **GOVT_ID/PRIVATE_ID**: id_no, fullname, birthdate, address, expiry_date
+- **DRIVER_LICENSE**: license_no, fullname, address, restrictions
+- **OR/CR**: Vehicle ownership documents
+- **SELFIE**: pose_hint, lighting_hint
+
+### Admin & QA
+- **/admin/kyc**: Queue with Approve/Reject actions
+- **/qa/ocr**: Confidence gating tests
+- **/qa/kyc-admin**: Admin workflow tests
+
+### Environment
+```env
+VITE_OCR_CONFIDENCE_MIN=0.65
+```
+
+---
+
 ## spec_id: kanggaxpress-v2.0.0
 **Date:** 2025-01-15  
 **Section:** Core Application Foundation
