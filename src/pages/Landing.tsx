@@ -66,35 +66,35 @@ export default function Landing() {
           </p>
 
           {/* Features */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 py-6 px-2">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 py-6 px-2">
+            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <MapPin className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-center">Easy Booking</p>
+              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Easy Booking</p>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-center">Safe & Secure</p>
+              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Safe & Secure</p>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-center">Fast Service</p>
+              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Fast Service</p>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Package className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+            <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-card/50 backdrop-blur-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <Package className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-center">Rides & Delivery</p>
+              <p className="text-sm sm:text-base font-semibold text-foreground text-center">Rides & Delivery</p>
             </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="space-y-3 w-full">
+          {/* CTA Button */}
+          <div className="w-full">
             <button
               type="button"
               data-testid="get-started-btn"
@@ -116,12 +116,6 @@ export default function Landing() {
             >
               Get Started
             </button>
-            <SecondaryButton
-              onClick={() => navigate('/auth')}
-              className="w-full"
-            >
-              Sign In
-            </SecondaryButton>
           </div>
 
           {/* Driver/Courier CTA */}
