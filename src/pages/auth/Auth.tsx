@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, User, Car, Package, Mail } from 'lucide-react';
@@ -345,26 +346,34 @@ export default function Auth() {
               </h1>
               
               {/* Role Selector */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 p-2 bg-muted rounded-lg">
-                <span className="text-xs sm:text-sm text-muted-foreground">Signing in as:</span>
-                <div className="flex gap-1">
-                  {(['passenger', 'driver', 'courier'] as const).map((r) => (
-                    <Button
-                      key={r}
-                      type="button"
-                      size="sm"
-                      variant={role === r ? 'default' : 'ghost'}
-                      onClick={() => setRole(r)}
-                      className="gap-3 text-xs sm:text-sm h-8 sm:h-9"
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center">
-                        {getRoleIcon(r)}
-                      </div>
-                      <span className="hidden sm:inline">{getRoleLabel(r)}</span>
-                    </Button>
-                  ))}
+              <TooltipProvider>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 p-2 bg-muted rounded-lg">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Signing in as:</span>
+                  <div className="flex gap-1">
+                    {(['passenger', 'driver', 'courier'] as const).map((r) => (
+                      <Tooltip key={r}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={role === r ? 'default' : 'ghost'}
+                            onClick={() => setRole(r)}
+                            className="gap-3 text-xs sm:text-sm h-12 sm:h-14 px-3 sm:px-4"
+                          >
+                            <div className="w-10 h-10 flex items-center justify-center">
+                              {getRoleIcon(r)}
+                            </div>
+                            <span className="hidden sm:inline">{getRoleLabel(r)}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Sign in as {getRoleLabel(r)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </TooltipProvider>
             </div>
 
             {/* Auth Tabs */}
