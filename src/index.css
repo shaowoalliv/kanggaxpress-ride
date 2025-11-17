@@ -58,7 +58,8 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-body antialiased;
     /* Mobile-first base font size - larger for readability */
-    font-size: 16px;
+    font-size: 17px;
+    line-height: 1.6;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -72,10 +73,42 @@ All colors MUST be HSL.
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Increase tap target sizes on mobile */
+  /* Ensure good contrast for text on yellow backgrounds */
+  .bg-primary, .bg-accent, .bg-background {
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Mobile-first tap targets and spacing */
   @media (max-width: 768px) {
-    input, select, textarea, button, a {
+    /* Larger tap targets */
+    button, a[role="button"] {
       min-height: 48px;
+    }
+    
+    input, select, textarea {
+      min-height: 48px;
+      font-size: 17px; /* iOS minimum to prevent zoom */
+    }
+
+    /* Better focus states for accessibility */
+    button:focus-visible, 
+    a:focus-visible, 
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid hsl(var(--ring));
+      outline-offset: 2px;
+    }
+  }
+
+  /* Desktop refinements */
+  @media (min-width: 768px) {
+    body {
+      font-size: 16px;
+    }
+    
+    input, select, textarea {
+      font-size: 16px;
     }
   }
 }
