@@ -168,36 +168,20 @@ export default function Auth() {
       return;
     }
 
-    console.log('[Password Reset] Attempting to send reset email to:', loginEmail);
-    console.log('[Password Reset] Redirect URL:', `${window.location.origin}/auth/reset-password`);
-    console.log('[Password Reset] Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-
     try {
-      // Call our custom edge function directly instead of using Supabase's auth hook
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: {
-          email: loginEmail,
-          redirectTo: `${window.location.origin}/auth/reset-password`,
-        },
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
       if (error) {
-        console.error('[Password Reset] Edge function error:', error);
-        throw new Error(error.message || 'Failed to send password reset email');
+        throw error;
       }
 
-      if (!data?.success) {
-        console.error('[Password Reset] Failed:', data);
-        throw new Error(data?.message || 'Failed to send password reset email');
-      }
-
-      console.log('[Password Reset] Success - email sent');
       toast({
         title: 'Password Reset Email Sent',
-        description: 'Check your email for a password reset link',
+        description: 'Please check your inbox for the reset link.',
       });
     } catch (error: any) {
-      console.error('[Password Reset] Failed:', error.message);
       toast({
         title: 'Error',
         description: error.message || 'Failed to send password reset email',
