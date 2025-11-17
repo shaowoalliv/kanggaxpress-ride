@@ -398,22 +398,22 @@ export default function Auth() {
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-start px-3 sm:px-4 py-3 sm:py-4 overflow-y-auto">
-          <div className="w-full max-w-[420px] space-y-3.5 sm:space-y-4 pb-safe">
+        <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-4 py-4 sm:py-4 overflow-y-auto">
+          <div className="w-full max-w-[420px] space-y-4 sm:space-y-4 pb-safe">
             {/* Header */}
-            <div className="text-center space-y-2 sm:space-y-2.5">
+            <div className="text-center space-y-3 sm:space-y-2.5">
               <div className="inline-flex items-center justify-center">
-                <KanggaLogo width={200} height={200} className="w-16 h-16 sm:w-20 sm:h-20" />
+                <KanggaLogo width={200} height={200} className="w-20 h-20 sm:w-20 sm:h-20" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">
+              <h1 className="text-2xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground leading-tight px-2">
                 Welcome to KanggaXpress
               </h1>
               
               {/* Role Selector */}
               <TooltipProvider>
-                <div className="flex flex-col items-center justify-center gap-2.5 sm:gap-2 p-4 sm:p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
-                  <span className="text-base sm:text-sm font-bold text-foreground">Signing in as:</span>
-                  <div className="flex gap-2.5 sm:gap-2">
+                <div className="flex flex-col items-center justify-center gap-3 sm:gap-2 p-5 sm:p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                  <span className="text-lg sm:text-base md:text-sm font-bold text-foreground">Signing in as:</span>
+                  <div className="flex gap-3 sm:gap-2">
                     {(['passenger', 'driver', 'courier'] as const).map((r) => (
                       <Tooltip key={r}>
                         <TooltipTrigger asChild>
@@ -422,7 +422,7 @@ export default function Auth() {
                             size="sm"
                             variant={role === r ? 'default' : 'outline'}
                             onClick={() => setRole(r)}
-                            className={`flex flex-col gap-2 sm:gap-1.5 h-auto py-3 px-3.5 sm:py-2 sm:px-3 transition-all ${
+                            className={`flex flex-col gap-2.5 sm:gap-1.5 h-auto py-4 px-4 sm:py-2 sm:px-3 transition-all min-h-[72px] sm:min-h-[60px] ${
                               role === r 
                                 ? 'shadow-lg scale-105 border-2 border-primary' 
                                 : 'hover:scale-105 hover:shadow-md border-2 border-border'
@@ -435,7 +435,7 @@ export default function Auth() {
                             }`}>
                               {getRoleIcon(r)}
                             </div>
-                            <span className="text-sm sm:text-xs font-semibold">{getRoleLabel(r)}</span>
+                            <span className="text-base sm:text-sm md:text-xs font-semibold">{getRoleLabel(r)}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -450,16 +450,16 @@ export default function Auth() {
 
             {/* Auth Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-12 sm:h-10">
-                <TabsTrigger value="login" className="text-base sm:text-sm font-semibold">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-base sm:text-sm font-semibold">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-14 sm:h-12 md:h-10">
+                <TabsTrigger value="login" className="text-lg sm:text-base md:text-sm font-semibold">Login</TabsTrigger>
+                <TabsTrigger value="register" className="text-lg sm:text-base md:text-sm font-semibold">Register</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-3.5 sm:space-y-3 mt-4 sm:mt-3">
-                <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-3">
-                  <div className="space-y-1.5 sm:space-y-1">
-                    <Label htmlFor="login-email" className="text-base sm:text-sm font-medium">Email</Label>
+              <TabsContent value="login" className="space-y-4 sm:space-y-3 mt-5 sm:mt-4">
+                <form onSubmit={handleLogin} className="space-y-4 sm:space-y-3">
+                  <div className="space-y-2 sm:space-y-1">
+                    <Label htmlFor="login-email" className="text-lg sm:text-base md:text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -467,7 +467,7 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      className="bg-white h-12 sm:h-10 text-mobile-base sm:text-base"
+                      className="bg-white h-14 sm:h-12 md:h-10 text-mobile-base sm:text-base"
                     />
                   </div>
 
