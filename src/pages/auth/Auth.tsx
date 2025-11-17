@@ -12,6 +12,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, User, Car, Package, Mail } from 'lucide-react';
 import { UserRole } from '@/types';
+import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
+import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
+import { kycService } from '@/services/kyc';
+import { DocType } from '@/types/kyc';
+import { z } from 'zod';
+
+const passengerSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'First name required'),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1, 'Last name required'),
+  birthdate: z.string().min(1, 'Birthdate required'),
+  personalMobile: z.string().min(10, 'Valid mobile number required'),
+  emergencyContact: z.string().min(10, 'Valid emergency contact required'),
+  completeAddress: z.string().min(5, 'Complete address required'),
+});
+
+interface KycStaged {
+  docType: DocType;
+  parsed: any;
+  confidence: number;
+  imageBlob: Blob;
+}
 
 export default function Auth() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,7 +58,29 @@ export default function Auth() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // Register form
+  // Passenger Register form
+  const [passengerData, setPassengerData] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    birthdate: '',
+    personalMobile: '',
+    emergencyContact: '',
+    completeAddress: '',
+  });
+  const [kycStaged, setKycStaged] = useState<KycStaged[]>([]);
+  const [reviewModal, setReviewModal] = useState<{
+    open: boolean;
+    docType: DocType;
+    imageUrl: string;
+    parsed: any;
+    avgConfidence: number;
+    imageBlob: Blob;
+  }>({ open: false, docType: 'GOVT_ID', imageUrl: '', parsed: {}, avgConfidence: 0, imageBlob: new Blob() });
+  
+  // Simple register form for driver/courier
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerFullName, setRegisterFullName] = useState('');
@@ -82,6 +128,127 @@ export default function Auth() {
         description: error.message || 'Invalid email or password',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOcrComplete = (docType: DocType) => (parsed: any, imageUrl: string, imageBlob: Blob, avgConfidence: number) => {
+    setReviewModal({
+      open: true,
+      docType,
+      imageUrl,
+      parsed,
+      avgConfidence,
+      imageBlob,
+    });
+  };
+
+  const handleOcrAccept = (finalParsed: any) => {
+    // Autofill form fields from ID
+    if (reviewModal.docType === 'GOVT_ID' || reviewModal.docType === 'PRIVATE_ID') {
+      setPassengerData(prev => ({
+        ...prev,
+        firstName: finalParsed.name_first || prev.firstName,
+        middleName: finalParsed.name_middle || prev.middleName,
+        lastName: finalParsed.name_last || prev.lastName,
+        birthdate: finalParsed.birthdate || prev.birthdate,
+        completeAddress: [
+          finalParsed.address_line1,
+          finalParsed.address_line2,
+          finalParsed.city,
+          finalParsed.province,
+          finalParsed.postal_code,
+        ].filter(Boolean).join(', ') || prev.completeAddress,
+      }));
+    }
+
+    // Stage for later submission
+    setKycStaged(prev => [...prev.filter(k => k.docType !== reviewModal.docType), {
+      docType: reviewModal.docType,
+      parsed: finalParsed,
+      confidence: reviewModal.avgConfidence,
+      imageBlob: reviewModal.imageBlob,
+    }]);
+
+    setReviewModal({ ...reviewModal, open: false });
+    toast({
+      title: 'Document Verified',
+      description: 'Document scanned and form auto-filled',
+    });
+  };
+
+  const handlePassengerRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      passengerSchema.parse(passengerData);
+
+      // Check required KYC docs
+      const hasId = kycStaged.some(k => k.docType === 'GOVT_ID' || k.docType === 'PRIVATE_ID');
+      const hasSelfie = kycStaged.some(k => k.docType === 'SELFIE');
+      if (!hasId || !hasSelfie) {
+        toast({
+          title: 'Documents Required',
+          description: 'Please complete ID and Selfie verification',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      // Sign up
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: passengerData.email.trim(),
+        password: passengerData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: `${passengerData.firstName} ${passengerData.middleName || ''} ${passengerData.lastName}`.trim(),
+            phone: passengerData.personalMobile,
+            role: 'passenger',
+          },
+        },
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('User creation failed');
+
+      // Upload KYC documents
+      for (const staged of kycStaged) {
+        const imagePath = await kycService.uploadDocumentImage(authData.user.id, staged.docType, staged.imageBlob);
+        await kycService.createKycDocument({
+          user_id: authData.user.id,
+          doc_type: staged.docType,
+          parsed: staged.parsed,
+          confidence: staged.confidence,
+          status: 'PENDING',
+          image_path: imagePath,
+        });
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Account created! Please verify your email to continue.',
+      });
+
+      setActiveTab('login');
+      setLoginEmail(passengerData.email);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0]?.message || 'Please check your inputs',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Registration Failed',
+          description: error.message || 'Could not create account',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -155,11 +322,11 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-3 py-4 sm:py-8 md:py-12">
-          <div className="w-full max-w-md space-y-4 sm:space-y-6 md:space-y-8">
+        <div className="flex-1 flex flex-col items-center justify-center px-3 py-2 sm:py-4 md:py-6">
+          <div className="w-full max-w-md space-y-2 sm:space-y-3 md:space-y-4">
             {/* Header */}
-            <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
-              <div className="inline-flex items-center justify-center mb-2">
+            <div className="text-center space-y-1 sm:space-y-2">
+              <div className="inline-flex items-center justify-center mb-1">
                 <KanggaLogo width={240} height={240} className="w-24 h-24 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72" />
               </div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground px-2">
@@ -242,6 +409,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
+                    variant="secondary"
                     className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
                     disabled={isSubmitting}
                   >
@@ -252,80 +420,255 @@ export default function Auth() {
 
               {/* Register Tab */}
               <TabsContent value="register" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-                <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-name" className="text-xs sm:text-sm">Full Name</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      placeholder="Juan dela Cruz"
-                      value={registerFullName}
-                      onChange={(e) => setRegisterFullName(e.target.value)}
-                      required
-                      className="bg-white h-9 sm:h-10 text-sm"
-                    />
-                  </div>
+                {role === 'passenger' ? (
+                  /* Comprehensive Passenger Registration with KYC */
+                  <form onSubmit={handlePassengerRegister} className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="passenger-firstName" className="text-xs sm:text-sm">First Name *</Label>
+                        <Input
+                          id="passenger-firstName"
+                          type="text"
+                          placeholder="Juan"
+                          value={passengerData.firstName}
+                          onChange={(e) => setPassengerData(prev => ({ ...prev, firstName: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
 
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-email" className="text-xs sm:text-sm">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
-                      className="bg-white h-9 sm:h-10 text-sm"
-                    />
-                  </div>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="passenger-middleName" className="text-xs sm:text-sm">Middle Name</Label>
+                        <Input
+                          id="passenger-middleName"
+                          type="text"
+                          placeholder="Santos"
+                          value={passengerData.middleName}
+                          onChange={(e) => setPassengerData(prev => ({ ...prev, middleName: e.target.value }))}
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+                    </div>
 
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-phone" className="text-xs sm:text-sm">Phone Number</Label>
-                    <Input
-                      id="register-phone"
-                      type="tel"
-                      placeholder="+63 912 345 6789"
-                      value={registerPhone}
-                      onChange={(e) => setRegisterPhone(e.target.value)}
-                      className="bg-white h-9 sm:h-10 text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-password" className="text-xs sm:text-sm">Password</Label>
-                    <div className="relative">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-lastName" className="text-xs sm:text-sm">Last Name *</Label>
                       <Input
-                        id="register-password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={registerPassword}
-                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        id="passenger-lastName"
+                        type="text"
+                        placeholder="dela Cruz"
+                        value={passengerData.lastName}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, lastName: e.target.value }))}
                         required
-                        minLength={6}
                         className="bg-white h-9 sm:h-10 text-sm"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
-                  </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </form>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-birthdate" className="text-xs sm:text-sm">Birthdate *</Label>
+                      <Input
+                        id="passenger-birthdate"
+                        type="date"
+                        value={passengerData.birthdate}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, birthdate: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-personalMobile" className="text-xs sm:text-sm">Personal Mobile Number *</Label>
+                      <Input
+                        id="passenger-personalMobile"
+                        type="tel"
+                        placeholder="+63 912 345 6789"
+                        value={passengerData.personalMobile}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, personalMobile: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-emergencyContact" className="text-xs sm:text-sm">Emergency Contact Number *</Label>
+                      <Input
+                        id="passenger-emergencyContact"
+                        type="tel"
+                        placeholder="+63 912 345 6789"
+                        value={passengerData.emergencyContact}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, emergencyContact: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-completeAddress" className="text-xs sm:text-sm">Complete Address *</Label>
+                      <Input
+                        id="passenger-completeAddress"
+                        type="text"
+                        placeholder="123 Main St, Barangay, City, Province"
+                        value={passengerData.completeAddress}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, completeAddress: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-email" className="text-xs sm:text-sm">Email *</Label>
+                      <Input
+                        id="passenger-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={passengerData.email}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-password" className="text-xs sm:text-sm">Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="passenger-password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={passengerData.password}
+                          onChange={(e) => setPassengerData(prev => ({ ...prev, password: e.target.value }))}
+                          required
+                          minLength={6}
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* KYC Verification */}
+                    <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Identity Verification</h3>
+                      
+                      <OcrCaptureCard
+                        docType="GOVT_ID"
+                        label="Government ID or Any Valid ID"
+                        onOcrComplete={handleOcrComplete('GOVT_ID')}
+                      />
+
+                      <OcrCaptureCard
+                        docType="SELFIE"
+                        label="Selfie Photo"
+                        onOcrComplete={handleOcrComplete('SELFIE')}
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Creating account...' : 'Create Passenger Account'}
+                    </Button>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      * After registration, verify your email to download and use the app
+                    </p>
+                  </form>
+                ) : (
+                  /* Simple Registration for Driver/Courier */
+                  <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-name" className="text-xs sm:text-sm">Full Name</Label>
+                      <Input
+                        id="register-name"
+                        type="text"
+                        placeholder="Juan dela Cruz"
+                        value={registerFullName}
+                        onChange={(e) => setRegisterFullName(e.target.value)}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-email" className="text-xs sm:text-sm">Email</Label>
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-phone" className="text-xs sm:text-sm">Phone Number</Label>
+                      <Input
+                        id="register-phone"
+                        type="tel"
+                        placeholder="+63 912 345 6789"
+                        value={registerPhone}
+                        onChange={(e) => setRegisterPhone(e.target.value)}
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-password" className="text-xs sm:text-sm">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="register-password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={registerPassword}
+                          onChange={(e) => setRegisterPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Creating account...' : 'Create Account'}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           </div>
         </div>
+
+        {/* OCR Review Modal */}
+        <OcrReviewModal
+          open={reviewModal.open}
+          onClose={() => setReviewModal({ ...reviewModal, open: false })}
+          docType={reviewModal.docType}
+          imageUrl={reviewModal.imageUrl}
+          parsed={reviewModal.parsed}
+          avgConfidence={reviewModal.avgConfidence}
+          onAccept={handleOcrAccept}
+        />
       </PageLayout>
     </>
   );
