@@ -57,9 +57,25 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    /* Mobile-first base font size - larger for readability */
+    font-size: 16px;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+
+  /* PWA safe area support for notched phones */
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Increase tap target sizes on mobile */
+  @media (max-width: 768px) {
+    input, select, textarea, button, a {
+      min-height: 48px;
+    }
   }
 }

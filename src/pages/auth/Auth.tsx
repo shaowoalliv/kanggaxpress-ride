@@ -385,11 +385,11 @@ export default function Auth() {
         <title>Sign In - KanggaXpress</title>
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
-      <div className="min-h-screen h-screen flex flex-col overflow-hidden">
+      <div className="min-h-screen min-h-[100dvh] flex flex-col overflow-hidden">
         {/* Yellow Header Bar with Shadow and Hamburger Menu - LOCKED CONFIGURATION
             DO NOT add logo or branding here - this is intentional */}
         <header className="sticky top-0 z-50 bg-primary shadow-md">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
             {/* LOCKED: Only hamburger menu - DO NOT ADD LOGO OR BRANDING */}
             <HamburgerMenu />
             
@@ -398,22 +398,22 @@ export default function Auth() {
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-start px-3 py-2 overflow-y-auto">
-          <div className="w-full max-w-2xl space-y-3 pb-4">
+        <div className="flex-1 flex flex-col items-center justify-start px-3 sm:px-4 py-3 sm:py-4 overflow-y-auto">
+          <div className="w-full max-w-[420px] space-y-3.5 sm:space-y-4 pb-safe">
             {/* Header */}
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-2 sm:space-y-2.5">
               <div className="inline-flex items-center justify-center">
-                <KanggaLogo width={200} height={200} className="w-16 h-16 sm:w-24 sm:h-24" />
+                <KanggaLogo width={200} height={200} className="w-16 h-16 sm:w-20 sm:h-20" />
               </div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">
                 Welcome to KanggaXpress
               </h1>
               
               {/* Role Selector */}
               <TooltipProvider>
-                <div className="flex flex-col items-center justify-center gap-2 p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
-                  <span className="text-sm sm:text-base font-bold text-foreground">Signing in as:</span>
-                  <div className="flex gap-2">
+                <div className="flex flex-col items-center justify-center gap-2.5 sm:gap-2 p-4 sm:p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                  <span className="text-base sm:text-sm font-bold text-foreground">Signing in as:</span>
+                  <div className="flex gap-2.5 sm:gap-2">
                     {(['passenger', 'driver', 'courier'] as const).map((r) => (
                       <Tooltip key={r}>
                         <TooltipTrigger asChild>
@@ -422,20 +422,20 @@ export default function Auth() {
                             size="sm"
                             variant={role === r ? 'default' : 'outline'}
                             onClick={() => setRole(r)}
-                            className={`flex flex-col gap-1.5 h-auto py-2 px-3 transition-all ${
+                            className={`flex flex-col gap-2 sm:gap-1.5 h-auto py-3 px-3.5 sm:py-2 sm:px-3 transition-all ${
                               role === r 
                                 ? 'shadow-lg scale-105 border-2 border-primary' 
                                 : 'hover:scale-105 hover:shadow-md border-2 border-border'
                             }`}
                           >
-                            <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+                            <div className={`w-12 h-12 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg ${
                               role === r 
                                 ? 'bg-primary/10' 
                                 : 'bg-muted'
                             }`}>
                               {getRoleIcon(r)}
                             </div>
-                            <span className="text-xs font-semibold">{getRoleLabel(r)}</span>
+                            <span className="text-sm sm:text-xs font-semibold">{getRoleLabel(r)}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -450,16 +450,16 @@ export default function Auth() {
 
             {/* Auth Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
-                <TabsTrigger value="login" className="text-sm font-semibold">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-sm font-semibold">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-12 sm:h-10">
+                <TabsTrigger value="login" className="text-base sm:text-sm font-semibold">Login</TabsTrigger>
+                <TabsTrigger value="register" className="text-base sm:text-sm font-semibold">Register</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-2.5 mt-3">
-                <form onSubmit={handleLogin} className="space-y-2.5">
-                  <div className="space-y-1">
-                    <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
+              <TabsContent value="login" className="space-y-3.5 sm:space-y-3 mt-4 sm:mt-3">
+                <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-3">
+                  <div className="space-y-1.5 sm:space-y-1">
+                    <Label htmlFor="login-email" className="text-base sm:text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -467,12 +467,12 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      className="bg-white h-9 text-sm"
+                      className="bg-white h-12 sm:h-10 text-mobile-base sm:text-base"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
+                  <div className="space-y-1.5 sm:space-y-1">
+                    <Label htmlFor="login-password" className="text-base sm:text-sm font-medium">Password</Label>
                     <div className="relative">
                       <Input
                         id="login-password"
@@ -481,21 +481,21 @@ export default function Auth() {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
-                        className="bg-white h-9 text-sm pr-10"
+                        className="bg-white h-12 sm:h-10 text-mobile-base sm:text-base pr-12"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded p-2"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-5 h-5 sm:w-4 sm:h-4" /> : <Eye className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </button>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-1">
                       <button
                         type="button"
-                        className="text-xs font-medium text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                        className="text-sm sm:text-xs font-medium text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-1"
                         onClick={handleForgotPassword}
                       >
                         Forgot password?
@@ -506,18 +506,19 @@ export default function Auth() {
                   <Button
                     type="submit"
                     variant="secondary"
-                    className="w-full h-10 text-base font-semibold"
+                    className="w-full text-base sm:text-base font-semibold mt-1"
+                    size="lg"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
                   </Button>
                   
                   {/* Help Link */}
-                  <div className="text-center pt-2">
+                  <div className="text-center pt-2 sm:pt-1.5">
                     <button
                       type="button"
                       onClick={() => setHelpModalOpen(true)}
-                      className="text-xs text-foreground/80 hover:text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-1"
+                      className="text-sm sm:text-xs text-foreground/80 hover:text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-2 py-1.5"
                     >
                       Need help signing in?
                     </button>
