@@ -1011,7 +1011,7 @@ export default function Auth() {
                     </div>
 
                     {/* 🔒 LOCKED: Vehicle Information Section
-                      * Includes: color, plate, license expiry, CR expiry
+                      * Includes: color and plate number
                       * DO NOT remove any fields
                       */}
                     <div className="space-y-2 sm:space-y-3 pt-3 border-t border-border">
@@ -1038,30 +1038,6 @@ export default function Auth() {
                           placeholder="ABC 1234"
                           value={driverData.vehiclePlate}
                           onChange={(e) => setDriverData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
-                          required
-                          className="bg-white h-9 sm:h-10 text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="driver-licenseExpiry" className="text-xs sm:text-sm font-bold">Driver's License Expiry Date *</Label>
-                        <Input
-                          id="driver-licenseExpiry"
-                          type="date"
-                          value={driverData.licenseExpiry}
-                          onChange={(e) => setDriverData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
-                          required
-                          className="bg-white h-9 sm:h-10 text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="driver-crExpiry" className="text-xs sm:text-sm font-bold">CR Expiry Date *</Label>
-                        <Input
-                          id="driver-crExpiry"
-                          type="date"
-                          value={driverData.crExpiry}
-                          onChange={(e) => setDriverData(prev => ({ ...prev, crExpiry: e.target.value }))}
                           required
                           className="bg-white h-9 sm:h-10 text-sm"
                         />
@@ -1127,9 +1103,14 @@ export default function Auth() {
                       </div>
                     </div>
 
-                    {/* 🔒 LOCKED: Identity Verification - Photo Capture ONLY (NO OCR) */}
+                    {/* 🔒 LOCKED: Document Verification - Photo Capture with Expiry Fields
+                      * Required photos: DRIVER_LICENSE, OR, CR, SELFIE
+                      * Expiry date fields placed directly after corresponding photos
+                      * NO OCR processing - simple photo upload
+                      * DO NOT replace with OcrCaptureCard
+                      */}
                     <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
-                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Identity Verification</h3>
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Document Verification</h3>
                       
                       <PhotoCaptureCard
                         title="Driver's License"
@@ -1137,6 +1118,44 @@ export default function Auth() {
                         onCapture={handleDriverPhotoCapture('DRIVER_LICENSE')}
                         captured={driverPhotosStaged.some(p => p.docType === 'DRIVER_LICENSE')}
                       />
+                      
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-licenseExpiry" className="text-xs sm:text-sm font-bold">Driver's License Expiry Date *</Label>
+                        <Input
+                          id="driver-licenseExpiry"
+                          type="date"
+                          value={driverData.licenseExpiry}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+                      
+                      <PhotoCaptureCard
+                        title="Official Receipt (OR)"
+                        description="Take or upload a photo of your vehicle's OR"
+                        onCapture={handleDriverPhotoCapture('OR')}
+                        captured={driverPhotosStaged.some(p => p.docType === 'OR')}
+                      />
+                      
+                      <PhotoCaptureCard
+                        title="Certificate of Registration (CR)"
+                        description="Take or upload a photo of your vehicle's CR"
+                        onCapture={handleDriverPhotoCapture('CR')}
+                        captured={driverPhotosStaged.some(p => p.docType === 'CR')}
+                      />
+                      
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-crExpiry" className="text-xs sm:text-sm font-bold">CR Expiry Date *</Label>
+                        <Input
+                          id="driver-crExpiry"
+                          type="date"
+                          value={driverData.crExpiry}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, crExpiry: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
                       
                       <PhotoCaptureCard
                         title="Selfie Photo"
