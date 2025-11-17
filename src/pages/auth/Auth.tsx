@@ -169,23 +169,28 @@ export default function Auth() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('request-password-reset', {
-        body: { email: loginEmail }
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
       if (error) {
-        throw error;
+        console.error('Password reset error:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to send password reset email',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Email Sent',
+          description: 'Password reset email sent. Please check your inbox.',
+        });
       }
-
-      toast({
-        title: 'Password Reset Email Sent',
-        description: 'Please check your inbox for the reset link.',
-      });
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      console.error('Unexpected password reset error:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send password reset email',
+        description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     }
