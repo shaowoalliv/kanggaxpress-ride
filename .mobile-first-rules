@@ -1,0 +1,57 @@
+# 🔒 MOBILE-FIRST ENFORCEMENT RULES
+
+## AUTO-CHECK BEFORE ANY CODE CHANGE
+
+Run these checks before committing:
+
+### 1. Sizing Check
+```bash
+# Search for violations of minimum sizes
+grep -r "h-\[1-9\]" src/  # Heights below h-10 on desktop
+grep -r "text-xs" src/    # Text smaller than allowed on mobile
+grep -r "min-h-\[1-4\]" src/  # Tap targets below 48px
+```
+
+### 2. Pattern Check
+```bash
+# Ensure mobile-first patterns (mobile size first, desktop size with md:)
+# CORRECT: h-14 md:h-10
+# WRONG: h-10 max-md:h-14
+```
+
+### 3. Interactive Element Check
+All buttons, links, and form controls must have:
+- Minimum 48px tap target on mobile
+- Clear focus states
+- Proper ARIA labels
+
+### 4. Viewport Check
+Test on:
+- 360x800 (Samsung Galaxy S8)
+- 375x667 (iPhone SE)
+- 390x844 (iPhone 12 Pro)
+
+NO horizontal scroll allowed.
+
+### 5. Typography Check
+- Body text: Never below 17px on mobile
+- Labels: Never below text-base (16px) on mobile
+- Headings: Never below text-lg (18px) on mobile
+
+## VIOLATIONS = REJECTED
+
+Any violation requires:
+1. Fix the violation
+2. Re-test on mobile viewport
+3. Update MOBILE_FIRST_LOCKED.md if adding new patterns
+4. Get approval before merging
+
+## PROTECTED FILES
+
+These files have 🔒 LOCKED sections:
+- src/index.css
+- tailwind.config.ts
+- public/manifest.json
+- index.html (viewport meta)
+
+Changes to locked sections require mobile testing proof.
