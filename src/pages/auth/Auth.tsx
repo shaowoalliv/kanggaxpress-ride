@@ -155,11 +155,14 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 sm:px-4 sm:py-12">
-          <div className="w-full max-w-md space-y-6 sm:space-y-8">
+        <div className="flex-1 flex flex-col items-center justify-center px-3 py-4 sm:py-8 md:py-12">
+          <div className="w-full max-w-md space-y-4 sm:space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="text-center space-y-4">
-              <h1 className="text-xl sm:text-2xl font-heading font-bold text-foreground">
+            <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
+              <div className="inline-flex items-center justify-center mb-2">
+                <KanggaLogo width={240} height={240} className="w-24 h-24 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72" />
+              </div>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground px-2">
                 Welcome to KanggaXpress
               </h1>
               
@@ -174,7 +177,7 @@ export default function Auth() {
                       size="sm"
                       variant={role === r ? 'default' : 'ghost'}
                       onClick={() => setRole(r)}
-                      className="gap-1.5 text-xs sm:text-sm"
+                      className="gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
                     >
                       {getRoleIcon(r)}
                       <span className="hidden sm:inline">{getRoleLabel(r)}</span>
@@ -192,7 +195,7 @@ export default function Auth() {
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-3 sm:space-y-4">
+              <TabsContent value="login" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
                 <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="login-email" className="text-xs sm:text-sm">Email</Label>
@@ -239,7 +242,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary h-9 sm:h-10 text-sm sm:text-base"
+                    className="w-full h-9 sm:h-10 text-sm sm:text-base"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
@@ -248,7 +251,7 @@ export default function Auth() {
               </TabsContent>
 
               {/* Register Tab */}
-              <TabsContent value="register" className="space-y-3 sm:space-y-4">
+              <TabsContent value="register" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
                 <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="register-name" className="text-xs sm:text-sm">Full Name</Label>
@@ -313,7 +316,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary h-9 sm:h-10 text-sm sm:text-base"
+                    className="w-full h-9 sm:h-10 text-sm sm:text-base"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Creating account...' : 'Create Account'}
