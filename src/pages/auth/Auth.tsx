@@ -364,7 +364,7 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 min-h-screen">
+        <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 min-h-screen overflow-hidden">
           <div className="w-full max-w-2xl space-y-2 sm:space-y-3">
             {/* Header */}
             <div className="text-center space-y-1">
@@ -459,13 +459,15 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="text-sm text-primary hover:underline text-left"
-                    onClick={handleForgotPassword}
-                  >
-                    Forgot password?
-                  </button>
+                  <div className="flex justify-end -mt-1">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
+                      onClick={handleForgotPassword}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
 
                   <Button
                     type="submit"
