@@ -16,22 +16,22 @@ All colors MUST be HSL.
     
     /* Semantic tokens */
     --background: 45 99% 51%;              /* Backdrop yellow #FFC003 */
-    --foreground: 16 45% 25%;              /* Dark text on yellow */
+    --foreground: 16 45% 25%;              /* Dark brown text */
 
     --card: 0 0% 100%;                     /* White cards */
-    --card-foreground: 16 45% 25%;
+    --card-foreground: 16 45% 25%;         /* Dark brown text */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 16 45% 25%;
+    --popover-foreground: 16 45% 25%;      /* Dark brown text */
 
     --primary: 45 100% 58%;
-    --primary-foreground: 16 45% 25%;
+    --primary-foreground: 16 45% 25%;      /* Dark brown text */
 
-    --secondary: 16 25% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 16 45% 25%;               /* Dark brown - matching KanggaXpress title */
+    --secondary-foreground: 0 0% 100%;     /* White text on brown */
 
     --muted: 45 30% 90%;
-    --muted-foreground: 16 25% 45%;
+    --muted-foreground: 16 45% 25%;        /* Dark brown text */
 
     --accent: 45 100% 58%;
     --accent-foreground: 16 45% 25%;
