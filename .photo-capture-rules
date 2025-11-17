@@ -1,0 +1,201 @@
+# 🔒 Photo Capture Enforcement Rules
+
+## AUTO-CHECK BEFORE ANY CODE CHANGE
+
+Run these checks before committing changes to Identity Verification:
+
+### 1. No OCR Imports Check
+```bash
+# Search for forbidden OCR imports
+grep -r "import.*OcrCaptureCard" src/pages/auth/
+grep -r "import.*OcrReviewModal" src/pages/auth/
+grep -r "import.*performOcr" src/pages/auth/
+grep -r "import.*ocrProvider" src/pages/auth/
+grep -r "from '@/components/ocr'" src/pages/auth/
+grep -r "from '@/lib/ocr'" src/pages/auth/
+
+# All should return 0 results
+# If any return results → VIOLATION - Remove OCR code
+```
+
+### 2. No OCR Function Calls Check
+```bash
+# Search for forbidden OCR function calls
+grep -r "performOcr\(" src/pages/auth/
+grep -r "mapFieldsToSchema" src/pages/auth/
+grep -r "isConfidenceAcceptable" src/pages/auth/
+grep -r "\.confidence" src/pages/auth/ | grep -v "confidence: 1.0"
+grep -r "\.parsed" src/pages/auth/ | grep -v "parsed: {}"
+
+# All should return 0 results
+# If any return results → VIOLATION - Remove OCR logic
+```
+
+### 3. No OCR Messages Check
+```bash
+# Search for forbidden OCR-related messages
+grep -r "OCR failed" src/pages/auth/
+grep -r "Processing document" src/pages/auth/
+grep -r "Scanning" src/pages/auth/
+grep -r "confidence score" src/pages/auth/
+grep -r "Low confidence" src/pages/auth/
+
+# All should return 0 results
+# If any return results → VIOLATION - Use simple messages
+```
+
+### 4. Correct Component Usage Check
+```bash
+# Verify PhotoCaptureCard is used (not OcrCaptureCard)
+grep "PhotoCaptureCard" src/pages/auth/Auth.tsx
+# Should return 2+ results (Government ID + Selfie)
+
+grep "OcrCaptureCard" src/pages/auth/Auth.tsx
+# Should return 0 results
+```
+
+### 5. Data Structure Check
+```bash
+# Verify PhotoStaged interface (not KycStaged with OCR data)
+grep -A5 "interface PhotoStaged" src/pages/auth/Auth.tsx
+# Should show: docType, imageBlob, imageUrl
+# Should NOT show: parsed, confidence (as fields)
+
+grep "interface KycStaged" src/pages/auth/Auth.tsx
+# Should return 0 results
+```
+
+## VIOLATIONS = REJECTED
+
+Any violation requires:
+1. **Immediate fix** - Remove OCR code
+2. **Re-test** - Verify no OCR processing occurs
+3. **Re-check** - Run all checks above
+4. **Approval only** after passing all checks
+
+## PROTECTED PATTERNS
+
+### ✅ ALLOWED: Simple Photo Capture
+```tsx
+// Correct photo capture handler
+const handlePhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
+  setPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
+    docType,
+    imageBlob,
+    imageUrl,
+  }]);
+  
+  toast({
+    title: 'Photo Captured',
+    description: 'Photo saved successfully',
+  });
+};
+```
+
+### ❌ FORBIDDEN: OCR Processing
+```tsx
+// WRONG - OCR processing
+const handleOcrComplete = (docType: DocType) => async (parsed: any, ...) => {
+  const result = await performOcr(imageUrl, docType); // ❌ FORBIDDEN
+  // ...
+};
+```
+
+### ✅ ALLOWED: Upload Without OCR
+```tsx
+// Correct upload without OCR
+await kycService.createKycDocument({
+  user_id: userId,
+  doc_type: photo.docType,
+  parsed: {}, // ✅ Empty - no OCR
+  confidence: 1.0, // ✅ Always 1.0
+  status: 'PENDING',
+  image_path: imagePath,
+});
+```
+
+### ❌ FORBIDDEN: Upload With OCR Data
+```tsx
+// WRONG - Upload with OCR data
+await kycService.createKycDocument({
+  user_id: userId,
+  doc_type: photo.docType,
+  parsed: ocrResult.data, // ❌ FORBIDDEN
+  confidence: ocrResult.confidence, // ❌ FORBIDDEN
+  status: 'PENDING',
+  image_path: imagePath,
+});
+```
+
+## TESTING REQUIREMENTS
+
+Before approving any Identity Verification changes:
+
+1. **Manual Test** (required)
+   - Navigate to `/auth?role=passenger`
+   - Click Register tab
+   - Tap Government ID camera button
+   - Capture/upload photo
+   - ✅ Verify: No "OCR failed" or processing messages
+   - ✅ Verify: Success message appears
+   - ✅ Verify: Checkmark shows
+   - Repeat for Selfie Photo
+
+2. **Code Review** (required)
+   - Run all checks above
+   - Verify 0 OCR imports
+   - Verify 0 OCR function calls
+   - Verify PhotoCaptureCard usage
+   - Verify simple success messages
+
+3. **Build Check** (required)
+   ```bash
+   npm run build
+   # Should complete without errors
+   # Should not show OCR-related warnings
+   ```
+
+## QUICK REFERENCE
+
+### Allowed Changes ✅
+- Improve photo quality validation
+- Add image compression
+- Add photo preview thumbnails
+- Improve camera UI/UX
+- Add file type/size validation
+- Improve upload error messages
+
+### Forbidden Changes ❌
+- Add OCR processing
+- Add text recognition
+- Add document parsing
+- Add auto-fill from photos
+- Add confidence scores
+- Add review modals
+- Add OCR error messages
+
+## ENFORCEMENT WORKFLOW
+
+```
+Change Requested
+    ↓
+Run Auto-Checks
+    ↓
+Any Violations? ─YES→ REJECT → Fix Required
+    ↓ NO
+Manual Test
+    ↓
+OCR Appears? ─YES→ REJECT → Remove OCR
+    ↓ NO
+Code Review
+    ↓
+OCR Code Found? ─YES→ REJECT → Remove OCR
+    ↓ NO
+✅ APPROVED
+```
+
+---
+
+**Last Updated**: 2025-11-17  
+**Status**: 🔒 ENFORCED - No OCR allowed  
+**Contact**: Review PHOTO_CAPTURE_LOCKED.md before making changes

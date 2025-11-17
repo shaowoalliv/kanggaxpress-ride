@@ -1,3 +1,24 @@
+/* 🔒 PHOTO CAPTURE - LOCKED COMPONENT
+ * 
+ * Simple camera/file upload component - NO OCR processing
+ * 
+ * This component provides:
+ * - Camera button (icon-only, 48px tap target)
+ * - File upload via input
+ * - Image preview
+ * - Clear button to retake
+ * 
+ * What it does NOT do:
+ * ❌ OCR processing
+ * ❌ Text recognition
+ * ❌ Document parsing
+ * ❌ Auto-fill
+ * ❌ Confidence scores
+ * 
+ * DO NOT add OCR logic to this component
+ * See: PHOTO_CAPTURE_LOCKED.md
+ */
+
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
