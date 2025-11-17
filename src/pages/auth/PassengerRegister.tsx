@@ -195,7 +195,7 @@ export function PassengerRegister() {
             setFormData({ ...formData, privacyConsent: checked === true })
           }
           required
-          className="mt-1"
+          className="mt-0.5 flex-shrink-0"
         />
         <label htmlFor="privacy-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
           I understand and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). I consent to the use of my data for registration, verification, and service provision purposes.
