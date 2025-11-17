@@ -105,6 +105,17 @@ export default function Auth() {
     setSearchParams({ role }, { replace: true });
   }, [role, setSearchParams]);
 
+  // Show success message if coming from password reset
+  useEffect(() => {
+    if (searchParams.get('reset') === 'success') {
+      toast({
+        title: 'Password Updated',
+        description: 'Please sign in with your new password.',
+      });
+      setSearchParams({ role }, { replace: true });
+    }
+  }, [searchParams, setSearchParams, role, toast]);
+
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user && profile) {
@@ -159,7 +170,7 @@ export default function Auth() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
       if (error) throw error;
@@ -459,10 +470,10 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end -mt-1">
+                  <div className="flex justify-end">
                     <button
                       type="button"
-                      className="text-sm font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
+                      className="text-xs font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
                       onClick={handleForgotPassword}
                     >
                       Forgot password?
