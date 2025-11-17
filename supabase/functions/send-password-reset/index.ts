@@ -2,9 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY") as string);
-const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") as string;
-
 const handler = async (req: Request): Promise<Response> => {
   // Only accept POST requests
   if (req.method !== "POST") {
@@ -14,6 +11,42 @@ const handler = async (req: Request): Promise<Response> => {
   console.log("[Password Reset Hook] Request received");
 
   try {
+    // Get environment variables
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+
+    if (!resendApiKey) {
+      console.error("[Password Reset Hook] RESEND_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Email service is not configured",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!hookSecret) {
+      console.error("[Password Reset Hook] SEND_EMAIL_HOOK_SECRET is not configured");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Hook secret is not configured",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Initialize Resend client inside the handler
+    const resend = new Resend(resendApiKey);
+
     // Verify webhook signature
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
@@ -36,7 +69,6 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("[Password Reset Hook] Verified webhook for:", user.email);
 
     // Construct password reset URL
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const resetUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=recovery&redirect_to=${redirect_to}`;
 
     // Send password reset email via Resend
