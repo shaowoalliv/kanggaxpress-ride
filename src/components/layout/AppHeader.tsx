@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { KanggaLogo } from '@/components/KanggaLogo';
+import { HamburgerMenu } from './HamburgerMenu';
 
 export function AppHeader() {
   const { user, profile, signOut } = useAuth();
@@ -16,6 +17,9 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Hamburger Menu */}
+        <HamburgerMenu />
+        
         <Link to="/" className="flex items-center">
           {/* Empty link - logo and text removed */}
         </Link>
