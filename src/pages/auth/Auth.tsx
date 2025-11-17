@@ -384,18 +384,15 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <div className="min-h-screen h-screen flex flex-col overflow-hidden">
-        {/* Yellow Header Bar with Shadow and Hamburger Menu */}
+        {/* Yellow Header Bar with Shadow and Hamburger Menu - LOCKED CONFIGURATION
+            DO NOT add logo or branding here - this is intentional */}
         <header className="sticky top-0 z-50 bg-primary shadow-md">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            {/* Hamburger Menu */}
+            {/* LOCKED: Only hamburger menu - DO NOT ADD LOGO OR BRANDING */}
             <HamburgerMenu />
             
-            <div className="flex items-center gap-2">
-              <KanggaLogo width={32} height={32} />
-              <span className="text-lg font-heading font-bold text-primary-foreground">KanggaXpress</span>
-            </div>
-
-            <div className="w-10" /> {/* Spacer for centering */}
+            {/* Empty spacer for layout */}
+            <div className="flex-1" />
           </div>
         </header>
 
