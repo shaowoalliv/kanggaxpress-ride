@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { PhotoCaptureCard } from '@/components/PhotoCaptureCard';
 import { kycService } from '@/services/kyc';
@@ -16,6 +17,9 @@ const passengerSchema = z.object({
   fullName: z.string().min(2, 'Name required'),
   completeAddress: z.string().min(5, 'Complete address required'),
   contactNumber: z.string().min(10, 'Valid contact number required'),
+  privacyConsent: z.boolean().refine(val => val === true, {
+    message: 'You must accept the Data Privacy Act terms',
+  }),
 });
 
 interface PhotoStaged {
@@ -33,6 +37,7 @@ export function PassengerRegister() {
     fullName: '',
     completeAddress: '',
     contactNumber: '',
+    privacyConsent: false,
   });
   const [photosStaged, setPhotosStaged] = useState<PhotoStaged[]>([]);
 
@@ -179,6 +184,22 @@ export function PassengerRegister() {
           onCapture={handlePhotoCapture('SELFIE')}
           captured={photosStaged.some(p => p.docType === 'SELFIE')}
         />
+      </div>
+
+      {/* Data Privacy Act Consent */}
+      <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+        <Checkbox
+          id="privacy-consent"
+          checked={formData.privacyConsent}
+          onCheckedChange={(checked) => 
+            setFormData({ ...formData, privacyConsent: checked === true })
+          }
+          required
+          className="mt-1"
+        />
+        <label htmlFor="privacy-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+          I understand and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). I consent to the use of my data for registration, verification, and service provision purposes.
+        </label>
       </div>
 
       <PrimaryButton type="submit" className="w-full" disabled={loading}>
