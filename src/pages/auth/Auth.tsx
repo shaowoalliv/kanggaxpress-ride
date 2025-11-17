@@ -242,12 +242,10 @@ export default function Auth() {
       }
 
       toast({
-        title: 'Success!',
-        description: 'Account created! Please verify your email to continue.',
+        title: 'Account Created!',
+        description: 'Please check your email to verify your account, then download the KanggaXpress app to get started.',
+        duration: 8000,
       });
-
-      setActiveTab('login');
-      setLoginEmail(passengerData.email);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -307,10 +305,10 @@ export default function Auth() {
 
   const getRoleIcon = (roleType: UserRole) => {
     switch (roleType) {
-      case 'driver': return <Car className="w-5 h-5" />;
-      case 'courier': return <Package className="w-5 h-5" />;
-      case 'sender': return <Mail className="w-5 h-5" />;
-      default: return <User className="w-5 h-5" />;
+      case 'driver': return <Car className="w-10 h-10" />;
+      case 'courier': return <Package className="w-10 h-10" />;
+      case 'sender': return <Mail className="w-10 h-10" />;
+      default: return <User className="w-10 h-10" />;
     }
   };
 
@@ -357,9 +355,11 @@ export default function Auth() {
                       size="sm"
                       variant={role === r ? 'default' : 'ghost'}
                       onClick={() => setRole(r)}
-                      className="gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
+                      className="gap-3 text-xs sm:text-sm h-8 sm:h-9"
                     >
-                      {getRoleIcon(r)}
+                      <div className="w-10 h-10 flex items-center justify-center">
+                        {getRoleIcon(r)}
+                      </div>
                       <span className="hidden sm:inline">{getRoleLabel(r)}</span>
                     </Button>
                   ))}
@@ -631,11 +631,7 @@ export default function Auth() {
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
-                      <p className="text-center">
-                        * After registration, verify your email to download and use the app
-                      </p>
-                      
-                      <div className="flex items-start gap-2 pt-2">
+                      <div className="flex items-start gap-2">
                         <input
                           type="checkbox"
                           id="privacy-consent"
