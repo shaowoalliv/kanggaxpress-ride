@@ -20,8 +20,9 @@ export function AppHeader() {
         {/* Hamburger Menu */}
         <HamburgerMenu />
         
-        <Link to="/" className="flex items-center">
-          {/* Empty link - logo and text removed */}
+        <Link to="/" className="flex items-center gap-2">
+          <KanggaLogo width={32} height={32} />
+          <span className="text-lg font-heading font-bold text-primary-foreground">KanggaXpress</span>
         </Link>
 
         {user && (
