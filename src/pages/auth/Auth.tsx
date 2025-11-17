@@ -21,7 +21,7 @@ export default function Auth() {
   
   const [role, setRole] = useState<UserRole>(() => {
     const urlRole = searchParams.get('role');
-    return (urlRole === 'passenger' || urlRole === 'driver' || urlRole === 'courier' || urlRole === 'sender')
+    return (urlRole === 'passenger' || urlRole === 'driver' || urlRole === 'courier')
       ? urlRole as UserRole
       : 'passenger';
   });
@@ -170,7 +170,7 @@ export default function Auth() {
               <div className="flex items-center justify-center gap-2 p-2 bg-muted rounded-lg">
                 <span className="text-sm text-muted-foreground">Signing in as:</span>
                 <div className="flex gap-1">
-                  {(['passenger', 'driver', 'courier', 'sender'] as UserRole[]).map((r) => (
+                  {(['passenger', 'driver', 'courier'] as const).map((r) => (
                     <Button
                       key={r}
                       type="button"
@@ -206,6 +206,7 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
+                      className="bg-white"
                     />
                   </div>
 
@@ -219,6 +220,7 @@ export default function Auth() {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
+                        className="bg-white"
                       />
                       <button
                         type="button"
@@ -240,7 +242,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
@@ -260,6 +262,7 @@ export default function Auth() {
                       value={registerFullName}
                       onChange={(e) => setRegisterFullName(e.target.value)}
                       required
+                      className="bg-white"
                     />
                   </div>
 
@@ -272,6 +275,7 @@ export default function Auth() {
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       required
+                      className="bg-white"
                     />
                   </div>
 
@@ -283,6 +287,7 @@ export default function Auth() {
                       placeholder="+63 912 345 6789"
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
+                      className="bg-white"
                     />
                   </div>
 
@@ -297,6 +302,7 @@ export default function Auth() {
                         onChange={(e) => setRegisterPassword(e.target.value)}
                         required
                         minLength={6}
+                        className="bg-white"
                       />
                       <button
                         type="button"
@@ -310,7 +316,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Creating account...' : 'Create Account'}
