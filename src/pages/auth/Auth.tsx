@@ -26,6 +26,8 @@ const passengerSchema = z.object({
   lastName: z.string().min(1, 'Last name required'),
   birthdate: z.string().min(1, 'Birthdate required'),
   personalMobile: z.string().min(10, 'Valid mobile number required'),
+  emergencyContactName: z.string().min(2, 'Emergency contact name required'),
+  emergencyContactRelation: z.string().min(2, 'Relationship required'),
   emergencyContact: z.string().min(10, 'Valid emergency contact required'),
   completeAddress: z.string().min(5, 'Complete address required'),
 });
@@ -67,6 +69,8 @@ export default function Auth() {
     lastName: '',
     birthdate: '',
     personalMobile: '',
+    emergencyContactName: '',
+    emergencyContactRelation: '',
     emergencyContact: '',
     completeAddress: '',
   });
@@ -489,6 +493,32 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-emergencyContactName" className="text-xs sm:text-sm">Emergency Contact Name *</Label>
+                      <Input
+                        id="passenger-emergencyContactName"
+                        type="text"
+                        placeholder="Maria dela Cruz"
+                        value={passengerData.emergencyContactName}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, emergencyContactName: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-emergencyContactRelation" className="text-xs sm:text-sm">Relation *</Label>
+                      <Input
+                        id="passenger-emergencyContactRelation"
+                        type="text"
+                        placeholder="Mother / Father / Spouse / Sibling"
+                        value={passengerData.emergencyContactRelation}
+                        onChange={(e) => setPassengerData(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label htmlFor="passenger-emergencyContact" className="text-xs sm:text-sm">Emergency Contact Number *</Label>
                       <Input
                         id="passenger-emergencyContact"
@@ -576,9 +606,14 @@ export default function Auth() {
                       {isSubmitting ? 'Creating account...' : 'Create Passenger Account'}
                     </Button>
 
-                    <p className="text-xs text-muted-foreground text-center">
-                      * After registration, verify your email to download and use the app
-                    </p>
+                    <div className="text-xs text-muted-foreground space-y-2 pt-2">
+                      <p className="text-center">
+                        * After registration, verify your email to download and use the app
+                      </p>
+                      <p className="text-justify leading-relaxed border-t border-border pt-2">
+                        By registering, you agree that your personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). Your data will be used solely for service delivery, account verification, and communication purposes. We are committed to protecting your privacy and will not share your information with third parties without your consent.
+                      </p>
+                    </div>
                   </form>
                 ) : (
                   /* Simple Registration for Driver/Courier */
