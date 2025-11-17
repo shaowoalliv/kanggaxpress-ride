@@ -36,8 +36,8 @@ export default function ChooseRole() {
                 className="group relative bg-card border-2 border-border rounded-xl p-4 sm:p-6 md:p-8 hover:border-primary transition-all hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center"
               >
                 <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 md:space-y-4 w-full">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <User className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-secondary/10 group-hover:bg-secondary/20 flex items-center justify-center transition-colors">
+                    <User className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-secondary" />
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-xl font-heading font-semibold text-foreground mb-1 sm:mb-2">
@@ -62,8 +62,8 @@ export default function ChooseRole() {
                 className="group relative bg-card border-2 border-border rounded-xl p-4 sm:p-6 md:p-8 hover:border-primary transition-all hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center"
               >
                 <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 md:space-y-4 w-full">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Car className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-secondary/10 group-hover:bg-secondary/20 flex items-center justify-center transition-colors">
+                    <Car className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-secondary" />
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-xl font-heading font-semibold text-foreground mb-1 sm:mb-2">
@@ -88,8 +88,8 @@ export default function ChooseRole() {
                 className="group relative bg-card border-2 border-border rounded-xl p-4 sm:p-6 md:p-8 hover:border-primary transition-all hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:col-span-2 lg:col-span-1 flex items-center"
               >
                 <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 md:space-y-4 w-full">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Package className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-secondary/10 group-hover:bg-secondary/20 flex items-center justify-center transition-colors">
+                    <Package className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-secondary" />
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-xl font-heading font-semibold text-foreground mb-1 sm:mb-2">
