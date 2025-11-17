@@ -12,6 +12,7 @@ import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
 import HowItWorks from "./pages/HowItWorks";
 import Auth from "./pages/auth/Auth";
+import ResetPassword from "./pages/auth/ResetPassword";
 import LoginRedirect from "./pages/auth/LoginRedirect";
 import SignupRedirect from "./pages/auth/SignupRedirect";
 import BookRide from "./pages/passenger/BookRide";
@@ -82,6 +83,7 @@ const App = () => {
             <Route path="/choose-role" element={<ChooseRole />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             
             {/* Legacy redirects */}
             <Route path="/login" element={<LoginRedirect />} />
