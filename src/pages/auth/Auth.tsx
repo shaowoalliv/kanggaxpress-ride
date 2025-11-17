@@ -169,8 +169,8 @@ export default function Auth() {
     }
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+      const { data, error } = await supabase.functions.invoke('request-password-reset', {
+        body: { email: loginEmail }
       });
 
       if (error) {
@@ -182,6 +182,7 @@ export default function Auth() {
         description: 'Please check your inbox for the reset link.',
       });
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to send password reset email',
