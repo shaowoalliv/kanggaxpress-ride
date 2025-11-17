@@ -10,6 +10,7 @@ import { DevPreviewBanner } from "@/components/DevPreviewBanner";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
+import HowItWorks from "./pages/HowItWorks";
 import Auth from "./pages/auth/Auth";
 import LoginRedirect from "./pages/auth/LoginRedirect";
 import SignupRedirect from "./pages/auth/SignupRedirect";
@@ -79,6 +80,7 @@ const App = () => {
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/choose-role" element={<ChooseRole />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Legacy redirects */}
