@@ -21,6 +21,7 @@ import { z } from 'zod';
 const passengerSchema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  passwordConfirm: z.string().min(6, 'Password confirmation required'),
   firstName: z.string().min(1, 'First name required'),
   middleName: z.string().optional(),
   lastName: z.string().min(1, 'Last name required'),
@@ -30,6 +31,12 @@ const passengerSchema = z.object({
   emergencyContactRelation: z.string().min(2, 'Relationship required'),
   emergencyContact: z.string().min(10, 'Valid emergency contact required'),
   completeAddress: z.string().min(5, 'Complete address required'),
+  privacyConsent: z.boolean().refine((val) => val === true, {
+    message: 'You must agree to the data privacy policy',
+  }),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Passwords don't match",
+  path: ['passwordConfirm'],
 });
 
 interface KycStaged {
@@ -64,6 +71,7 @@ export default function Auth() {
   const [passengerData, setPassengerData] = useState({
     email: '',
     password: '',
+    passwordConfirm: '',
     firstName: '',
     middleName: '',
     lastName: '',
@@ -73,6 +81,7 @@ export default function Auth() {
     emergencyContactRelation: '',
     emergencyContact: '',
     completeAddress: '',
+    privacyConsent: false,
   });
   const [kycStaged, setKycStaged] = useState<KycStaged[]>([]);
   const [reviewModal, setReviewModal] = useState<{
@@ -580,6 +589,29 @@ export default function Auth() {
                       </div>
                     </div>
 
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="passenger-passwordConfirm" className="text-xs sm:text-sm">Confirm Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="passenger-passwordConfirm"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={passengerData.passwordConfirm}
+                          onChange={(e) => setPassengerData(prev => ({ ...prev, passwordConfirm: e.target.value }))}
+                          required
+                          minLength={6}
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
                     {/* KYC Verification */}
                     <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
                       <h3 className="text-sm sm:text-base font-semibold text-foreground">Identity Verification</h3>
@@ -597,6 +629,26 @@ export default function Auth() {
                       />
                     </div>
 
+                    <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
+                      <p className="text-center">
+                        * After registration, verify your email to download and use the app
+                      </p>
+                      
+                      <div className="flex items-start gap-2 pt-2">
+                        <input
+                          type="checkbox"
+                          id="privacy-consent"
+                          checked={passengerData.privacyConsent}
+                          onChange={(e) => setPassengerData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
+                          className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                          required
+                        />
+                        <label htmlFor="privacy-consent" className="text-justify leading-relaxed cursor-pointer">
+                          <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
+                        </label>
+                      </div>
+                    </div>
+
                     <Button
                       type="submit"
                       variant="secondary"
@@ -605,15 +657,6 @@ export default function Auth() {
                     >
                       {isSubmitting ? 'Creating account...' : 'Create Passenger Account'}
                     </Button>
-
-                    <div className="text-xs text-muted-foreground space-y-2 pt-2">
-                      <p className="text-center">
-                        * After registration, verify your email to download and use the app
-                      </p>
-                      <p className="text-justify leading-relaxed border-t border-border pt-2">
-                        By registering, you agree that your personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). Your data will be used solely for service delivery, account verification, and communication purposes. We are committed to protecting your privacy and will not share your information with third parties without your consent.
-                      </p>
-                    </div>
                   </form>
                 ) : (
                   /* Simple Registration for Driver/Courier */
