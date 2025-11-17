@@ -242,7 +242,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full h-9 sm:h-10 text-sm sm:text-base"
+                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
@@ -316,7 +316,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full h-9 sm:h-10 text-sm sm:text-base"
+                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Creating account...' : 'Create Account'}
