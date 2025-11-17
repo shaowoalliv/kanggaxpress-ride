@@ -60,8 +60,8 @@ export function PhotoCaptureCard({ title, description, onCapture, captured }: Ph
             </Button>
           </div>
         ) : (
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+            <Camera className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">Take or upload a photo</p>
             <input
               ref={fileInputRef}
@@ -70,14 +70,14 @@ export function PhotoCaptureCard({ title, description, onCapture, captured }: Ph
               capture="environment"
               onChange={handleFileChange}
               className="hidden"
+              id={`file-input-${title.replace(/\s+/g, '-')}`}
             />
             <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              variant="outline"
+              className="w-full h-12"
             >
-              <Camera className="w-4 h-4 mr-2" />
-              Capture Photo
+              <Camera className="w-5 h-5" />
             </Button>
           </div>
         )}
