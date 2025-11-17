@@ -64,6 +64,31 @@ const passengerSchema = z.object({
   path: ['passwordConfirm'],
 });
 
+const driverSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  passwordConfirm: z.string().min(6, 'Password confirmation required'),
+  firstName: z.string().min(1, 'First name required'),
+  middleName: z.string().min(1, 'Middle name required'),
+  lastName: z.string().min(1, 'Last name required'),
+  birthdate: z.string().min(1, 'Birthdate required'),
+  personalMobile: z.string().min(10, 'Valid mobile number required'),
+  emergencyContactName: z.string().min(2, 'Emergency contact name required'),
+  emergencyContactRelation: z.string().min(2, 'Relationship required'),
+  emergencyContact: z.string().min(10, 'Valid emergency contact required'),
+  completeAddress: z.string().min(5, 'Complete address required'),
+  vehicleColor: z.string().min(2, 'Vehicle color required'),
+  vehiclePlate: z.string().min(2, 'Plate number required'),
+  orNumber: z.string().min(2, 'OR number required'),
+  crNumber: z.string().min(2, 'CR number required'),
+  privacyConsent: z.boolean().refine((val) => val === true, {
+    message: 'You must agree to the data privacy policy',
+  }),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Passwords don't match",
+  path: ['passwordConfirm'],
+});
+
 /* 🔒 LOCKED: Simple photo staging - NO OCR data
  * DO NOT add: parsed, confidence, or any OCR-related fields */
 interface PhotoStaged {
@@ -113,11 +138,27 @@ export default function Auth() {
   const [photosStaged, setPhotosStaged] = useState<PhotoStaged[]>([]);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   
-  // Simple register form for driver/courier
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [registerFullName, setRegisterFullName] = useState('');
-  const [registerPhone, setRegisterPhone] = useState('');
+  // Driver/Courier register form (expanded to match passenger)
+  const [driverData, setDriverData] = useState({
+    email: '',
+    password: '',
+    passwordConfirm: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    birthdate: '',
+    personalMobile: '',
+    emergencyContactName: '',
+    emergencyContactRelation: '',
+    emergencyContact: '',
+    completeAddress: '',
+    vehicleColor: '',
+    vehiclePlate: '',
+    orNumber: '',
+    crNumber: '',
+    privacyConsent: false,
+  });
+  const [driverPhotosStaged, setDriverPhotosStaged] = useState<PhotoStaged[]>([]);
 
   // Update URL when role changes
   useEffect(() => {
@@ -215,18 +256,7 @@ export default function Auth() {
     }
   };
 
-  /* 🔒 LOCKED: Simple photo capture handler - NO OCR
-   * 
-   * DO NOT add:
-   * - performOcr() calls
-   * - Text recognition
-   * - Document parsing
-   * - Auto-fill logic
-   * - Confidence calculations
-   * - Review modals
-   * 
-   * Keep it simple: capture → store → success message
-   */
+  // Passenger photo capture handler - no OCR
   const handlePhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
     setPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
       docType,
@@ -234,10 +264,23 @@ export default function Auth() {
       imageUrl,
     }]);
     
-    // ✅ Simple success message - NO OCR messages
     toast({
       title: 'Photo Captured',
       description: `${docType === 'GOVT_ID' ? 'ID' : 'Selfie'} photo saved successfully`,
+    });
+  };
+
+  // Driver/Courier photo capture handler - no OCR
+  const handleDriverPhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
+    setDriverPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
+      docType,
+      imageBlob,
+      imageUrl,
+    }]);
+    
+    toast({
+      title: 'Photo Captured',
+      description: `${docType === 'DRIVER_LICENSE' ? 'Driver\'s License' : 'Selfie'} photo saved successfully`,
     });
   };
 
@@ -323,39 +366,84 @@ export default function Auth() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleDriverRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
+    
     try {
-      const { error } = await supabase.auth.signUp({
-        email: registerEmail,
-        password: registerPassword,
+      driverSchema.parse(driverData);
+
+      // Check required photos (Driver's License + Selfie)
+      const hasLicense = driverPhotosStaged.some(p => p.docType === 'DRIVER_LICENSE');
+      const hasSelfie = driverPhotosStaged.some(p => p.docType === 'SELFIE');
+      if (!hasLicense || !hasSelfie) {
+        toast({
+          title: 'Photos Required',
+          description: 'Please upload both Driver\'s License and Selfie photos',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      // Sign up
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: driverData.email.trim(),
+        password: driverData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: registerFullName,
-            phone: registerPhone,
+            full_name: `${driverData.firstName} ${driverData.middleName || ''} ${driverData.lastName}`.trim(),
+            phone: driverData.personalMobile,
             role: role,
           },
         },
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('User creation failed');
+
+      const userId = authData.user.id;
+
+      // Upload photos as KYC documents (without OCR data)
+      for (const photo of driverPhotosStaged) {
+        const imagePath = await kycService.uploadDocumentImage(userId, photo.docType, photo.imageBlob);
+        await kycService.createKycDocument({
+          user_id: userId,
+          doc_type: photo.docType,
+          parsed: photo.docType === 'DRIVER_LICENSE' ? {
+            vehicle_color: driverData.vehicleColor,
+            vehicle_brand: '',
+            vehicle_model: '',
+            plate_no: driverData.vehiclePlate,
+            or_no: driverData.orNumber,
+            cr_no: driverData.crNumber,
+          } : {},
+          confidence: 1.0,
+          status: 'PENDING',
+          image_path: imagePath,
+        });
+      }
 
       toast({
-        title: 'Success',
-        description: 'Account created successfully! You can now log in.',
+        title: 'Account Created!',
+        description: 'Please check your email to verify your account, then download the KanggaXpress app to get started.',
+        duration: 8000,
       });
-      
-      setActiveTab('login');
-      setLoginEmail(registerEmail);
     } catch (error: any) {
-      toast({
-        title: 'Registration Failed',
-        description: error.message || 'Could not create account',
-        variant: 'destructive',
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0]?.message || 'Please check your inputs',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Registration Failed',
+          description: error.message || 'Could not create account',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -766,55 +854,205 @@ export default function Auth() {
                     </Button>
                   </form>
                 ) : (
-                  /* Simple Registration for Driver/Courier */
-                  <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
+                  /* Detailed Registration for Driver/Courier */
+                  <form onSubmit={handleDriverRegister} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="driver-firstName" className="text-sm font-bold">First Name *</Label>
+                        <Input
+                          id="driver-firstName"
+                          type="text"
+                          placeholder="Juan"
+                          value={driverData.firstName}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, firstName: e.target.value }))}
+                          required
+                          className="bg-white h-10 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-middleName" className="text-xs sm:text-sm font-bold">Middle Name *</Label>
+                        <Input
+                          id="driver-middleName"
+                          type="text"
+                          placeholder="Santos"
+                          value={driverData.middleName}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, middleName: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-name" className="text-xs sm:text-sm font-bold">Full Name</Label>
+                      <Label htmlFor="driver-lastName" className="text-xs sm:text-sm font-bold">Last Name *</Label>
                       <Input
-                        id="register-name"
+                        id="driver-lastName"
                         type="text"
-                        placeholder="Juan dela Cruz"
-                        value={registerFullName}
-                        onChange={(e) => setRegisterFullName(e.target.value)}
+                        placeholder="dela Cruz"
+                        value={driverData.lastName}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, lastName: e.target.value }))}
                         required
                         className="bg-white h-9 sm:h-10 text-sm"
                       />
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-email" className="text-xs sm:text-sm font-bold">Email</Label>
+                      <Label htmlFor="driver-birthdate" className="text-xs sm:text-sm font-bold">Birthdate *</Label>
                       <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={registerEmail}
-                        onChange={(e) => setRegisterEmail(e.target.value)}
+                        id="driver-birthdate"
+                        type="date"
+                        value={driverData.birthdate}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, birthdate: e.target.value }))}
                         required
                         className="bg-white h-9 sm:h-10 text-sm"
                       />
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-phone" className="text-xs sm:text-sm font-bold">Phone Number</Label>
+                      <Label htmlFor="driver-personalMobile" className="text-xs sm:text-sm font-bold">Personal Mobile Number *</Label>
                       <Input
-                        id="register-phone"
+                        id="driver-personalMobile"
                         type="tel"
                         placeholder="+63 912 345 6789"
-                        value={registerPhone}
-                        onChange={(e) => setRegisterPhone(e.target.value)}
+                        value={driverData.personalMobile}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, personalMobile: e.target.value }))}
+                        required
                         className="bg-white h-9 sm:h-10 text-sm"
                       />
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-password" className="text-xs sm:text-sm font-bold">Password</Label>
+                      <Label htmlFor="driver-emergencyContactName" className="text-xs sm:text-sm font-bold">Emergency Contact Name *</Label>
+                      <Input
+                        id="driver-emergencyContactName"
+                        type="text"
+                        placeholder="Maria dela Cruz"
+                        value={driverData.emergencyContactName}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContactName: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-emergencyContactRelation" className="text-xs sm:text-sm font-bold">Relation *</Label>
+                      <Input
+                        id="driver-emergencyContactRelation"
+                        type="text"
+                        placeholder="Mother, Father, Spouse, etc."
+                        value={driverData.emergencyContactRelation}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-emergencyContact" className="text-xs sm:text-sm font-bold">Emergency Contact Number *</Label>
+                      <Input
+                        id="driver-emergencyContact"
+                        type="tel"
+                        placeholder="+63 912 345 6789"
+                        value={driverData.emergencyContact}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContact: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-completeAddress" className="text-xs sm:text-sm font-bold">Complete Address *</Label>
+                      <Input
+                        id="driver-completeAddress"
+                        type="text"
+                        placeholder="123 Main St, Barangay, City, Province"
+                        value={driverData.completeAddress}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, completeAddress: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    {/* Vehicle Information */}
+                    <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Vehicle Information</h3>
+                      
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-vehicleColor" className="text-xs sm:text-sm font-bold">Vehicle Color *</Label>
+                        <Input
+                          id="driver-vehicleColor"
+                          type="text"
+                          placeholder="e.g. White, Black, Red"
+                          value={driverData.vehicleColor}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, vehicleColor: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-vehiclePlate" className="text-xs sm:text-sm font-bold">Plate Number *</Label>
+                        <Input
+                          id="driver-vehiclePlate"
+                          type="text"
+                          placeholder="ABC 1234"
+                          value={driverData.vehiclePlate}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-orNumber" className="text-xs sm:text-sm font-bold">OR Number *</Label>
+                        <Input
+                          id="driver-orNumber"
+                          type="text"
+                          placeholder="Official Receipt Number"
+                          value={driverData.orNumber}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, orNumber: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-crNumber" className="text-xs sm:text-sm font-bold">CR Number *</Label>
+                        <Input
+                          id="driver-crNumber"
+                          type="text"
+                          placeholder="Certificate of Registration Number"
+                          value={driverData.crNumber}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, crNumber: e.target.value }))}
+                          required
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-email" className="text-xs sm:text-sm font-bold">Email *</Label>
+                      <Input
+                        id="driver-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={driverData.email}
+                        onChange={(e) => setDriverData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="bg-white h-9 sm:h-10 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-password" className="text-xs sm:text-sm font-bold">Password *</Label>
                       <div className="relative">
                         <Input
-                          id="register-password"
+                          id="driver-password"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
-                          value={registerPassword}
-                          onChange={(e) => setRegisterPassword(e.target.value)}
+                          value={driverData.password}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, password: e.target.value }))}
                           required
                           minLength={6}
                           className="bg-white h-9 sm:h-10 text-sm"
@@ -829,13 +1067,71 @@ export default function Auth() {
                       </div>
                     </div>
 
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="driver-passwordConfirm" className="text-xs sm:text-sm font-bold">Confirm Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="driver-passwordConfirm"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={driverData.passwordConfirm}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, passwordConfirm: e.target.value }))}
+                          required
+                          minLength={6}
+                          className="bg-white h-9 sm:h-10 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 🔒 LOCKED: Identity Verification - Photo Capture ONLY (NO OCR) */}
+                    <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Identity Verification</h3>
+                      
+                      <PhotoCaptureCard
+                        title="Driver's License"
+                        description="Take or upload a photo of your Driver's License"
+                        onCapture={handleDriverPhotoCapture('DRIVER_LICENSE')}
+                        captured={driverPhotosStaged.some(p => p.docType === 'DRIVER_LICENSE')}
+                      />
+                      
+                      <PhotoCaptureCard
+                        title="Selfie Photo"
+                        description="Take a selfie holding your Driver's License"
+                        onCapture={handleDriverPhotoCapture('SELFIE')}
+                        captured={driverPhotosStaged.some(p => p.docType === 'SELFIE')}
+                      />
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
+                      <label htmlFor="driver-privacy-consent" className="flex items-start gap-2 leading-relaxed cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="driver-privacy-consent"
+                          checked={driverData.privacyConsent}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
+                          className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
+                          required
+                        />
+                        <span className="text-justify">
+                          <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
+                        </span>
+                      </label>
+                    </div>
+
                     <Button
                       type="submit"
                       variant="secondary"
                       className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Creating account...' : 'Create Account'}
+                      {isSubmitting ? 'Creating account...' : `Create ${role === 'driver' ? 'Driver' : 'Courier'} Account`}
                     </Button>
                   </form>
                 )}
