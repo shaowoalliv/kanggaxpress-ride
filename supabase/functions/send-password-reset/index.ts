@@ -1,20 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface PasswordResetPayload {
-  user: {
-    email: string;
-  };
-  email_data: {
-    token: string;
-    token_hash: string;
-    redirect_to: string;
-    email_action_type: string;
-  };
+interface PasswordResetRequest {
+  email: string;
+  redirectTo: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,13 +17,13 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log("[Password Reset Hook] Request received");
+  console.log("[Password Reset] Request received");
 
   try {
     // Check for Resend API key
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
-      console.error("[Password Reset Hook] RESEND_API_KEY is not configured");
+      console.error("[Password Reset] RESEND_API_KEY is not configured");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -42,12 +36,68 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Parse the webhook payload from Supabase
-    const payload: PasswordResetPayload = await req.json();
-    console.log("[Password Reset Hook] Processing reset for:", payload.user.email);
+    // Parse request body
+    const { email, redirectTo }: PasswordResetRequest = await req.json();
+    console.log("[Password Reset] Processing reset for:", email);
 
-    const { user, email_data } = payload;
-    const resetUrl = `${email_data.redirect_to}#token_hash=${email_data.token_hash}&type=recovery`;
+    if (!email || !redirectTo) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Email and redirectTo are required" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Initialize Supabase client with service role to generate reset token
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[Password Reset] Supabase credentials not configured");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Service not properly configured" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Generate password reset link using Supabase
+    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: redirectTo,
+      }
+    });
+
+    if (resetError || !resetData) {
+      console.error("[Password Reset] Error generating reset link:", resetError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Failed to generate reset link" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const resetUrl = resetData.properties?.action_link || '';
+    console.log("[Password Reset] Reset link generated");
 
     // Send password reset email via Resend
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -58,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "KanggaXpress <onboarding@resend.dev>",
-        to: [user.email],
+        to: [email],
         subject: "Reset Your KanggaXpress Password",
         html: `
           <!DOCTYPE html>
@@ -113,12 +163,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json();
-      console.error("[Password Reset Hook] Resend API error:", errorData);
-      throw new Error(errorData.message || `Resend API error: ${emailResponse.status}`);
+      console.error("[Password Reset] Resend API error:", errorData);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: errorData.message || `Failed to send email: ${emailResponse.status}` 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     const emailData = await emailResponse.json();
-    console.log("[Password Reset Hook] Email sent successfully:", emailData);
+    console.log("[Password Reset] Email sent successfully:", emailData);
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -128,10 +187,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("[Password Reset Hook] Error:", error);
-    
-    // Log the full error details for debugging
-    console.error("[Password Reset Hook] Error details:", {
+    console.error("[Password Reset] Error:", error);
+    console.error("[Password Reset] Error details:", {
       message: error.message,
       name: error.name,
       stack: error.stack,
