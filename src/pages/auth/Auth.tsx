@@ -865,19 +865,22 @@ export default function Auth() {
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
-                      <label htmlFor="privacy-consent" className="flex items-start gap-1 leading-relaxed cursor-pointer">
-                        <span className="text-justify">
-                          <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.{' '}
+                      <p className="text-justify leading-relaxed">
+                        <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
+                      </p>
+                      <div className="flex items-center justify-center pt-2">
+                        <label htmlFor="privacy-consent" className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             id="privacy-consent"
                             checked={passengerData.privacyConsent}
                             onChange={(e) => setPassengerData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
-                            className="align-middle h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                             required
                           />
-                        </span>
-                      </label>
+                          <span className="text-sm font-medium text-foreground">I agree to the terms above</span>
+                        </label>
+                      </div>
                     </div>
 
                     <Button
@@ -1166,19 +1169,22 @@ export default function Auth() {
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
-                      <label htmlFor="driver-privacy-consent" className="flex items-start gap-1 leading-relaxed cursor-pointer">
-                        <span className="text-justify">
-                          <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.{' '}
+                      <p className="text-justify leading-relaxed">
+                        <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
+                      </p>
+                      <div className="flex items-center justify-center pt-2">
+                        <label htmlFor="driver-privacy-consent" className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             id="driver-privacy-consent"
                             checked={driverData.privacyConsent}
                             onChange={(e) => setDriverData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
-                            className="align-middle h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                             required
                           />
-                        </span>
-                      </label>
+                          <span className="text-sm font-medium text-foreground">I agree to the terms above</span>
+                        </label>
+                      </div>
                     </div>
 
                     <Button
