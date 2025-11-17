@@ -75,10 +75,11 @@ export function PhotoCaptureCard({ title, description, onCapture, captured }: Ph
             <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-12"
-              aria-label={`Capture ${title.toLowerCase()}`}
+              className="w-full h-12 flex items-center justify-center"
+              aria-label={`Capture ${title}`}
             >
-              <Camera className="w-5 h-5" />
+              <Camera className="w-5 h-5" aria-hidden="true" />
+              <span className="sr-only">Capture {title}</span>
             </Button>
           </div>
         )}
