@@ -108,18 +108,6 @@ export default function ChooseRole() {
               </Link>
             </div>
 
-            {/* Alternative for senders */}
-            <div className="text-center pt-4">
-              <p className="text-sm text-muted-foreground">
-                Looking to send packages?{' '}
-                <Link
-                  to="/auth?role=sender"
-                  className="text-primary hover:underline font-medium"
-                >
-                  Sign up as a Sender
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </PageLayout>
