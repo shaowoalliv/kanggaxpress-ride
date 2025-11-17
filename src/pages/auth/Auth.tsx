@@ -726,19 +726,19 @@ export default function Auth() {
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
-                      <div className="flex items-start gap-2">
+                      <label htmlFor="privacy-consent" className="flex items-start gap-2 leading-relaxed cursor-pointer">
                         <input
                           type="checkbox"
                           id="privacy-consent"
                           checked={passengerData.privacyConsent}
                           onChange={(e) => setPassengerData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
-                          className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                          className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
                           required
                         />
-                        <label htmlFor="privacy-consent" className="text-justify leading-relaxed cursor-pointer">
+                        <span className="text-justify">
                           <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                     </div>
 
                     <Button
