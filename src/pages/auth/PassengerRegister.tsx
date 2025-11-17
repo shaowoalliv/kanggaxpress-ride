@@ -4,8 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
-import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
+import { PhotoCaptureCard } from '@/components/PhotoCaptureCard';
 import { kycService } from '@/services/kyc';
 import { DocType } from '@/types/kyc';
 import { toast } from 'sonner';
@@ -19,11 +18,10 @@ const passengerSchema = z.object({
   contactNumber: z.string().min(10, 'Valid contact number required'),
 });
 
-interface KycStaged {
+interface PhotoStaged {
   docType: DocType;
-  parsed: any;
-  confidence: number;
   imageBlob: Blob;
+  imageUrl: string;
 }
 
 export function PassengerRegister() {
@@ -36,59 +34,14 @@ export function PassengerRegister() {
     completeAddress: '',
     contactNumber: '',
   });
-  const [kycStaged, setKycStaged] = useState<KycStaged[]>([]);
-  const [reviewModal, setReviewModal] = useState<{
-    open: boolean;
-    docType: DocType;
-    imageUrl: string;
-    parsed: any;
-    avgConfidence: number;
-    imageBlob: Blob;
-  }>({ open: false, docType: 'GOVT_ID', imageUrl: '', parsed: {}, avgConfidence: 0, imageBlob: new Blob() });
+  const [photosStaged, setPhotosStaged] = useState<PhotoStaged[]>([]);
 
-  const handleOcrComplete = (parsed: any, imageUrl: string, imageBlob: Blob, avgConfidence: number, docType: DocType) => {
-    setReviewModal({
-      open: true,
+  const handlePhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
+    setPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
       docType,
-      imageUrl,
-      parsed,
-      avgConfidence,
       imageBlob,
-    });
-  };
-
-  const handleOcrAccept = (finalParsed: any) => {
-    // Autofill form fields
-    if (reviewModal.docType === 'GOVT_ID' || reviewModal.docType === 'PRIVATE_ID') {
-      const fullname = finalParsed.fullname ||
-        [finalParsed.name_first, finalParsed.name_middle, finalParsed.name_last]
-          .filter(Boolean).join(' ');
-      
-      const address = [
-        finalParsed.address_line1,
-        finalParsed.address_line2,
-        finalParsed.city,
-        finalParsed.province,
-        finalParsed.postal_code,
-      ].filter(Boolean).join(', ');
-
-      setFormData(prev => ({
-        ...prev,
-        fullName: fullname || prev.fullName,
-        completeAddress: address || prev.completeAddress,
-      }));
-    }
-
-    // Stage for later submission
-    setKycStaged(prev => [...prev.filter(k => k.docType !== reviewModal.docType), {
-      docType: reviewModal.docType,
-      parsed: finalParsed,
-      confidence: reviewModal.avgConfidence,
-      imageBlob: reviewModal.imageBlob,
+      imageUrl,
     }]);
-
-    setReviewModal({ ...reviewModal, open: false });
-    toast.success('Document scanned and form auto-filled');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,11 +50,11 @@ export function PassengerRegister() {
     try {
       passengerSchema.parse(formData);
 
-      // Check required KYC docs
-      const hasId = kycStaged.some(k => k.docType === 'GOVT_ID' || k.docType === 'PRIVATE_ID');
-      const hasSelfie = kycStaged.some(k => k.docType === 'SELFIE');
+      // Check required photos
+      const hasId = photosStaged.some(p => p.docType === 'GOVT_ID' || p.docType === 'PRIVATE_ID');
+      const hasSelfie = photosStaged.some(p => p.docType === 'SELFIE');
       if (!hasId || !hasSelfie) {
-        toast.error('Please complete ID and Selfie verification');
+        toast.error('Please upload ID and Selfie photos');
         return;
       }
 
@@ -124,28 +77,20 @@ export function PassengerRegister() {
 
       const userId = authData.user.id;
 
-      // Upload KYC documents
-      const OCR_MIN = Number(import.meta.env.VITE_OCR_CONFIDENCE_MIN ?? 0.65);
-      for (const kyc of kycStaged) {
-        const imagePath = await kycService.uploadDocumentImage(userId, kyc.docType, kyc.imageBlob);
-        const status = kyc.docType !== 'SELFIE' && kyc.confidence < OCR_MIN ? 'REVIEW' : 'PENDING';
-        
+      // Upload photos as KYC documents
+      for (const photo of photosStaged) {
+        const imagePath = await kycService.uploadDocumentImage(userId, photo.docType, photo.imageBlob);
         await kycService.createKycDocument({
           user_id: userId,
-          doc_type: kyc.docType,
-          parsed: kyc.parsed,
-          confidence: kyc.confidence,
-          status,
+          doc_type: photo.docType,
+          parsed: {},
+          confidence: 1.0,
+          status: 'PENDING',
           image_path: imagePath,
         });
       }
 
-      const hasReview = kycStaged.some(k => k.docType !== 'SELFIE' && k.confidence < OCR_MIN);
-      if (hasReview) {
-        toast.success('Account created! Your documents will be reviewed shortly.');
-      } else {
-        toast.success('Account created successfully!');
-      }
+      toast.success('Account created successfully!');
 
       setTimeout(() => navigate('/passenger/book-ride'), 1500);
     } catch (error) {
@@ -217,43 +162,28 @@ export function PassengerRegister() {
         </div>
       </div>
 
+      {/* Photo Capture - ID and Selfie */}
       <div className="space-y-4">
         <h3 className="font-semibold text-foreground">Document Verification</h3>
         
-        <div>
-          <Label>Government or Private ID</Label>
-          <OcrCaptureCard
-            docType="GOVT_ID"
-            onOcrComplete={(parsed, imageUrl, imageBlob, avgConfidence) =>
-              handleOcrComplete(parsed, imageUrl, imageBlob, avgConfidence, 'GOVT_ID')
-            }
-          />
-        </div>
-
-        <div>
-          <Label>Selfie Verification</Label>
-          <OcrCaptureCard
-            docType="SELFIE"
-            onOcrComplete={(parsed, imageUrl, imageBlob, avgConfidence) =>
-              handleOcrComplete(parsed, imageUrl, imageBlob, avgConfidence, 'SELFIE')
-            }
-          />
-        </div>
+        <PhotoCaptureCard
+          title="ID Verification"
+          description="Take or upload a photo of your Government ID or Company ID"
+          onCapture={handlePhotoCapture('GOVT_ID')}
+          captured={photosStaged.some(p => p.docType === 'GOVT_ID' || p.docType === 'PRIVATE_ID')}
+        />
+        
+        <PhotoCaptureCard
+          title="Selfie Verification"
+          description="Take a selfie holding your ID"
+          onCapture={handlePhotoCapture('SELFIE')}
+          captured={photosStaged.some(p => p.docType === 'SELFIE')}
+        />
       </div>
 
       <PrimaryButton type="submit" className="w-full" disabled={loading}>
         {loading ? 'Creating Account...' : 'Register as Passenger'}
       </PrimaryButton>
-
-      <OcrReviewModal
-        open={reviewModal.open}
-        onClose={() => setReviewModal({ ...reviewModal, open: false })}
-        docType={reviewModal.docType}
-        imageUrl={reviewModal.imageUrl}
-        parsed={reviewModal.parsed}
-        avgConfidence={reviewModal.avgConfidence}
-        onAccept={handleOcrAccept}
-      />
     </form>
   );
 }
