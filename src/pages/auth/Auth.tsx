@@ -155,20 +155,17 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-          <div className="w-full max-w-md space-y-8">
+        <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 sm:px-4 sm:py-12">
+          <div className="w-full max-w-md space-y-6 sm:space-y-8">
             {/* Header */}
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center mb-4">
-                <KanggaLogo width={80} height={80} className="w-20 h-20" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
+              <h1 className="text-xl sm:text-2xl font-heading font-bold text-foreground">
                 Welcome to KanggaXpress
               </h1>
               
               {/* Role Selector */}
-              <div className="flex items-center justify-center gap-2 p-2 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">Signing in as:</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 p-2 bg-muted rounded-lg">
+                <span className="text-xs sm:text-sm text-muted-foreground">Signing in as:</span>
                 <div className="flex gap-1">
                   {(['passenger', 'driver', 'courier'] as const).map((r) => (
                     <Button
@@ -177,7 +174,7 @@ export default function Auth() {
                       size="sm"
                       variant={role === r ? 'default' : 'ghost'}
                       onClick={() => setRole(r)}
-                      className="gap-1.5"
+                      className="gap-1.5 text-xs sm:text-sm"
                     >
                       {getRoleIcon(r)}
                       <span className="hidden sm:inline">{getRoleLabel(r)}</span>
@@ -189,16 +186,16 @@ export default function Auth() {
 
             {/* Auth Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
+                <TabsTrigger value="login" className="text-xs sm:text-sm">Login</TabsTrigger>
+                <TabsTrigger value="register" className="text-xs sm:text-sm">Register</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+              <TabsContent value="login" className="space-y-3 sm:space-y-4">
+                <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="login-email" className="text-xs sm:text-sm">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -206,12 +203,12 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      className="bg-white"
+                      className="bg-white h-9 sm:h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="login-password" className="text-xs sm:text-sm">Password</Label>
                     <div className="relative">
                       <Input
                         id="login-password"
@@ -220,7 +217,7 @@ export default function Auth() {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
-                        className="bg-white"
+                        className="bg-white h-9 sm:h-10 text-sm"
                       />
                       <button
                         type="button"
@@ -234,7 +231,7 @@ export default function Auth() {
 
                   <button
                     type="button"
-                    className="text-sm text-primary hover:underline"
+                    className="text-xs sm:text-sm text-primary hover:underline"
                     onClick={() => toast({ title: 'Coming soon', description: 'Password reset functionality will be available soon.' })}
                   >
                     Forgot password?
@@ -242,7 +239,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary"
+                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary h-9 sm:h-10 text-sm sm:text-base"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
@@ -251,10 +248,10 @@ export default function Auth() {
               </TabsContent>
 
               {/* Register Tab */}
-              <TabsContent value="register" className="space-y-4">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Full Name</Label>
+              <TabsContent value="register" className="space-y-3 sm:space-y-4">
+                <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-name" className="text-xs sm:text-sm">Full Name</Label>
                     <Input
                       id="register-name"
                       type="text"
@@ -262,12 +259,12 @@ export default function Auth() {
                       value={registerFullName}
                       onChange={(e) => setRegisterFullName(e.target.value)}
                       required
-                      className="bg-white"
+                      className="bg-white h-9 sm:h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-email" className="text-xs sm:text-sm">Email</Label>
                     <Input
                       id="register-email"
                       type="email"
@@ -275,24 +272,24 @@ export default function Auth() {
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       required
-                      className="bg-white"
+                      className="bg-white h-9 sm:h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-phone">Phone Number</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-phone" className="text-xs sm:text-sm">Phone Number</Label>
                     <Input
                       id="register-phone"
                       type="tel"
                       placeholder="+63 912 345 6789"
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
-                      className="bg-white"
+                      className="bg-white h-9 sm:h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-password" className="text-xs sm:text-sm">Password</Label>
                     <div className="relative">
                       <Input
                         id="register-password"
@@ -302,7 +299,7 @@ export default function Auth() {
                         onChange={(e) => setRegisterPassword(e.target.value)}
                         required
                         minLength={6}
-                        className="bg-white"
+                        className="bg-white h-9 sm:h-10 text-sm"
                       />
                       <button
                         type="button"
@@ -316,7 +313,7 @@ export default function Auth() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary"
+                    className="w-full bg-white text-primary hover:bg-white/90 border border-primary h-9 sm:h-10 text-sm sm:text-base"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Creating account...' : 'Create Account'}
