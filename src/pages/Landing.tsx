@@ -5,7 +5,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { KanggaLogo } from '@/components/KanggaLogo';
-import { MapPin, Shield, Zap, Package } from 'lucide-react';
+import { MapPin, Shield, Zap, Package, Heart, Users, Clock } from 'lucide-react';
 
 export default function Landing() {
   const { user, profile, loading } = useAuth();
@@ -140,19 +140,101 @@ export default function Landing() {
             </div>
           </div>
         </div>
-
-        {/* Footer with Admin Link */}
-        <footer className="py-4 px-4 text-center border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            &copy; 2025 KanggaXpress. All rights reserved.
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            <a href="/admin-sign-in" className="hover:text-primary transition-colors">
-              Admin
-            </a>
-          </p>
-        </footer>
       </section>
+
+      {/* Why KanggaXpress Section */}
+      <section className="px-4 py-12 bg-card/30">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-heading font-bold text-foreground text-center mb-8">
+            Why Choose KanggaXpress?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Heart className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-heading font-semibold text-foreground">Community First</h3>
+              <p className="text-sm text-muted-foreground">
+                Built for Filipinos, by Filipinos. Supporting local communities and culture.
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-heading font-semibold text-foreground">Fair for Everyone</h3>
+              <p className="text-sm text-muted-foreground">
+                Better earnings for drivers and affordable fares for passengers.
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Clock className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-heading font-semibold text-foreground">Always Available</h3>
+              <p className="text-sm text-muted-foreground">
+                24/7 service with multiple vehicle options to fit your needs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-heading font-bold text-foreground text-center mb-8">
+            How It Works
+          </h2>
+          <div className="space-y-6">
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+                1
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-foreground mb-1">Book Your Ride</h3>
+                <p className="text-sm text-muted-foreground">
+                  Enter your pickup and drop-off locations, choose your preferred vehicle type.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+                2
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-foreground mb-1">Get Matched</h3>
+                <p className="text-sm text-muted-foreground">
+                  We'll find the nearest available driver to pick you up quickly.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+                3
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-foreground mb-1">Enjoy Your Journey</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track your ride in real-time and reach your destination safely.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer with Admin Link */}
+      <footer className="py-4 px-4 text-center border-t border-border">
+        <p className="text-xs text-muted-foreground">
+          &copy; 2025 KanggaXpress. All rights reserved.
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          <a href="/admin-sign-in" className="hover:text-primary transition-colors">
+            Admin
+          </a>
+        </p>
+      </footer>
     </PageLayout>
   );
 }
