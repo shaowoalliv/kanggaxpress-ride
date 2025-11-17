@@ -538,7 +538,7 @@ export default function Auth() {
                   <form onSubmit={handlePassengerRegister} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="passenger-firstName" className="text-sm font-medium">First Name *</Label>
+                        <Label htmlFor="passenger-firstName" className="text-sm font-bold">First Name *</Label>
                         <Input
                           id="passenger-firstName"
                           type="text"
@@ -551,7 +551,7 @@ export default function Auth() {
                       </div>
 
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="passenger-middleName" className="text-xs sm:text-sm">Middle Name *</Label>
+                        <Label htmlFor="passenger-middleName" className="text-xs sm:text-sm font-bold">Middle Name *</Label>
                         <Input
                           id="passenger-middleName"
                           type="text"
@@ -565,7 +565,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-lastName" className="text-xs sm:text-sm">Last Name *</Label>
+                      <Label htmlFor="passenger-lastName" className="text-xs sm:text-sm font-bold">Last Name *</Label>
                       <Input
                         id="passenger-lastName"
                         type="text"
@@ -578,7 +578,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-birthdate" className="text-xs sm:text-sm">Birthdate *</Label>
+                      <Label htmlFor="passenger-birthdate" className="text-xs sm:text-sm font-bold">Birthdate *</Label>
                       <Input
                         id="passenger-birthdate"
                         type="date"
@@ -590,7 +590,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-personalMobile" className="text-xs sm:text-sm">Personal Mobile Number *</Label>
+                      <Label htmlFor="passenger-personalMobile" className="text-xs sm:text-sm font-bold">Personal Mobile Number *</Label>
                       <Input
                         id="passenger-personalMobile"
                         type="tel"
@@ -603,7 +603,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-emergencyContactName" className="text-xs sm:text-sm">Emergency Contact Name *</Label>
+                      <Label htmlFor="passenger-emergencyContactName" className="text-xs sm:text-sm font-bold">Emergency Contact Name *</Label>
                       <Input
                         id="passenger-emergencyContactName"
                         type="text"
@@ -616,7 +616,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-emergencyContactRelation" className="text-xs sm:text-sm">Relation *</Label>
+                      <Label htmlFor="passenger-emergencyContactRelation" className="text-xs sm:text-sm font-bold">Relation *</Label>
                       <Input
                         id="passenger-emergencyContactRelation"
                         type="text"
@@ -629,7 +629,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-emergencyContact" className="text-xs sm:text-sm">Emergency Contact Number *</Label>
+                      <Label htmlFor="passenger-emergencyContact" className="text-xs sm:text-sm font-bold">Emergency Contact Number *</Label>
                       <Input
                         id="passenger-emergencyContact"
                         type="tel"
@@ -642,7 +642,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-completeAddress" className="text-xs sm:text-sm">Complete Address *</Label>
+                      <Label htmlFor="passenger-completeAddress" className="text-xs sm:text-sm font-bold">Complete Address *</Label>
                       <Input
                         id="passenger-completeAddress"
                         type="text"
@@ -655,7 +655,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-email" className="text-xs sm:text-sm">Email *</Label>
+                      <Label htmlFor="passenger-email" className="text-xs sm:text-sm font-bold">Email *</Label>
                       <Input
                         id="passenger-email"
                         type="email"
@@ -668,7 +668,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-password" className="text-xs sm:text-sm">Password *</Label>
+                      <Label htmlFor="passenger-password" className="text-xs sm:text-sm font-bold">Password *</Label>
                       <div className="relative">
                         <Input
                           id="passenger-password"
@@ -691,7 +691,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="passenger-passwordConfirm" className="text-xs sm:text-sm">Confirm Password *</Label>
+                      <Label htmlFor="passenger-passwordConfirm" className="text-xs sm:text-sm font-bold">Confirm Password *</Label>
                       <div className="relative">
                         <Input
                           id="passenger-passwordConfirm"
@@ -769,7 +769,7 @@ export default function Auth() {
                   /* Simple Registration for Driver/Courier */
                   <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-name" className="text-xs sm:text-sm">Full Name</Label>
+                      <Label htmlFor="register-name" className="text-xs sm:text-sm font-bold">Full Name</Label>
                       <Input
                         id="register-name"
                         type="text"
@@ -782,7 +782,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-email" className="text-xs sm:text-sm">Email</Label>
+                      <Label htmlFor="register-email" className="text-xs sm:text-sm font-bold">Email</Label>
                       <Input
                         id="register-email"
                         type="email"
@@ -795,7 +795,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-phone" className="text-xs sm:text-sm">Phone Number</Label>
+                      <Label htmlFor="register-phone" className="text-xs sm:text-sm font-bold">Phone Number</Label>
                       <Input
                         id="register-phone"
                         type="tel"
@@ -807,7 +807,7 @@ export default function Auth() {
                     </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-password" className="text-xs sm:text-sm">Password</Label>
+                      <Label htmlFor="register-password" className="text-xs sm:text-sm font-bold">Password</Label>
                       <div className="relative">
                         <Input
                           id="register-password"
