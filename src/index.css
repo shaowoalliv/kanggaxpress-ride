@@ -1,3 +1,16 @@
+/* 🔒 MOBILE-FIRST DESIGN SYSTEM - LOCKED CONFIGURATION
+ * 
+ * CRITICAL: This file contains locked mobile-first settings.
+ * DO NOT modify these values without reviewing MOBILE_FIRST_LOCKED.md
+ * 
+ * Key Rules:
+ * - Body font-size: 17px minimum (prevents iOS zoom)
+ * - Interactive elements: 48px minimum tap targets on mobile
+ * - All sizes are mobile-first (small screen = base, larger = enhancement)
+ * 
+ * See MOBILE_FIRST_LOCKED.md for complete guidelines
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,60 +68,65 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* 🔒 LOCKED: Mobile-first base configuration */
   body {
     @apply bg-background text-foreground font-body antialiased;
-    /* Mobile-first base font size - larger for readability */
+    /* 🔒 DO NOT REDUCE: 17px minimum prevents iOS auto-zoom */
     font-size: 17px;
-    line-height: 1.6;
+    line-height: 1.6;  /* 🔒 DO NOT REDUCE: Ensures readability */
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
   }
 
-  /* PWA safe area support for notched phones */
+  /* 🔒 LOCKED: PWA safe area support for notched phones */
   #root {
     min-height: 100vh;
     min-height: 100dvh;
+    /* 🔒 DO NOT REMOVE: Prevents content from being hidden by device notches/bars */
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Ensure good contrast for text on yellow backgrounds */
+  /* 🔒 LOCKED: Ensure good contrast for text on yellow backgrounds */
   .bg-primary, .bg-accent, .bg-background {
+    /* 🔒 DO NOT CHANGE: Dark brown text ensures readability on yellow */
     color: hsl(var(--primary-foreground));
   }
 
-  /* Mobile-first tap targets and spacing */
+  /* 🔒 LOCKED: Mobile-first tap targets and spacing */
   @media (max-width: 768px) {
-    /* Larger tap targets */
+    /* 🔒 DO NOT REDUCE: 48px minimum for comfortable thumb tapping */
     button, a[role="button"] {
       min-height: 48px;
     }
     
+    /* 🔒 DO NOT REDUCE: 48px height + 17px font prevents iOS zoom */
     input, select, textarea {
       min-height: 48px;
       font-size: 17px; /* iOS minimum to prevent zoom */
     }
 
-    /* Better focus states for accessibility */
+    /* 🔒 LOCKED: Better focus states for accessibility */
     button:focus-visible, 
     a:focus-visible, 
     input:focus-visible,
     select:focus-visible,
     textarea:focus-visible {
+      /* 🔒 DO NOT REDUCE: Ensures keyboard navigation is visible */
       outline: 3px solid hsl(var(--ring));
       outline-offset: 2px;
     }
   }
 
-  /* Desktop refinements */
+  /* Desktop refinements - ONLY reduce sizes, never below mobile minimums */
   @media (min-width: 768px) {
     body {
-      font-size: 16px;
+      font-size: 16px;  /* Slightly smaller on desktop (still readable) */
     }
     
     input, select, textarea {
-      font-size: 16px;
+      font-size: 16px;  /* Match body font on desktop */
     }
   }
 }
