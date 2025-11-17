@@ -150,8 +150,8 @@ export default function Landing() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <Heart className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-secondary flex items-center justify-center shadow-lg">
+                <Heart className="w-8 h-8 text-secondary-foreground" />
               </div>
               <h3 className="font-heading font-semibold text-foreground">Community First</h3>
               <p className="text-sm text-muted-foreground">
@@ -159,8 +159,8 @@ export default function Landing() {
               </p>
             </div>
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-secondary flex items-center justify-center shadow-lg">
+                <Users className="w-8 h-8 text-secondary-foreground" />
               </div>
               <h3 className="font-heading font-semibold text-foreground">Fair for Everyone</h3>
               <p className="text-sm text-muted-foreground">
@@ -168,8 +168,8 @@ export default function Landing() {
               </p>
             </div>
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <Clock className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-secondary flex items-center justify-center shadow-lg">
+                <Clock className="w-8 h-8 text-secondary-foreground" />
               </div>
               <h3 className="font-heading font-semibold text-foreground">Always Available</h3>
               <p className="text-sm text-muted-foreground">
