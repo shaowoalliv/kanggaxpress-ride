@@ -9,44 +9,44 @@ export function InstallPromptBanner() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 animate-fade-in">
-      <div className="bg-card border border-border rounded-lg shadow-lg p-4 max-w-md mx-auto">
+      <div className="bg-card border border-border rounded-lg shadow-xl p-4 max-w-md mx-auto">
         <div className="flex items-start gap-3">
-          <Download className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <Download className="h-6 w-6 text-primary mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground text-sm mb-1">
-              Install KanggaXpress?
+            <h3 className="font-semibold text-foreground text-base mb-1.5">
+              Install KanggaXpress
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
               {isIOS
-                ? "To install KanggaXpress, tap the Share button and select 'Add to Home Screen'."
-                : "Get quicker access by installing the KanggaXpress app on your device."}
+                ? "Install KanggaXpress: tap the Share icon and choose 'Add to Home Screen'."
+                : "Add KanggaXpress to your home screen for faster access to rides and deliveries."}
             </p>
             <div className="flex gap-2">
               {!isIOS && (
                 <Button
-                  size="sm"
+                  size="default"
                   onClick={handleInstall}
-                  className="text-xs"
+                  className="flex-1 h-11"
                 >
-                  Install
+                  Install app
                 </Button>
               )}
               <Button
-                size="sm"
+                size="default"
                 variant="outline"
                 onClick={handleDismiss}
-                className="text-xs"
+                className={isIOS ? "flex-1 h-11" : "h-11"}
               >
-                {isIOS ? 'Got it' : 'Maybe later'}
+                {isIOS ? 'Got it' : 'Not now'}
               </Button>
             </div>
           </div>
           <button
             onClick={handleDismiss}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 -mt-1"
             aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
       </div>
