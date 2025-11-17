@@ -188,7 +188,7 @@ export function PassengerRegister() {
 
       {/* Data Privacy Act Consent */}
       <div className="p-4 bg-muted/50 rounded-lg">
-        <label htmlFor="privacy-consent" className="flex items-start gap-3 text-sm text-muted-foreground leading-relaxed cursor-pointer">
+        <label htmlFor="privacy-consent" className="flex items-start gap-2 text-sm text-muted-foreground leading-relaxed cursor-pointer">
           <Checkbox
             id="privacy-consent"
             checked={formData.privacyConsent}
