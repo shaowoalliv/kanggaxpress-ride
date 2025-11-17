@@ -56,6 +56,28 @@ This document provides a quick reference to all locked configurations in KanggaX
 
 ---
 
+### 3. 🚗 Driver & Courier Registration
+**Document**: `DRIVER_COURIER_REGISTRATION_LOCKED.md`
+
+**Key Rules:**
+- Comprehensive registration with vehicle documentation
+- Required fields: vehicle color, plate, license expiry, CR expiry
+- Required photos: Driver's License, OR, CR, Selfie (4 total)
+- NO OCR - uses `PhotoCaptureCard` only
+- Vehicle info stored in DRIVER_LICENSE parsed field
+- CR expiry stored in CR parsed field
+
+**Protected Files:**
+- `src/pages/auth/Auth.tsx` (🔒 driver/courier registration section)
+
+**Violations:**
+- ❌ Removing expiry date fields
+- ❌ Removing any of the 4 required photos
+- ❌ Removing vehicle information fields
+- ❌ Adding OCR processing
+
+---
+
 ## 📋 QUICK CHECK BEFORE CHANGES
 
 ### Mobile-First Check:

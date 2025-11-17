@@ -64,6 +64,10 @@ const passengerSchema = z.object({
   path: ['passwordConfirm'],
 });
 
+/* 🔒 LOCKED: Driver/Courier Registration Schema
+ * All fields required for vehicle operator registration
+ * DO NOT modify validation rules without updating PHOTO_CAPTURE_LOCKED.md
+ */
 const driverSchema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -79,8 +83,8 @@ const driverSchema = z.object({
   completeAddress: z.string().min(5, 'Complete address required'),
   vehicleColor: z.string().min(2, 'Vehicle color required'),
   vehiclePlate: z.string().min(2, 'Plate number required'),
-  orNumber: z.string().min(2, 'OR number required'),
-  crNumber: z.string().min(2, 'CR number required'),
+  licenseExpiry: z.string().min(1, 'License expiry date required'),
+  crExpiry: z.string().min(1, 'CR expiry date required'),
   privacyConsent: z.boolean().refine((val) => val === true, {
     message: 'You must agree to the data privacy policy',
   }),
@@ -138,7 +142,9 @@ export default function Auth() {
   const [photosStaged, setPhotosStaged] = useState<PhotoStaged[]>([]);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   
-  // Driver/Courier register form (expanded to match passenger)
+  /* 🔒 LOCKED: Driver/Courier State - includes vehicle documents
+   * DO NOT remove expiry dates or photo capture fields
+   */
   const [driverData, setDriverData] = useState({
     email: '',
     password: '',
@@ -154,8 +160,8 @@ export default function Auth() {
     completeAddress: '',
     vehicleColor: '',
     vehiclePlate: '',
-    orNumber: '',
-    crNumber: '',
+    licenseExpiry: '',
+    crExpiry: '',
     privacyConsent: false,
   });
   const [driverPhotosStaged, setDriverPhotosStaged] = useState<PhotoStaged[]>([]);
@@ -270,7 +276,10 @@ export default function Auth() {
     });
   };
 
-  // Driver/Courier photo capture handler - no OCR
+  /* 🔒 LOCKED: Driver/Courier photo capture - NO OCR processing
+   * Handles: DRIVER_LICENSE, OR, CR, SELFIE
+   * DO NOT add OCR processing or text recognition
+   */
   const handleDriverPhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
     setDriverPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
       docType,
@@ -278,9 +287,18 @@ export default function Auth() {
       imageUrl,
     }]);
     
+    const docNames: Record<DocType, string> = {
+      'DRIVER_LICENSE': 'Driver\'s License',
+      'OR': 'Official Receipt (OR)',
+      'CR': 'Certificate of Registration (CR)',
+      'SELFIE': 'Selfie',
+      'GOVT_ID': 'Government ID',
+      'PRIVATE_ID': 'Private ID',
+    };
+    
     toast({
       title: 'Photo Captured',
-      description: `${docType === 'DRIVER_LICENSE' ? 'Driver\'s License' : 'Selfie'} photo saved successfully`,
+      description: `${docNames[docType] || docType} photo saved successfully`,
     });
   };
 
@@ -372,13 +390,18 @@ export default function Auth() {
     try {
       driverSchema.parse(driverData);
 
-      // Check required photos (Driver's License + Selfie)
+      /* 🔒 LOCKED: Required photos validation
+       * Driver/Courier must upload: DRIVER_LICENSE, OR, CR, SELFIE
+       */
       const hasLicense = driverPhotosStaged.some(p => p.docType === 'DRIVER_LICENSE');
+      const hasOR = driverPhotosStaged.some(p => p.docType === 'OR');
+      const hasCR = driverPhotosStaged.some(p => p.docType === 'CR');
       const hasSelfie = driverPhotosStaged.some(p => p.docType === 'SELFIE');
-      if (!hasLicense || !hasSelfie) {
+      
+      if (!hasLicense || !hasOR || !hasCR || !hasSelfie) {
         toast({
           title: 'Photos Required',
-          description: 'Please upload both Driver\'s License and Selfie photos',
+          description: 'Please upload Driver\'s License, OR, CR, and Selfie photos',
           variant: 'destructive',
         });
         return;
@@ -405,21 +428,34 @@ export default function Auth() {
 
       const userId = authData.user.id;
 
-      // Upload photos as KYC documents (without OCR data)
+      /* 🔒 LOCKED: Upload photos WITHOUT OCR processing
+       * Store vehicle/document info in parsed field
+       * Always: confidence: 1.0, status: 'PENDING'
+       * DO NOT add OCR processing
+       */
       for (const photo of driverPhotosStaged) {
         const imagePath = await kycService.uploadDocumentImage(userId, photo.docType, photo.imageBlob);
-        await kycService.createKycDocument({
-          user_id: userId,
-          doc_type: photo.docType,
-          parsed: photo.docType === 'DRIVER_LICENSE' ? {
+        
+        let parsedData = {};
+        if (photo.docType === 'DRIVER_LICENSE') {
+          parsedData = {
             vehicle_color: driverData.vehicleColor,
             vehicle_brand: '',
             vehicle_model: '',
             plate_no: driverData.vehiclePlate,
-            or_no: driverData.orNumber,
-            cr_no: driverData.crNumber,
-          } : {},
-          confidence: 1.0,
+            expiry_date: driverData.licenseExpiry,
+          };
+        } else if (photo.docType === 'CR') {
+          parsedData = {
+            expiry_date: driverData.crExpiry,
+          };
+        }
+        
+        await kycService.createKycDocument({
+          user_id: userId,
+          doc_type: photo.docType,
+          parsed: parsedData,
+          confidence: 1.0, // 🔒 ALWAYS 1.0 - no OCR
           status: 'PENDING',
           image_path: imagePath,
         });
@@ -974,8 +1010,11 @@ export default function Auth() {
                       />
                     </div>
 
-                    {/* Vehicle Information */}
-                    <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
+                    {/* 🔒 LOCKED: Vehicle Information Section
+                      * Includes: color, plate, license expiry, CR expiry
+                      * DO NOT remove any fields
+                      */}
+                    <div className="space-y-2 sm:space-y-3 pt-3 border-t border-border">
                       <h3 className="text-sm sm:text-base font-semibold text-foreground">Vehicle Information</h3>
                       
                       <div className="space-y-1.5 sm:space-y-2">
@@ -983,7 +1022,7 @@ export default function Auth() {
                         <Input
                           id="driver-vehicleColor"
                           type="text"
-                          placeholder="e.g. White, Black, Red"
+                          placeholder="e.g. Red, Blue, White"
                           value={driverData.vehicleColor}
                           onChange={(e) => setDriverData(prev => ({ ...prev, vehicleColor: e.target.value }))}
                           required
@@ -1005,26 +1044,24 @@ export default function Auth() {
                       </div>
 
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="driver-orNumber" className="text-xs sm:text-sm font-bold">OR Number *</Label>
+                        <Label htmlFor="driver-licenseExpiry" className="text-xs sm:text-sm font-bold">Driver's License Expiry Date *</Label>
                         <Input
-                          id="driver-orNumber"
-                          type="text"
-                          placeholder="Official Receipt Number"
-                          value={driverData.orNumber}
-                          onChange={(e) => setDriverData(prev => ({ ...prev, orNumber: e.target.value }))}
+                          id="driver-licenseExpiry"
+                          type="date"
+                          value={driverData.licenseExpiry}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
                           required
                           className="bg-white h-9 sm:h-10 text-sm"
                         />
                       </div>
 
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="driver-crNumber" className="text-xs sm:text-sm font-bold">CR Number *</Label>
+                        <Label htmlFor="driver-crExpiry" className="text-xs sm:text-sm font-bold">CR Expiry Date *</Label>
                         <Input
-                          id="driver-crNumber"
-                          type="text"
-                          placeholder="Certificate of Registration Number"
-                          value={driverData.crNumber}
-                          onChange={(e) => setDriverData(prev => ({ ...prev, crNumber: e.target.value }))}
+                          id="driver-crExpiry"
+                          type="date"
+                          value={driverData.crExpiry}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, crExpiry: e.target.value }))}
                           required
                           className="bg-white h-9 sm:h-10 text-sm"
                         />
