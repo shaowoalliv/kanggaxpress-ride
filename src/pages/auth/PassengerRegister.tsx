@@ -187,18 +187,20 @@ export function PassengerRegister() {
       </div>
 
       {/* Data Privacy Act Consent */}
-      <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-        <Checkbox
-          id="privacy-consent"
-          checked={formData.privacyConsent}
-          onCheckedChange={(checked) => 
-            setFormData({ ...formData, privacyConsent: checked === true })
-          }
-          required
-          className="mt-0.5 flex-shrink-0"
-        />
-        <label htmlFor="privacy-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-          I understand and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). I consent to the use of my data for registration, verification, and service provision purposes.
+      <div className="p-4 bg-muted/50 rounded-lg">
+        <label htmlFor="privacy-consent" className="flex items-start gap-3 text-sm text-muted-foreground leading-relaxed cursor-pointer">
+          <Checkbox
+            id="privacy-consent"
+            checked={formData.privacyConsent}
+            onCheckedChange={(checked) => 
+              setFormData({ ...formData, privacyConsent: checked === true })
+            }
+            required
+            className="mt-0.5 flex-shrink-0"
+          />
+          <span>
+            I understand and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). I consent to the use of my data for registration, verification, and service provision purposes.
+          </span>
         </label>
       </div>
 
