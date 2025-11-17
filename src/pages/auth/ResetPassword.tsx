@@ -24,14 +24,17 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const token = searchParams.get('token');
-
   useEffect(() => {
-    if (!token) {
-      toast.error('Invalid or missing reset token');
+    // Check if we have the required hash fragment for password reset
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+
+    if (!accessToken || type !== 'recovery') {
+      toast.error('Invalid or expired reset link');
       navigate('/auth');
     }
-  }, [token, navigate]);
+  }, [navigate]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,15 +43,12 @@ export default function ResetPassword() {
       resetSchema.parse({ password, confirmPassword });
       
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('verify-reset-token', {
-        body: { 
-          token: token,
-          newPassword: password
-        }
+      const { error } = await supabase.auth.updateUser({
+        password: password,
       });
 
       if (error) {
-        toast.error(error.message || 'Failed to reset password');
+        toast.error(error.message);
         return;
       }
 
