@@ -383,9 +383,9 @@ export default function Auth() {
         <title>Sign In - KanggaXpress</title>
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
-      <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 min-h-screen overflow-hidden">
-          <div className="w-full max-w-2xl space-y-2 sm:space-y-3">
+      <div className="min-h-screen h-screen flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-start px-3 py-2 overflow-y-auto">
+          <div className="w-full max-w-2xl space-y-2 sm:space-y-3 pb-4">
             {/* Header */}
             <div className="text-center space-y-1">
               <div className="inline-flex items-center justify-center">
@@ -813,7 +813,7 @@ export default function Auth() {
           avgConfidence={reviewModal.avgConfidence}
           onAccept={handleOcrAccept}
         />
-      </PageLayout>
+      </div>
     </>
   );
 }
