@@ -12,16 +12,17 @@ export function usePWAInstallPrompt() {
 
   useEffect(() => {
     // Check if already dismissed
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    const dismissed = localStorage.getItem('kx_pwa_install_prompt_dismissed');
     if (dismissed) return;
 
     // Check if running in standalone mode
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         (window.navigator as any).standalone === true;
     if (isStandalone) return;
 
-    // Only show on /choose-role page (defer install prompt)
-    const shouldShowOnPage = window.location.pathname === '/choose-role';
-    if (!shouldShowOnPage) return;
+    // Check if mobile viewport (width < 768px)
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) return;
 
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -29,12 +30,9 @@ export function usePWAInstallPrompt() {
 
     if (iOS) {
       // Show iOS hint once after delay
-      const iosHintShown = localStorage.getItem('pwa-ios-hint-shown');
-      if (!iosHintShown) {
-        setTimeout(() => {
-          setShowPrompt(true);
-        }, 800);
-      }
+      setTimeout(() => {
+        setShowPrompt(true);
+      }, 1500);
       return;
     }
 
@@ -44,7 +42,7 @@ export function usePWAInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setTimeout(() => {
         setShowPrompt(true);
-      }, 800);
+      }, 1500);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -60,17 +58,16 @@ export function usePWAInstallPrompt() {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     
+    console.log(`PWA install prompt outcome: ${outcome}`);
+    
     setDeferredPrompt(null);
     setShowPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem('kx_pwa_install_prompt_dismissed', 'true');
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
-    if (isIOS) {
-      localStorage.setItem('pwa-ios-hint-shown', 'true');
-    }
+    localStorage.setItem('kx_pwa_install_prompt_dismissed', 'true');
   };
 
   return {
