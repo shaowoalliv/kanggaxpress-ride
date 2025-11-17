@@ -306,10 +306,10 @@ export default function Auth() {
 
   const getRoleIcon = (roleType: UserRole) => {
     switch (roleType) {
-      case 'driver': return <Car className="w-10 h-10" />;
-      case 'courier': return <Package className="w-10 h-10" />;
-      case 'sender': return <Mail className="w-10 h-10" />;
-      default: return <User className="w-10 h-10" />;
+      case 'driver': return <Car className="w-12 h-12" />;
+      case 'courier': return <Package className="w-12 h-12" />;
+      case 'sender': return <Mail className="w-12 h-12" />;
+      default: return <User className="w-12 h-12" />;
     }
   };
 
@@ -347,27 +347,35 @@ export default function Auth() {
               
               {/* Role Selector */}
               <TooltipProvider>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 p-2 bg-muted rounded-lg">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Signing in as:</span>
-                  <div className="flex gap-1">
+                <div className="flex flex-col items-center justify-center gap-4 p-4 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                  <span className="text-base sm:text-lg font-bold text-foreground">Signing in as:</span>
+                  <div className="flex gap-3">
                     {(['passenger', 'driver', 'courier'] as const).map((r) => (
                       <Tooltip key={r}>
                         <TooltipTrigger asChild>
                           <Button
                             type="button"
-                            size="sm"
-                            variant={role === r ? 'default' : 'ghost'}
+                            size="lg"
+                            variant={role === r ? 'default' : 'outline'}
                             onClick={() => setRole(r)}
-                            className="gap-3 text-xs sm:text-sm h-12 sm:h-14 px-3 sm:px-4"
+                            className={`flex flex-col gap-2 h-auto py-4 px-6 transition-all ${
+                              role === r 
+                                ? 'shadow-lg scale-105 border-2 border-primary' 
+                                : 'hover:scale-105 hover:shadow-md border-2 border-border'
+                            }`}
                           >
-                            <div className="w-10 h-10 flex items-center justify-center">
+                            <div className={`w-16 h-16 flex items-center justify-center rounded-lg ${
+                              role === r 
+                                ? 'bg-primary/10' 
+                                : 'bg-muted'
+                            }`}>
                               {getRoleIcon(r)}
                             </div>
-                            <span className="hidden sm:inline">{getRoleLabel(r)}</span>
+                            <span className="text-xs sm:text-sm font-semibold">{getRoleLabel(r)}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Sign in as {getRoleLabel(r)}</p>
+                          <p className="font-medium">Sign in as {getRoleLabel(r)}</p>
                         </TooltipContent>
                       </Tooltip>
                     ))}
