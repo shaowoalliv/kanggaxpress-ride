@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { KanggaLogo } from '@/components/KanggaLogo';
+import { HamburgerMenu } from '@/components/layout/HamburgerMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -383,6 +384,21 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <div className="min-h-screen h-screen flex flex-col overflow-hidden">
+        {/* Yellow Header Bar with Shadow and Hamburger Menu */}
+        <header className="sticky top-0 z-50 bg-primary shadow-md">
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            {/* Hamburger Menu */}
+            <HamburgerMenu />
+            
+            <div className="flex items-center gap-2">
+              <KanggaLogo width={32} height={32} />
+              <span className="text-lg font-heading font-bold text-primary-foreground">KanggaXpress</span>
+            </div>
+
+            <div className="w-10" /> {/* Spacer for centering */}
+          </div>
+        </header>
+
         <div className="flex-1 flex flex-col items-center justify-start px-3 py-2 overflow-y-auto">
           <div className="w-full max-w-2xl space-y-2 sm:space-y-3 pb-4">
             {/* Header */}
