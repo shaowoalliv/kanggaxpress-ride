@@ -147,6 +147,36 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!loginEmail) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Check your email for a password reset link',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send password reset email',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleOcrComplete = (docType: DocType) => (parsed: any, imageUrl: string, imageBlob: Blob, avgConfidence: number) => {
     setReviewModal({
       open: true,
@@ -431,8 +461,8 @@ export default function Auth() {
 
                   <button
                     type="button"
-                    className="text-sm text-primary hover:underline"
-                    onClick={() => toast({ title: 'Coming soon', description: 'Password reset functionality will be available soon.' })}
+                    className="text-sm text-primary hover:underline text-left"
+                    onClick={handleForgotPassword}
                   >
                     Forgot password?
                   </button>
