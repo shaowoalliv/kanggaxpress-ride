@@ -470,10 +470,10 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end mt-1 mb-3">
                     <button
                       type="button"
-                      className="text-xs font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
+                      className="text-sm font-medium text-foreground hover:underline transition-colors"
                       onClick={handleForgotPassword}
                     >
                       Forgot password?
