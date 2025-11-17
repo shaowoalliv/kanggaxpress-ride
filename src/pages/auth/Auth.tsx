@@ -334,14 +334,14 @@ export default function Auth() {
         <meta name="description" content="Sign in to your KanggaXpress account" />
       </Helmet>
       <PageLayout>
-        <div className="flex-1 flex flex-col items-center justify-center px-3 py-2 sm:py-4 md:py-6">
-          <div className="w-full max-w-md space-y-2 sm:space-y-3 md:space-y-4">
+        <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 min-h-screen">
+          <div className="w-full max-w-2xl space-y-2 sm:space-y-3">
             {/* Header */}
-            <div className="text-center space-y-1 sm:space-y-2">
-              <div className="inline-flex items-center justify-center mb-1">
-                <KanggaLogo width={240} height={240} className="w-24 h-24 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72" />
+            <div className="text-center space-y-1">
+              <div className="inline-flex items-center justify-center">
+                <KanggaLogo width={200} height={200} className="w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40" />
               </div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground px-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground">
                 Welcome to KanggaXpress
               </h1>
               
@@ -386,16 +386,16 @@ export default function Auth() {
 
             {/* Auth Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
-                <TabsTrigger value="login" className="text-xs sm:text-sm">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-xs sm:text-sm">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11">
+                <TabsTrigger value="login" className="text-sm sm:text-base font-semibold">Login</TabsTrigger>
+                <TabsTrigger value="register" className="text-sm sm:text-base font-semibold">Register</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-                <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="login-email" className="text-xs sm:text-sm">Email</Label>
+              <TabsContent value="login" className="space-y-3 mt-3">
+                <form onSubmit={handleLogin} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -403,12 +403,12 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      className="bg-white h-9 sm:h-10 text-sm"
+                      className="bg-white h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="login-password" className="text-xs sm:text-sm">Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                     <div className="relative">
                       <Input
                         id="login-password"
@@ -417,7 +417,7 @@ export default function Auth() {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
-                        className="bg-white h-9 sm:h-10 text-sm"
+                        className="bg-white h-10 text-sm"
                       />
                       <button
                         type="button"
@@ -431,7 +431,7 @@ export default function Auth() {
 
                   <button
                     type="button"
-                    className="text-xs sm:text-sm text-primary hover:underline"
+                    className="text-sm text-primary hover:underline"
                     onClick={() => toast({ title: 'Coming soon', description: 'Password reset functionality will be available soon.' })}
                   >
                     Forgot password?
@@ -440,7 +440,7 @@ export default function Auth() {
                   <Button
                     type="submit"
                     variant="secondary"
-                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold"
+                    className="w-full h-11 text-lg font-semibold"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
@@ -449,13 +449,13 @@ export default function Auth() {
               </TabsContent>
 
               {/* Register Tab */}
-              <TabsContent value="register" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+              <TabsContent value="register" className="space-y-3 mt-3">
                 {role === 'passenger' ? (
                   /* Comprehensive Passenger Registration with KYC */
-                  <form onSubmit={handlePassengerRegister} className="space-y-3 sm:space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="passenger-firstName" className="text-xs sm:text-sm">First Name *</Label>
+                  <form onSubmit={handlePassengerRegister} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="passenger-firstName" className="text-sm font-medium">First Name *</Label>
                         <Input
                           id="passenger-firstName"
                           type="text"
@@ -463,7 +463,7 @@ export default function Auth() {
                           value={passengerData.firstName}
                           onChange={(e) => setPassengerData(prev => ({ ...prev, firstName: e.target.value }))}
                           required
-                          className="bg-white h-9 sm:h-10 text-sm"
+                          className="bg-white h-10 text-sm"
                         />
                       </div>
 
