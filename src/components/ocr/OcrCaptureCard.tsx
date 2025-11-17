@@ -230,15 +230,16 @@ export function OcrCaptureCard({ docType, label, onCapture, onOcrComplete, requi
             <Button
               onClick={startCamera}
               variant="outline"
-              className="w-full"
+              className="w-full h-12 flex items-center justify-center"
               disabled={isProcessing}
+              aria-label={isProcessing ? "Processing image" : `Capture ${label}`}
             >
               {isProcessing ? (
                 <>Processing...</>
               ) : (
                 <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Capture {label}
+                  <Camera className="w-5 h-5" aria-hidden="true" />
+                  <span className="sr-only">Capture {label}</span>
                 </>
               )}
             </Button>
