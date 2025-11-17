@@ -23,7 +23,7 @@ const passengerSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   passwordConfirm: z.string().min(6, 'Password confirmation required'),
   firstName: z.string().min(1, 'First name required'),
-  middleName: z.string().optional(),
+  middleName: z.string().min(1, 'Middle name required'),
   lastName: z.string().min(1, 'Last name required'),
   birthdate: z.string().min(1, 'Birthdate required'),
   personalMobile: z.string().min(10, 'Valid mobile number required'),
@@ -451,13 +451,14 @@ export default function Auth() {
                       </div>
 
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="passenger-middleName" className="text-xs sm:text-sm">Middle Name</Label>
+                        <Label htmlFor="passenger-middleName" className="text-xs sm:text-sm">Middle Name *</Label>
                         <Input
                           id="passenger-middleName"
                           type="text"
                           placeholder="Santos"
                           value={passengerData.middleName}
                           onChange={(e) => setPassengerData(prev => ({ ...prev, middleName: e.target.value }))}
+                          required
                           className="bg-white h-9 sm:h-10 text-sm"
                         />
                       </div>
