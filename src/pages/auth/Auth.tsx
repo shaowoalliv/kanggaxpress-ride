@@ -16,6 +16,7 @@ import { Eye, EyeOff, User, Car, Package, Mail } from 'lucide-react';
 import { UserRole } from '@/types';
 import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
 import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
+import { AuthHelpModal } from '@/components/auth/AuthHelpModal';
 import { kycService } from '@/services/kyc';
 import { DocType } from '@/types/kyc';
 import { z } from 'zod';
@@ -94,6 +95,7 @@ export default function Auth() {
     avgConfidence: number;
     imageBlob: Blob;
   }>({ open: false, docType: 'GOVT_ID', imageUrl: '', parsed: {}, avgConfidence: 0, imageBlob: new Blob() });
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   
   // Simple register form for driver/courier
   const [registerEmail, setRegisterEmail] = useState('');
@@ -397,43 +399,43 @@ export default function Auth() {
         </header>
 
         <div className="flex-1 flex flex-col items-center justify-start px-3 py-2 overflow-y-auto">
-          <div className="w-full max-w-2xl space-y-2 sm:space-y-3 pb-4">
+          <div className="w-full max-w-2xl space-y-3 pb-4">
             {/* Header */}
-            <div className="text-center space-y-1">
+            <div className="text-center space-y-2">
               <div className="inline-flex items-center justify-center">
-                <KanggaLogo width={200} height={200} className="w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40" />
+                <KanggaLogo width={200} height={200} className="w-16 h-16 sm:w-24 sm:h-24" />
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground">
                 Welcome to KanggaXpress
               </h1>
               
               {/* Role Selector */}
               <TooltipProvider>
-                <div className="flex flex-col items-center justify-center gap-4 p-4 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
-                  <span className="text-base sm:text-lg font-bold text-foreground">Signing in as:</span>
-                  <div className="flex gap-3">
+                <div className="flex flex-col items-center justify-center gap-2 p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                  <span className="text-sm sm:text-base font-bold text-foreground">Signing in as:</span>
+                  <div className="flex gap-2">
                     {(['passenger', 'driver', 'courier'] as const).map((r) => (
                       <Tooltip key={r}>
                         <TooltipTrigger asChild>
                           <Button
                             type="button"
-                            size="lg"
+                            size="sm"
                             variant={role === r ? 'default' : 'outline'}
                             onClick={() => setRole(r)}
-                            className={`flex flex-col gap-2 h-auto py-4 px-6 transition-all ${
+                            className={`flex flex-col gap-1.5 h-auto py-2 px-3 transition-all ${
                               role === r 
                                 ? 'shadow-lg scale-105 border-2 border-primary' 
                                 : 'hover:scale-105 hover:shadow-md border-2 border-border'
                             }`}
                           >
-                            <div className={`w-16 h-16 flex items-center justify-center rounded-lg ${
+                            <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${
                               role === r 
                                 ? 'bg-primary/10' 
                                 : 'bg-muted'
                             }`}>
                               {getRoleIcon(r)}
                             </div>
-                            <span className="text-xs sm:text-sm font-semibold">{getRoleLabel(r)}</span>
+                            <span className="text-xs font-semibold">{getRoleLabel(r)}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -448,15 +450,15 @@ export default function Auth() {
 
             {/* Auth Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11">
-                <TabsTrigger value="login" className="text-sm sm:text-base font-semibold">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-sm sm:text-base font-semibold">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
+                <TabsTrigger value="login" className="text-sm font-semibold">Login</TabsTrigger>
+                <TabsTrigger value="register" className="text-sm font-semibold">Register</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
-              <TabsContent value="login" className="space-y-3 mt-3">
-                <form onSubmit={handleLogin} className="space-y-3">
-                  <div className="space-y-1.5">
+              <TabsContent value="login" className="space-y-2.5 mt-3">
+                <form onSubmit={handleLogin} className="space-y-2.5">
+                  <div className="space-y-1">
                     <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
@@ -465,11 +467,11 @@ export default function Auth() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      className="bg-white h-10 text-sm"
+                      className="bg-white h-9 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                     <div className="relative">
                       <Input
@@ -479,36 +481,47 @@ export default function Auth() {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
-                        className="bg-white h-10 text-sm"
+                        className="bg-white h-9 text-sm pr-10"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                  </div>
-
-                  <div className="flex justify-end mt-1 mb-3">
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-foreground hover:underline transition-colors"
-                      onClick={handleForgotPassword}
-                    >
-                      Forgot password?
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                        onClick={handleForgotPassword}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                   </div>
 
                   <Button
                     type="submit"
                     variant="secondary"
-                    className="w-full h-11 text-lg font-semibold"
+                    className="w-full h-10 text-base font-semibold"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : 'Sign In'}
                   </Button>
+                  
+                  {/* Help Link */}
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setHelpModalOpen(true)}
+                      className="text-xs text-foreground/80 hover:text-foreground hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-1"
+                    >
+                      Need help signing in?
+                    </button>
+                  </div>
                 </form>
               </TabsContent>
 
@@ -825,6 +838,9 @@ export default function Auth() {
           avgConfidence={reviewModal.avgConfidence}
           onAccept={handleOcrAccept}
         />
+        
+        {/* Help Modal */}
+        <AuthHelpModal open={helpModalOpen} onOpenChange={setHelpModalOpen} />
       </div>
     </>
   );
