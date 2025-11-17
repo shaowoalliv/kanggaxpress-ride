@@ -1,3 +1,24 @@
+/* 🔒 PHOTO CAPTURE - LOCKED CONFIGURATION (NO OCR)
+ * 
+ * CRITICAL: Identity Verification uses simple photo capture ONLY
+ * DO NOT add OCR processing, text recognition, or document parsing
+ * 
+ * Why NO OCR:
+ * - Prevents "OCR failed" errors
+ * - Simpler user experience
+ * - Faster processing
+ * - Manual admin review is more reliable
+ * 
+ * Key Rules:
+ * - Use PhotoCaptureCard component ONLY (not OcrCaptureCard)
+ * - Store photos with empty parsed: {} object
+ * - Always set confidence: 1.0 (no OCR confidence)
+ * - Simple success messages: "Photo Captured"
+ * - NO OCR error messages
+ * 
+ * See: PHOTO_CAPTURE_LOCKED.md for complete guidelines
+ */
+
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,6 +35,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, User, Car, Package, Mail } from 'lucide-react';
 import { UserRole } from '@/types';
+/* 🔒 LOCKED: Use PhotoCaptureCard for simple photo capture
+ * DO NOT replace with OcrCaptureCard - causes OCR errors */
 import { PhotoCaptureCard } from '@/components/PhotoCaptureCard';
 import { AuthHelpModal } from '@/components/auth/AuthHelpModal';
 import { kycService } from '@/services/kyc';
@@ -41,6 +64,8 @@ const passengerSchema = z.object({
   path: ['passwordConfirm'],
 });
 
+/* 🔒 LOCKED: Simple photo staging - NO OCR data
+ * DO NOT add: parsed, confidence, or any OCR-related fields */
 interface PhotoStaged {
   docType: DocType;
   imageBlob: Blob;
@@ -84,6 +109,7 @@ export default function Auth() {
     completeAddress: '',
     privacyConsent: false,
   });
+  /* 🔒 LOCKED: Photo state - NO OCR processing data */
   const [photosStaged, setPhotosStaged] = useState<PhotoStaged[]>([]);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   
@@ -189,7 +215,18 @@ export default function Auth() {
     }
   };
 
-  // Simple photo capture handler - no OCR
+  /* 🔒 LOCKED: Simple photo capture handler - NO OCR
+   * 
+   * DO NOT add:
+   * - performOcr() calls
+   * - Text recognition
+   * - Document parsing
+   * - Auto-fill logic
+   * - Confidence calculations
+   * - Review modals
+   * 
+   * Keep it simple: capture → store → success message
+   */
   const handlePhotoCapture = (docType: DocType) => (imageBlob: Blob, imageUrl: string) => {
     setPhotosStaged(prev => [...prev.filter(p => p.docType !== docType), {
       docType,
@@ -197,6 +234,7 @@ export default function Auth() {
       imageUrl,
     }]);
     
+    // ✅ Simple success message - NO OCR messages
     toast({
       title: 'Photo Captured',
       description: `${docType === 'GOVT_ID' ? 'ID' : 'Selfie'} photo saved successfully`,
@@ -240,14 +278,22 @@ export default function Auth() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('User creation failed');
 
-      // Upload photos as KYC documents (without OCR data)
+      /* 🔒 LOCKED: Upload photos WITHOUT OCR data
+       * 
+       * Always upload with:
+       * - parsed: {} (empty - no OCR)
+       * - confidence: 1.0 (no OCR confidence)
+       * - status: 'PENDING' (for admin review)
+       * 
+       * DO NOT add OCR processing here
+       */
       for (const photo of photosStaged) {
         const imagePath = await kycService.uploadDocumentImage(authData.user.id, photo.docType, photo.imageBlob);
         await kycService.createKycDocument({
           user_id: authData.user.id,
           doc_type: photo.docType,
-          parsed: {}, // No OCR data
-          confidence: 1.0, // Full confidence since we're not doing OCR
+          parsed: {}, // 🔒 ALWAYS empty - no OCR data
+          confidence: 1.0, // 🔒 ALWAYS 1.0 - no OCR confidence
           status: 'PENDING',
           image_path: imagePath,
         });
@@ -667,10 +713,18 @@ export default function Auth() {
                       </div>
                     </div>
 
-                    {/* KYC Verification */}
+                    {/* 🔒 LOCKED: Identity Verification - Photo Capture ONLY (NO OCR)
+                     * 
+                     * Uses PhotoCaptureCard for simple camera/file upload
+                     * DO NOT replace with OcrCaptureCard
+                     * DO NOT add OCR processing
+                     * 
+                     * See: PHOTO_CAPTURE_LOCKED.md
+                     */}
                     <div className="space-y-2 sm:space-y-3 pt-2 border-t border-border">
                       <h3 className="text-sm sm:text-base font-semibold text-foreground">Identity Verification</h3>
                       
+                      {/* ✅ CORRECT: PhotoCaptureCard - simple photo only */}
                       <PhotoCaptureCard
                         title="Government ID or Any Valid ID"
                         description="Take or upload a photo of your Government ID or Company ID"
