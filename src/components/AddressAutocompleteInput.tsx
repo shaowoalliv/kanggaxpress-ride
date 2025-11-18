@@ -15,6 +15,7 @@ interface AddressAutocompleteInputProps {
   placeholder?: string;
   className?: string;
   icon?: React.ReactNode;
+  proximityLocation?: { lat: number; lng: number };
 }
 
 export function AddressAutocompleteInput({
@@ -24,13 +25,14 @@ export function AddressAutocompleteInput({
   placeholder = 'Enter address',
   className = '',
   icon,
+  proximityLocation,
 }: AddressAutocompleteInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Mock autocomplete - replace with actual API call
+  // Geocoding search with proximity bias
   const fetchSuggestions = async (query: string) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -39,17 +41,35 @@ export function AddressAutocompleteInput({
 
     setLoading(true);
     
-    // Mock suggestions - replace with actual geocoding API
-    setTimeout(() => {
-      const mockSuggestions: AddressSuggestion[] = [
-        { formattedAddress: `${query} - Calapan City Terminal`, lat: 13.4119, lng: 121.1828 },
-        { formattedAddress: `${query} - Calapan Public Market`, lat: 13.4120, lng: 121.1830 },
-        { formattedAddress: `${query} - City Hall Calapan`, lat: 13.4115, lng: 121.1825 },
-        { formattedAddress: `${query} - SM City Calapan`, lat: 13.4125, lng: 121.1835 },
-      ];
-      setSuggestions(mockSuggestions);
+    try {
+      // Build Nominatim search URL with proximity bias
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`;
+      
+      // Add proximity/viewbox if pickup location is provided
+      if (proximityLocation) {
+        // Create a viewbox around the pickup location (approx 50km radius)
+        const latDelta = 0.45; // ~50km
+        const lngDelta = 0.45;
+        const viewbox = `${proximityLocation.lng - lngDelta},${proximityLocation.lat + latDelta},${proximityLocation.lng + lngDelta},${proximityLocation.lat - latDelta}`;
+        url += `&viewbox=${viewbox}&bounded=0`; // bounded=0 allows results outside but biases to viewbox
+      }
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const suggestions: AddressSuggestion[] = data.map((place: any) => ({
+        formattedAddress: place.display_name,
+        lat: parseFloat(place.lat),
+        lng: parseFloat(place.lon),
+      }));
+
+      setSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+    } finally {
       setLoading(false);
-    }, 300);
+    }
   };
 
   useEffect(() => {
