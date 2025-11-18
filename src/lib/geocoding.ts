@@ -37,7 +37,6 @@ export const searchPlaces = async (
       limit: '5',
       autocomplete: 'true',
       types: 'poi,address,place',
-      bbox: '121.0,13.3,121.3,13.6', // Calapan / NE Mindoro area
     });
 
     if (options?.proximity) {
