@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { reverseGeocode, searchPlaces } from '@/lib/geocoding';
 import carIcon from '@/assets/car-icon.png';
 import motorcycleIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
@@ -67,8 +68,17 @@ export default function BookRide() {
   const navigate = useNavigate();
   
   // State
-  const [destination, setDestination] = useState('');
-  const [pickup, setPickup] = useState('');
+  const [destinationQuery, setDestinationQuery] = useState('');
+  const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pickupError, setPickupError] = useState<string | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+  
   const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null);
   const [passengerCount, setPassengerCount] = useState(1);
   const [notes, setNotes] = useState('');
@@ -77,7 +87,7 @@ export default function BookRide() {
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
 
   // Check if form is complete for Request Ride button
-  const isFormComplete = Boolean(pickup.trim() && destination.trim() && selectedService);
+  const isFormComplete = Boolean(currentAddress && dropoffAddress && selectedService);
 
   // Get greeting based on time of day
   useEffect(() => {
@@ -86,6 +96,63 @@ export default function BookRide() {
     else if (hour < 18) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
   }, []);
+
+  // Get GPS location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setPickupError("Device location not supported.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setPickupError(null);
+      },
+      (err) => {
+        console.error("GPS error", err);
+        setPickupError("Unable to get your location. Please enable GPS and refresh.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+      }
+    );
+  }, []);
+
+  // Reverse geocode pickup coordinates
+  useEffect(() => {
+    if (!pickupCoords) return;
+
+    setIsAddressLoading(true);
+    reverseGeocode(pickupCoords.lat, pickupCoords.lng)
+      .then((addr) => setCurrentAddress(addr))
+      .catch(() => {
+        setCurrentAddress(
+          `Location at ${pickupCoords.lat.toFixed(4)}, ${pickupCoords.lng.toFixed(4)}`
+        );
+      })
+      .finally(() => setIsAddressLoading(false));
+  }, [pickupCoords]);
+
+  // Search for destination places
+  useEffect(() => {
+    if (!destinationQuery.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const handle = setTimeout(async () => {
+      const results = await searchPlaces(destinationQuery, {
+        proximity: pickupCoords ?? undefined,
+      });
+      setSuggestions(results);
+      setShowSuggestions(true);
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [destinationQuery, pickupCoords]);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -124,9 +191,16 @@ export default function BookRide() {
 
   const handleRecentSearchClick = () => {
     if (recentSearches[0]) {
-      setDestination(recentSearches[0].destination);
-      setPickup(recentSearches[0].pickup);
+      setDestinationQuery(recentSearches[0].destination);
+      setDropoffAddress(recentSearches[0].destination);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setDestinationQuery(suggestion.place_name);
+    setDropoffAddress(suggestion.place_name);
+    setDropoffCoords({ lat: suggestion.center[1], lng: suggestion.center[0] });
+    setShowSuggestions(false);
   };
 
   
@@ -136,7 +210,7 @@ export default function BookRide() {
       return;
     }
 
-    if (!selectedService || !pickup.trim() || !destination.trim()) {
+    if (!selectedService || !currentAddress || !dropoffAddress) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -148,13 +222,19 @@ export default function BookRide() {
         .from('rides')
         .insert([{
           passenger_id: user.id,
-          pickup_location: pickup.trim(),
-          dropoff_location: destination.trim(),
+          pickup_location: currentAddress,
+          dropoff_location: dropoffAddress,
+          pickup_lat: pickupCoords?.lat,
+          pickup_lng: pickupCoords?.lng,
+          dropoff_lat: dropoffCoords?.lat,
+          dropoff_lng: dropoffCoords?.lng,
           base_fare: selectedService.baseFare,
           ride_type: selectedService.type as RideType,
           status: 'requested',
           passenger_count: passengerCount,
           notes: notes.trim() || null,
+          top_up_fare: 0,
+          total_fare: selectedService.baseFare,
         }])
         .select()
         .single();
@@ -163,8 +243,8 @@ export default function BookRide() {
 
       // Save to recent searches
       const newSearch = {
-        destination: destination.trim(),
-        pickup: pickup.trim(),
+        destination: dropoffAddress,
+        pickup: currentAddress,
         timestamp: Date.now(),
       };
       const updated = [newSearch, ...recentSearches.slice(0, 4)];
@@ -197,21 +277,50 @@ export default function BookRide() {
           </h1>
           <div className="flex items-center gap-2 text-sm opacity-90">
             <MapPin className="w-4 h-4" />
-            <span>📍 Set your pickup location</span>
+            {pickupError ? (
+              <span>📍 {pickupError}</span>
+            ) : isAddressLoading ? (
+              <span>📍 Locating your address…</span>
+            ) : currentAddress ? (
+              <span className="truncate">📍 {currentAddress}</span>
+            ) : (
+              <span>📍 Getting your location…</span>
+            )}
           </div>
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
           {/* 🔒 SECTION 2: Destination Search Bar */}
-          <ThemedCard className="flex items-center gap-3 py-3">
-            <Search className="w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Where are you heading?"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-base"
-            />
-          </ThemedCard>
+          <div className="relative">
+            <ThemedCard className="flex items-center gap-3 py-3">
+              <Search className="w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="Where are you heading?"
+                value={destinationQuery}
+                onChange={(e) => setDestinationQuery(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-base"
+              />
+            </ThemedCard>
+            
+            {/* Suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <ThemedCard className="absolute top-full left-0 right-0 mt-2 z-10 max-h-60 overflow-y-auto">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                  >
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground mt-1 flex-shrink-0" />
+                      <span className="text-sm">{suggestion.place_name}</span>
+                    </div>
+                  </button>
+                ))}
+              </ThemedCard>
+            )}
+          </div>
 
           {/* 🔒 SECTION 3: Recent Searches */}
           <div>
@@ -308,14 +417,14 @@ export default function BookRide() {
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-muted-foreground">From: </span>
-                  <span className="font-medium">{pickup || 'Not set'}</span>
+                  <span className="font-medium">{currentAddress || 'Not set'}</span>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-muted-foreground">To: </span>
-                  <span className="font-medium">{destination || 'Not set'}</span>
+                  <span className="font-medium">{dropoffAddress || 'Not set'}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">

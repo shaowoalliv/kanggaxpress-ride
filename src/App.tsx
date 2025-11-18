@@ -20,6 +20,8 @@ import RideStatus from "./pages/passenger/RideStatus";
 import MyRides from "./pages/passenger/MyRides";
 import DriverDashboard from "./pages/driver/Dashboard";
 import DriverSetup from "./pages/driver/Setup";
+import DriverJobs from "./pages/driver/Jobs";
+import JobDetail from "./pages/driver/JobDetail";
 import SenderDashboard from "./pages/sender/Dashboard";
 import CreateDelivery from "./pages/sender/CreateDelivery";
 import MyDeliveries from "./pages/sender/MyDeliveries";
@@ -98,6 +100,8 @@ const App = () => {
             {/* Driver Routes */}
             <Route path="/driver/dashboard" element={<DriverDashboard />} />
             <Route path="/driver/setup" element={<DriverSetup />} />
+            <Route path="/driver/jobs" element={<DriverJobs />} />
+            <Route path="/driver/jobs/:rideId" element={<JobDetail />} />
             
             {/* Sender Routes */}
             <Route path="/sender/dashboard" element={<SenderDashboard />} />
