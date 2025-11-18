@@ -182,8 +182,18 @@ export default function Auth() {
     }
   }, [searchParams, setSearchParams, role, toast]);
 
-  // Allow access to auth page even when logged in
-  // Users can view login/register page without auto-redirect
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user && profile) {
+      const routes: Record<UserRole, string> = {
+        passenger: '/passenger/book-ride',
+        driver: '/driver/dashboard',
+        courier: '/courier/dashboard',
+        sender: '/sender/dashboard',
+      };
+      navigate(routes[profile.role] || routes.passenger);
+    }
+  }, [user, profile, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
