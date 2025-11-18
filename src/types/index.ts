@@ -37,8 +37,12 @@ export interface Ride {
   dropoff_location: string;
   ride_type: RideType;
   status: RideStatus;
+  base_fare: number | null;
+  top_up_fare: number | null;
+  total_fare: number | null;
   fare_estimate: number | null;
   fare_final: number | null;
+  app_fee: number | null;
   passenger_count: number;
   notes: string | null;
   created_at: string;

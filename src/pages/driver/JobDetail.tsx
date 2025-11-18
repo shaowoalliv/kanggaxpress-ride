@@ -117,6 +117,65 @@ export default function JobDetail() {
     }
   };
 
+  const handleStartRide = async () => {
+    try {
+      setSending(true);
+      const { error } = await supabase
+        .from('rides')
+        .update({
+          status: 'in_progress',
+          started_at: new Date().toISOString(),
+        })
+        .eq('id', rideId);
+
+      if (error) throw error;
+
+      toast.success('Ride started!');
+      await fetchRide();
+    } catch (error) {
+      console.error('Error starting ride:', error);
+      toast.error('Failed to start ride');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCompleteRide = async () => {
+    try {
+      setSending(true);
+      
+      // Fetch app fee from platform_settings
+      const { data: platformSettings } = await supabase
+        .from('platform_settings')
+        .select('setting_value')
+        .eq('setting_key', 'app_fee_per_ride')
+        .single();
+
+      const appFee = platformSettings?.setting_value || 5;
+      const fareFinal = ride.total_fare || ride.base_fare || 0;
+
+      const { error } = await supabase
+        .from('rides')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          fare_final: fareFinal,
+          app_fee: appFee,
+        })
+        .eq('id', rideId);
+
+      if (error) throw error;
+
+      toast.success(`Ride completed! Total fare ₱${fareFinal}, app fee ₱${appFee}.`);
+      await fetchRide();
+    } catch (error) {
+      console.error('Error completing ride:', error);
+      toast.error('Failed to complete ride');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const getServiceName = (rideType: string) => {
     const map: Record<string, string> = {
       'car': 'Car',
@@ -166,57 +225,89 @@ export default function JobDetail() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
-          {offerSent ? (
+          {/* Ride Status Summary */}
+          {ride.status === 'in_progress' && (
+            <ThemedCard className="bg-secondary/5 border-secondary/20 text-center py-6">
+              <p className="text-lg font-semibold text-secondary mb-2">Ride In Progress</p>
+              <p className="text-sm text-muted-foreground">Complete the ride when you reach the destination.</p>
+            </ThemedCard>
+          )}
+
+          {ride.status === 'completed' && (
+            <ThemedCard className="bg-primary/5 border-primary/20 text-center py-8">
+              <p className="text-lg font-semibold text-primary mb-2">Ride Completed!</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Total fare ₱{ride.total_fare}, app fee ₱{ride.app_fee || 5}.
+              </p>
+              <PrimaryButton onClick={() => navigate('/driver/jobs')} className="mt-2">
+                Back to Jobs
+              </PrimaryButton>
+            </ThemedCard>
+          )}
+
+          {offerSent && ride.status === 'accepted' && (
             <ThemedCard className="bg-primary/5 border-primary/20 text-center py-8">
               <p className="text-lg font-semibold text-primary mb-2">Offer Sent!</p>
               <p className="text-sm text-muted-foreground">Waiting for passenger to confirm.</p>
             </ThemedCard>
-          ) : (
+          )}
+
+          {/* Route Details */}
+          <ThemedCard>
+            <h2 className="text-lg font-semibold mb-4">Route Details</h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Pickup</p>
+                  <p className="font-medium">{ride.pickup_location}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-destructive mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Drop-off</p>
+                  <p className="font-medium">{ride.dropoff_location}</p>
+                </div>
+              </div>
+            </div>
+          </ThemedCard>
+
+          {/* Service & Base Fare */}
+          <ThemedCard>
+            <h2 className="text-lg font-semibold mb-4">Service & Fare</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Car className="w-5 h-5 text-secondary" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Service</p>
+                  <p className="font-medium">{getServiceName(ride.ride_type)}</p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-border space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Base Fare</span>
+                  <span className="text-xl font-semibold">₱{ride.base_fare}</span>
+                </div>
+                {ride.top_up_fare > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Top-up</span>
+                    <span className="text-xl font-semibold">₱{ride.top_up_fare}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border">
+                  <span className="font-semibold">Total Fare</span>
+                  <span className="text-2xl font-bold text-primary">₱{ride.total_fare || ride.base_fare}</span>
+                </div>
+              </div>
+            </div>
+          </ThemedCard>
+
+          {/* Top-Up Panel - Only show if ride not yet accepted */}
+          {ride.status === 'requested' && !ride.driver_id && (
             <>
-              {/* Route Details */}
-              <ThemedCard>
-                <h2 className="text-lg font-semibold mb-4">Route Details</h2>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Pickup</p>
-                      <p className="font-medium">{ride.pickup_location}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-destructive mt-1 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Drop-off</p>
-                      <p className="font-medium">{ride.dropoff_location}</p>
-                    </div>
-                  </div>
-                </div>
-              </ThemedCard>
-
-              {/* Service & Base Fare */}
-              <ThemedCard>
-                <h2 className="text-lg font-semibold mb-4">Service & Base Fare</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Car className="w-5 h-5 text-secondary" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Service</p>
-                      <p className="font-medium">{getServiceName(ride.ride_type)}</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-border">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Base Fare</span>
-                      <span className="text-2xl font-bold text-primary">₱{ride.base_fare}</span>
-                    </div>
-                  </div>
-                </div>
-              </ThemedCard>
-
-              {/* Top-Up Panel */}
               <ThemedCard>
                 <h2 className="text-lg font-semibold mb-4">Add Top-Up (Optional)</h2>
                 <div className="space-y-4">
@@ -274,7 +365,7 @@ export default function JobDetail() {
                 </div>
               </ThemedCard>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Send Offer */}
               <div className="space-y-3 pt-4">
                 <PrimaryButton
                   onClick={handleSendOffer}
@@ -292,6 +383,45 @@ export default function JobDetail() {
                 </SecondaryButton>
               </div>
             </>
+          )}
+
+          {/* Action Buttons - Start/Complete Ride */}
+          {ride.status === 'accepted' && ride.driver_id && !offerSent && (
+            <div className="space-y-3 pt-4">
+              <PrimaryButton
+                onClick={handleStartRide}
+                disabled={sending}
+                isLoading={sending}
+                className="w-full"
+              >
+                Start Ride
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => navigate('/driver/jobs')}
+                className="w-full"
+              >
+                Back to Jobs
+              </SecondaryButton>
+            </div>
+          )}
+
+          {ride.status === 'in_progress' && (
+            <div className="space-y-3 pt-4">
+              <PrimaryButton
+                onClick={handleCompleteRide}
+                disabled={sending}
+                isLoading={sending}
+                className="w-full"
+              >
+                Complete Ride
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => navigate('/driver/jobs')}
+                className="w-full"
+              >
+                Back to Jobs
+              </SecondaryButton>
+            </div>
           )}
         </div>
       </div>

@@ -111,7 +111,7 @@ export default function MyRides() {
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-primary">
-                          ₱{ride.fare_final || ride.fare_estimate || '—'}
+                          ₱{ride.fare_final ?? ride.total_fare ?? ride.base_fare ?? '—'}
                         </p>
                       </div>
                     </div>
