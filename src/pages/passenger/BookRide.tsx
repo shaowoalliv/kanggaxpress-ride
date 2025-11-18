@@ -135,16 +135,17 @@ export default function BookRide() {
       .finally(() => setIsAddressLoading(false));
   }, [pickupCoords]);
 
-  // Search for destination places
+  // Search for destination places (only with 3+ characters)
   useEffect(() => {
-    if (!destinationQuery.trim()) {
+    const q = destinationQuery.trim();
+    if (q.length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
     const handle = setTimeout(async () => {
-      const results = await searchPlaces(destinationQuery, {
+      const results = await searchPlaces(q, {
         proximity: pickupCoords ?? undefined,
       });
       setSuggestions(results);
@@ -197,9 +198,9 @@ export default function BookRide() {
   };
 
   const handleSuggestionClick = (suggestion: any) => {
-    setDestinationQuery(suggestion.place_name);
-    setDropoffAddress(suggestion.place_name);
-    setDropoffCoords({ lat: suggestion.center[1], lng: suggestion.center[0] });
+    setDestinationQuery(suggestion.fullAddress);
+    setDropoffAddress(suggestion.fullAddress);
+    setDropoffCoords(suggestion.coords);
     setShowSuggestions(false);
   };
 
@@ -310,12 +311,17 @@ export default function BookRide() {
                   <button
                     key={suggestion.id}
                     onClick={() => handleSuggestionClick(suggestion)}
+                    type="button"
                     className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
                   >
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground mt-1 flex-shrink-0" />
-                      <span className="text-sm">{suggestion.place_name}</span>
+                    <div className="font-medium text-sm truncate">
+                      {suggestion.primary}
                     </div>
+                    {suggestion.secondary && (
+                      <div className="text-xs text-muted-foreground truncate mt-1">
+                        {suggestion.secondary}
+                      </div>
+                    )}
                   </button>
                 ))}
               </ThemedCard>
