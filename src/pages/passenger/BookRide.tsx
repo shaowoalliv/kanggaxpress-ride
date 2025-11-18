@@ -425,7 +425,7 @@ export default function BookRide() {
                           "w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all",
                           isConfigured 
                             ? "bg-[hsl(30,40%,45%)] border-2 border-[hsl(30,40%,45%)]" 
-                            : "bg-[hsl(30,40%,90%)] border-2 border-dashed border-[hsl(30,40%,60%)]"
+                            : "bg-[hsl(30,40%,90%)] border-2 border-[hsl(30,40%,70%)]"
                         )}
                       >
                         <Icon className={cn(
