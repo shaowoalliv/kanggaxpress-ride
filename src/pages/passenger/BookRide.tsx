@@ -33,12 +33,27 @@ import courierIcon from '@/assets/courier-icon.png';
  * Do NOT reorder, remove, or add sections between these without explicit permission.
  */
 
+/**
+ * 🔒 LOCKED - All Kanggaxpress Services Configuration
+ * 
+ * CRITICAL: This services array is LOCKED and must NOT be modified without explicit user approval.
+ * 
+ * Service structure:
+ * - Car: ₱80 base fare, car-icon.png
+ * - Motorcycle: ₱40 base fare, motorcycle-icon.png
+ * - Tricycle: ₱50 base fare, tricycle-icon.png
+ * - Send Package: ₱45 base fare, courier-icon.png (redirects to /sender/dashboard)
+ * 
+ * Icons are custom PNG files stored in src/assets/
+ * Do NOT change icons, names, order, or base fares without explicit permission.
+ */
 const services: Array<{ type: RideType | 'package'; name: string; icon: string; baseFare: number; isPackage?: boolean }> = [
   { type: 'car' as RideType, name: 'Car', icon: carIcon, baseFare: 80 },
   { type: 'motor' as RideType, name: 'Motorcycle', icon: motorcycleIcon, baseFare: 40 },
   { type: 'tricycle' as RideType, name: 'Tricycle', icon: tricycleIcon, baseFare: 50 },
   { type: 'package', name: 'Send Package', icon: courierIcon, baseFare: 45, isPackage: true },
 ];
+// 🔒 END LOCKED SECTION
 
 const quickAccessItems = [
   { id: 'home', label: 'Home', icon: Home },
@@ -244,7 +259,20 @@ export default function BookRide() {
             </div>
           </div>
 
-          {/* 🔒 SECTION 5: All Kanggaxpress Services */}
+          {/* 🔒 SECTION 5: All Kanggaxpress Services - LOCKED */}
+          {/* 
+            🔒 CRITICAL: This services grid section is LOCKED
+            
+            Requirements:
+            - Must maintain 2x2 grid layout
+            - Each card must show: icon (custom PNG), service name, base fare
+            - Icons must use object-contain to prevent stretching
+            - Card order: Car, Motorcycle, Tricycle, Send Package
+            - Send Package redirects to /sender/dashboard
+            - Other services scroll to booking form
+            
+            Do NOT modify layout, styling, or behavior without explicit permission.
+          */}
           <div>
             <h2 className="text-lg font-semibold mb-3">All Kanggaxpress Services</h2>
             <div className="grid grid-cols-2 gap-4">
@@ -263,6 +291,7 @@ export default function BookRide() {
               ))}
             </div>
           </div>
+          {/* 🔒 END LOCKED SECTION - All Kanggaxpress Services */}
 
           {/* 🔒 SECTION 6: Booking Form (shown when service selected) */}
           {selectedType && (
