@@ -467,11 +467,13 @@ export default function BookRide() {
                     : "border-border bg-card hover:border-[hsl(30,40%,60%)]"
                 )}
               >
-                <img
-                  src={getServiceIcon(fare.service_type)}
-                  alt={fare.display_name}
-                  className="w-12 h-12 mx-auto mb-2"
-                />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2">
+                  <img
+                    src={getServiceIcon(fare.service_type)}
+                    alt={fare.display_name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
                 <h4 className="font-semibold text-sm">{fare.display_name}</h4>
                 <p className="text-[hsl(30,40%,45%)] font-bold text-sm mt-1">
                   ₱{fare.base_fare}
