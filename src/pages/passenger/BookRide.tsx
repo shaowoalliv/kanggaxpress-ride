@@ -10,7 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ridesService } from '@/services/rides';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Bike, Car as CarIcon, Search, Home, Building2, ShoppingCart, MapPinned, Clock } from 'lucide-react';
+import { MapPin, User, Search, Home, Building2, ShoppingCart, MapPinned, Clock } from 'lucide-react';
+import carIcon from '@/assets/car-icon.png';
+import motorcycleIcon from '@/assets/motorcycle-icon.png';
+import tricycleIcon from '@/assets/tricycle-icon.png';
+import courierIcon from '@/assets/courier-icon.png';
 
 /**
  * 🔒 LOCKED LAYOUT - /passenger/book-ride (Canonical Mobile-First Ride Home Screen)
@@ -29,11 +33,11 @@ import { MapPin, User, Bike, Car as CarIcon, Search, Home, Building2, ShoppingCa
  * Do NOT reorder, remove, or add sections between these without explicit permission.
  */
 
-const services: Array<{ type: RideType | 'package'; name: string; icon: any; baseFare: number; isPackage?: boolean }> = [
-  { type: 'car' as RideType, name: 'Car', icon: CarIcon, baseFare: 80 },
-  { type: 'motor' as RideType, name: 'Motorcycle', icon: Bike, baseFare: 40 },
-  { type: 'tricycle' as RideType, name: 'Tricycle', icon: CarIcon, baseFare: 50 },
-  { type: 'package', name: 'Send Package', icon: ShoppingCart, baseFare: 45, isPackage: true },
+const services: Array<{ type: RideType | 'package'; name: string; icon: string; baseFare: number; isPackage?: boolean }> = [
+  { type: 'car' as RideType, name: 'Car', icon: carIcon, baseFare: 80 },
+  { type: 'motor' as RideType, name: 'Motorcycle', icon: motorcycleIcon, baseFare: 40 },
+  { type: 'tricycle' as RideType, name: 'Tricycle', icon: tricycleIcon, baseFare: 50 },
+  { type: 'package', name: 'Send Package', icon: courierIcon, baseFare: 45, isPackage: true },
 ];
 
 const quickAccessItems = [
@@ -251,7 +255,7 @@ export default function BookRide() {
                   className="flex flex-col items-center justify-center p-6 cursor-pointer hover:shadow-lg transition-all active:scale-[0.97]"
                 >
                   <div className="w-16 h-16 flex items-center justify-center mb-3">
-                    <service.icon className="w-12 h-12 text-secondary" style={{ objectFit: 'contain' }} />
+                    <img src={service.icon} alt={service.name} className="w-full h-full object-contain" />
                   </div>
                   <p className="font-semibold text-center mb-1">{service.name}</p>
                   <p className="text-primary font-bold">₱{service.baseFare}</p>
