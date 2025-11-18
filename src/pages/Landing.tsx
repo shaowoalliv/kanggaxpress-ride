@@ -11,8 +11,26 @@ export default function Landing() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Don't auto-redirect - let users see the landing page
-  // They can navigate to their dashboard via buttons if needed
+  useEffect(() => {
+    if (!loading && user && profile) {
+      // Redirect logged-in users to their dashboard based on role
+      switch (profile.role) {
+        case 'driver':
+          navigate('/driver/dashboard');
+          break;
+        case 'courier':
+          navigate('/courier/dashboard');
+          break;
+        case 'sender':
+          navigate('/sender/dashboard');
+          break;
+        case 'passenger':
+        default:
+          navigate('/passenger/book-ride');
+          break;
+      }
+    }
+  }, [user, profile, loading, navigate]);
 
   if (loading) {
     return (
@@ -84,13 +102,13 @@ export default function Landing() {
                 e?.preventDefault?.();
                 e?.stopPropagation?.();
                 try {
-                  navigate('/auth');
+                  navigate('/choose-role');
                 } catch (err) {
                   console.error('Navigation error:', err);
                 }
                 setTimeout(() => {
-                  if (window.location.pathname !== '/auth') {
-                    window.location.href = '/auth';
+                  if (window.location.pathname !== '/choose-role') {
+                    window.location.href = '/choose-role';
                   }
                 }, 400);
               }}

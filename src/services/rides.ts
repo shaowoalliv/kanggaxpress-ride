@@ -8,12 +8,6 @@ export interface CreateRideData {
   passenger_count?: number;
   notes?: string;
   fare_estimate?: number;
-  pickup_lat?: number;
-  pickup_lng?: number;
-  dropoff_lat?: number;
-  dropoff_lng?: number;
-  base_fare?: number;
-  app_fee?: number;
 }
 
 export const ridesService = {
