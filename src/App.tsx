@@ -16,6 +16,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import LoginRedirect from "./pages/auth/LoginRedirect";
 import SignupRedirect from "./pages/auth/SignupRedirect";
 import BookRide from "./pages/passenger/BookRide";
+import RideStatus from "./pages/passenger/RideStatus";
 import MyRides from "./pages/passenger/MyRides";
 import DriverDashboard from "./pages/driver/Dashboard";
 import DriverSetup from "./pages/driver/Setup";
@@ -91,6 +92,7 @@ const App = () => {
             
             {/* Passenger Routes */}
             <Route path="/passenger/book-ride" element={<BookRide />} />
+            <Route path="/passenger/ride-status/:rideId" element={<RideStatus />} />
             <Route path="/passenger/my-rides" element={<MyRides />} />
             
             {/* Driver Routes */}

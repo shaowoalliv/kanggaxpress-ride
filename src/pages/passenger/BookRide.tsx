@@ -7,10 +7,10 @@ import { ThemedCard } from '@/components/ui/ThemedCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ridesService } from '@/services/rides';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Search, Home, Building2, ShoppingCart, MapPinned, Clock } from 'lucide-react';
+import { MapPin, User, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import carIcon from '@/assets/car-icon.png';
 import motorcycleIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
@@ -69,12 +69,15 @@ export default function BookRide() {
   // State
   const [destination, setDestination] = useState('');
   const [pickup, setPickup] = useState('');
-  const [selectedType, setSelectedType] = useState<RideType | null>(null);
+  const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null);
   const [passengerCount, setPassengerCount] = useState(1);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
+
+  // Check if form is complete for Request Ride button
+  const isFormComplete = Boolean(pickup.trim() && destination.trim() && selectedService);
 
   // Get greeting based on time of day
   useEffect(() => {
@@ -112,18 +115,13 @@ export default function BookRide() {
       navigate('/sender/dashboard');
       return;
     }
-    setSelectedType(service.type as RideType);
-    // Scroll to booking form
-    setTimeout(() => {
-      document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    setSelectedService(service);
   };
 
   const handleQuickAccess = (id: string) => {
     toast.info(`${id.charAt(0).toUpperCase() + id.slice(1)} quick access coming soon!`);
   };
 
-  
   const handleRecentSearchClick = () => {
     if (recentSearches[0]) {
       setDestination(recentSearches[0].destination);
@@ -131,37 +129,37 @@ export default function BookRide() {
     }
   };
 
-  const handleBookRide = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  
+  const handleRequestRide = async () => {
     if (!user || !profile) {
       toast.error('Please sign in to book a ride');
       return;
     }
 
-    if (!selectedType) {
-      toast.error('Please select a ride type');
-      return;
-    }
-
-    if (!pickup.trim() || !destination.trim()) {
-      toast.error('Please enter both pickup and destination');
+    if (!selectedService || !pickup.trim() || !destination.trim()) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
     try {
       setLoading(true);
       
-      const selectedService = services.find(s => s.type === selectedType);
-      
-      await ridesService.createRide(profile.id, {
-        pickup_location: pickup.trim(),
-        dropoff_location: destination.trim(),
-        ride_type: selectedType,
-        passenger_count: passengerCount,
-        notes: notes.trim() || undefined,
-        fare_estimate: selectedService?.baseFare,
-      });
+      const { data: ride, error } = await supabase
+        .from('rides')
+        .insert([{
+          passenger_id: user.id,
+          pickup_location: pickup.trim(),
+          dropoff_location: destination.trim(),
+          base_fare: selectedService.baseFare,
+          ride_type: selectedService.type as RideType,
+          status: 'requested',
+          passenger_count: passengerCount,
+          notes: notes.trim() || null,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
 
       // Save to recent searches
       const newSearch = {
@@ -173,11 +171,11 @@ export default function BookRide() {
       setRecentSearches(updated);
       localStorage.setItem('kanggaxpress_recent_searches', JSON.stringify(updated));
 
-      toast.success('Ride requested! Looking for a driver...');
-      navigate('/passenger/my-rides');
+      toast.success('Ride requested! Finding a driver...');
+      navigate(`/passenger/ride-status/${ride.id}`);
     } catch (error) {
-      console.error('Error booking ride:', error);
-      toast.error('Failed to book ride. Please try again.');
+      console.error('Error requesting ride:', error);
+      toast.error('Failed to request ride. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -280,7 +278,11 @@ export default function BookRide() {
                 <ThemedCard
                   key={service.type}
                   onClick={() => handleServiceClick(service)}
-                  className="flex flex-col items-center justify-center p-6 cursor-pointer hover:shadow-lg transition-all active:scale-[0.97]"
+                  className={`flex flex-col items-center justify-center p-6 cursor-pointer transition-all active:scale-[0.97] ${
+                    selectedService?.type === service.type
+                      ? 'ring-2 ring-primary bg-primary/5 shadow-lg'
+                      : 'hover:shadow-lg'
+                  }`}
                 >
                   <div className="w-16 h-16 flex items-center justify-center mb-3">
                     <img src={service.icon} alt={service.name} className="w-full h-full object-contain" />
@@ -293,69 +295,49 @@ export default function BookRide() {
           </div>
           {/* 🔒 END LOCKED SECTION - All Kanggaxpress Services */}
 
-          {/* 🔒 SECTION 6: Booking Form (shown when service selected) */}
-          {selectedType && (
-            <div id="booking-form" className="space-y-4 pt-6 border-t-2 border-border">
-              <h2 className="text-xl font-heading font-bold">Complete Your Booking</h2>
-              
-              <form onSubmit={handleBookRide} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pickup" className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    Pickup Location
-                  </Label>
-                  <Input
-                    id="pickup"
-                    placeholder="Enter pickup location"
-                    value={pickup}
-                    onChange={(e) => setPickup(e.target.value)}
-                    required
-                    className="h-12"
-                  />
+          {/* Bottom spacing for sticky bar */}
+          <div className="h-32" />
+        </div>
+
+        {/* Bottom Sticky Request Ride Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-10">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+            {/* Summary */}
+            <div className="space-y-1 text-sm">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-muted-foreground">From: </span>
+                  <span className="font-medium">{pickup || 'Not set'}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="passengers" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Number of Passengers
-                  </Label>
-                  <Input
-                    id="passengers"
-                    type="number"
-                    min="1"
-                    max="8"
-                    value={passengerCount}
-                    onChange={(e) => setPassengerCount(parseInt(e.target.value) || 1)}
-                    className="h-12"
-                  />
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-muted-foreground">To: </span>
+                  <span className="font-medium">{destination || 'Not set'}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes (Optional)</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Any special instructions?"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <ThemedCard className="bg-muted/30">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Estimated Fare</span>
-                    <span className="text-2xl font-bold text-primary">
-                      ₱{services.find(s => s.type === selectedType)?.baseFare}
-                    </span>
-                  </div>
-                </ThemedCard>
-
-                <PrimaryButton type="submit" isLoading={loading} className="w-full">
-                  Request Ride
-                </PrimaryButton>
-              </form>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Service: </span>
+                <span className="font-medium">{selectedService?.name || 'Not selected'}</span>
+                {selectedService && (
+                  <span className="text-primary font-bold">₱{selectedService.baseFare}</span>
+                )}
+              </div>
             </div>
-          )}
+
+            {/* Request Ride Button */}
+            <PrimaryButton
+              onClick={handleRequestRide}
+              disabled={!isFormComplete || loading}
+              isLoading={loading}
+              className="w-full"
+            >
+              Request Ride
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </PrimaryButton>
+          </div>
         </div>
       </div>
     </PageLayout>
