@@ -54,6 +54,7 @@ export default function BookRide() {
   const [loading, setLoading] = useState(false);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [recentRides, setRecentRides] = useState<any[]>([]);
   const [selectedQuickAccess, setSelectedQuickAccess] = useState<string | null>(null);
 
   // Reverse geocoding helper
@@ -97,7 +98,20 @@ export default function BookRide() {
     if (stored) {
       setRecentSearches(JSON.parse(stored));
     }
-  }, []);
+
+    // Fetch recent rides from backend
+    const fetchRecentRides = async () => {
+      if (!user) return;
+      try {
+        const rides = await ridesService.getPassengerRides(user.id);
+        setRecentRides(rides.slice(0, 5)); // Get last 5 rides
+      } catch (error) {
+        console.error('Error fetching recent rides:', error);
+      }
+    };
+
+    fetchRecentRides();
+  }, [user]);
 
   // Reverse geocode when coordinates are available
   useEffect(() => {
@@ -256,22 +270,41 @@ export default function BookRide() {
         {/* Main Content */}
         <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto space-y-6">
           {/* Recent Ride */}
-          {recentSearches.length > 0 && (
+          {(recentRides.length > 0 || recentSearches.length > 0) && (
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Ride</h3>
               <ThemedCard 
-                className="bg-primary/20 cursor-pointer hover:bg-primary/30 transition-colors shadow-md"
-                onClick={() => handleRecentSearchSelect(recentSearches[0])}
+                className="bg-[hsl(var(--primary)/0.15)] border-[hsl(var(--primary)/0.3)] cursor-pointer hover:bg-[hsl(var(--primary)/0.25)] transition-colors shadow-md"
+                onClick={() => {
+                  if (recentRides.length > 0) {
+                    const ride = recentRides[0];
+                    setPickup(ride.pickup_location);
+                    setDropoff(ride.dropoff_location);
+                  } else if (recentSearches.length > 0) {
+                    handleRecentSearchSelect(recentSearches[0]);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm sm:text-base truncate">{recentSearches[0].dropoff}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Last booked {Math.floor((Date.now() - recentSearches[0].timestamp) / (1000 * 60 * 60 * 24))} days ago
-                    </p>
+                    {recentRides.length > 0 ? (
+                      <>
+                        <p className="font-semibold text-sm sm:text-base truncate">{recentRides[0].dropoff_location}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          Last ride from {recentRides[0].pickup_location.substring(0, 30)}...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-sm sm:text-base truncate">{recentSearches[0].dropoff}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          Last booked {Math.floor((Date.now() - recentSearches[0].timestamp) / (1000 * 60 * 60 * 24))} days ago
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </ThemedCard>
