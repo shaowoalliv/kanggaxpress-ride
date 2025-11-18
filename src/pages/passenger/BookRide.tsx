@@ -278,7 +278,14 @@ export default function BookRide() {
                       : 'hover:bg-muted/50'
                   }`}
                 >
-                  <img src={service.image} alt={service.name} className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 object-contain" />
+                  <img 
+                    src={service.image} 
+                    alt={service.name} 
+                    className={cn(
+                      "mx-auto mb-2 sm:mb-3 object-contain",
+                      service.type === 'car' ? "w-12 h-12 sm:w-16 sm:h-16" : "w-10 h-10 sm:w-12 sm:h-12"
+                    )} 
+                  />
                   <p className="font-semibold text-sm sm:text-base mb-1">{service.name}</p>
                   <p className="text-xs text-muted-foreground mb-2">{service.description}</p>
                   <p className="text-primary font-bold text-sm sm:text-base">₱{service.price}</p>
