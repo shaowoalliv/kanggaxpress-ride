@@ -78,6 +78,29 @@ This document provides a quick reference to all locked configurations in KanggaX
 
 ---
 
+### 4. 🏠 Passenger Book Ride Screen
+**Document**: `BOOK_RIDE_LOCKED.md`
+
+**Key Rules:**
+- Mobile-first Grab/Uber style layout
+- 7 sections in fixed order: App bar, Greeting+Location, Destination search, Recent searches, Quick Access, Services grid, Booking form
+- **Services Grid LOCKED**: 2x2 grid with Car (₱80), Motorcycle (₱40), Tricycle (₱50), Send Package (₱45)
+- Custom PNG icons from src/assets/ (car-icon.png, motorcycle-icon.png, tricycle-icon.png, courier-icon.png)
+- "Send Package" redirects to /sender/dashboard
+- Icon aspect ratio preserved with object-contain
+
+**Protected Files:**
+- `src/pages/passenger/BookRide.tsx` (🔒 entire layout structure and services grid)
+
+**Violations:**
+- ❌ Reordering layout sections
+- ❌ Changing service order, names, or base fares
+- ❌ Modifying service icons or grid layout
+- ❌ Removing sections from the canonical structure
+- ❌ Changing "Send Package" redirect behavior
+
+---
+
 ## 📋 QUICK CHECK BEFORE CHANGES
 
 ### Mobile-First Check:
