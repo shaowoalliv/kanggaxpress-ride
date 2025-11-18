@@ -69,57 +69,81 @@ export type Database = {
       }
       delivery_orders: {
         Row: {
+          app_fee: number | null
           assigned_at: string | null
+          base_fare: number | null
           cod_amount: number | null
           courier_id: string | null
           created_at: string | null
           delivered_at: string | null
           dropoff_address: string
+          dropoff_lat: number | null
+          dropoff_lng: number | null
           id: string
           package_description: string
           package_size: Database["public"]["Enums"]["package_size"]
           picked_up_at: string | null
           pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
           receiver_name: string
           receiver_phone: string
           sender_id: string
           status: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare: number | null
+          total_fare: number | null
           updated_at: string | null
         }
         Insert: {
+          app_fee?: number | null
           assigned_at?: string | null
+          base_fare?: number | null
           cod_amount?: number | null
           courier_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           dropoff_address: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           id?: string
           package_description: string
           package_size: Database["public"]["Enums"]["package_size"]
           picked_up_at?: string | null
           pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           receiver_name: string
           receiver_phone: string
           sender_id: string
           status?: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
           updated_at?: string | null
         }
         Update: {
+          app_fee?: number | null
           assigned_at?: string | null
+          base_fare?: number | null
           cod_amount?: number | null
           courier_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           dropoff_address?: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           id?: string
           package_description?: string
           package_size?: Database["public"]["Enums"]["package_size"]
           picked_up_at?: string | null
           pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           receiver_name?: string
           receiver_phone?: string
           sender_id?: string
           status?: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -234,6 +258,36 @@ export type Database = {
         }
         Relationships: []
       }
+      fare_settings: {
+        Row: {
+          base_fare: number
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          base_fare?: number
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          base_fare?: number
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          service_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kyc_documents: {
         Row: {
           confidence: number
@@ -300,6 +354,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -333,9 +414,13 @@ export type Database = {
       rides: {
         Row: {
           accepted_at: string | null
+          app_fee: number | null
+          base_fare: number | null
           completed_at: string | null
           created_at: string | null
           driver_id: string | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
           dropoff_location: string
           fare_estimate: number | null
           fare_final: number | null
@@ -343,17 +428,25 @@ export type Database = {
           notes: string | null
           passenger_count: number | null
           passenger_id: string
+          pickup_lat: number | null
+          pickup_lng: number | null
           pickup_location: string
           ride_type: Database["public"]["Enums"]["ride_type"]
           started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
+          top_up_fare: number | null
+          total_fare: number | null
           updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
+          app_fee?: number | null
+          base_fare?: number | null
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           dropoff_location: string
           fare_estimate?: number | null
           fare_final?: number | null
@@ -361,17 +454,25 @@ export type Database = {
           notes?: string | null
           passenger_count?: number | null
           passenger_id: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           pickup_location: string
           ride_type: Database["public"]["Enums"]["ride_type"]
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
           updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
+          app_fee?: number | null
+          base_fare?: number | null
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           dropoff_location?: string
           fare_estimate?: number | null
           fare_final?: number | null
@@ -379,10 +480,14 @@ export type Database = {
           notes?: string | null
           passenger_count?: number | null
           passenger_id?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           pickup_location?: string
           ride_type?: Database["public"]["Enums"]["ride_type"]
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
           updated_at?: string | null
         }
         Relationships: [

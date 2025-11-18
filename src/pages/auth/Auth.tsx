@@ -864,7 +864,11 @@ export default function Auth() {
                       />
                     </div>
 
-                    <div className="text-xs text-muted-foreground space-y-3 pt-2 border-t border-border">
+                    <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+                      <p className="text-justify mb-3 leading-relaxed">
+                        <span className="font-semibold">Data Privacy Act of 2012 (Republic Act No. 10173):</span> Your personal information will be collected, stored, and processed in accordance with the Data Privacy Act. Your data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting your privacy and will not share your information with third parties without your consent.
+                      </p>
+                      
                       <label htmlFor="privacy-consent" className="flex items-start gap-2 leading-relaxed cursor-pointer">
                         <input
                           type="checkbox"
@@ -874,8 +878,8 @@ export default function Auth() {
                           className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
                           required
                         />
-                        <span className="text-justify">
-                          <span className="font-semibold">I understand</span> and agree that my personal information will be collected, stored, and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). My data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting my privacy and will not share my information with third parties without my consent.
+                        <span>
+                          I understand and agree to the data privacy policy
                         </span>
                       </label>
                     </div>
