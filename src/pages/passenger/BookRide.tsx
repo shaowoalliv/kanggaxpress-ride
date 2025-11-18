@@ -45,6 +45,9 @@ export default function BookRide() {
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
   const [currentLocation, setCurrentLocation] = useState('Getting your location...');
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [currentLocationCoords, setCurrentLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedType, setSelectedType] = useState<RideType | null>(null);
   const [passengerCount, setPassengerCount] = useState(1);
   const [notes, setNotes] = useState('');
@@ -53,25 +56,39 @@ export default function BookRide() {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [selectedQuickAccess, setSelectedQuickAccess] = useState<string | null>(null);
 
+  // Reverse geocoding helper
+  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
+      const data = await res.json();
+      return data.display_name ?? `Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      return `Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}`;
+    }
+  };
+
   // Get GPS location on mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // Mock reverse geocoding - replace with actual API
-          const address = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)} - Calapan City`;
-          setCurrentLocation(address);
-          setPickup(address);
+          setCurrentLocationCoords({ lat: latitude, lng: longitude });
+          setCurrentLocation('Locating your address...');
         },
         (error) => {
           console.error('Error getting location:', error);
           setCurrentLocation('Calapan City Terminal');
+          setCurrentAddress('Calapan City Terminal');
           setPickup('Calapan City Terminal');
         }
       );
     } else {
       setCurrentLocation('Calapan City Terminal');
+      setCurrentAddress('Calapan City Terminal');
       setPickup('Calapan City Terminal');
     }
 
@@ -81,6 +98,28 @@ export default function BookRide() {
       setRecentSearches(JSON.parse(stored));
     }
   }, []);
+
+  // Reverse geocode when coordinates are available
+  useEffect(() => {
+    if (!currentLocationCoords) return;
+
+    setIsAddressLoading(true);
+    reverseGeocode(currentLocationCoords.lat, currentLocationCoords.lng)
+      .then((address) => {
+        setCurrentAddress(address);
+        setCurrentLocation(address);
+        setPickup(address);
+      })
+      .catch(() => {
+        const fallback = `Lat ${currentLocationCoords.lat.toFixed(4)}, Lng ${currentLocationCoords.lng.toFixed(4)}`;
+        setCurrentAddress(fallback);
+        setCurrentLocation(fallback);
+        setPickup(fallback);
+      })
+      .finally(() => {
+        setIsAddressLoading(false);
+      });
+  }, [currentLocationCoords]);
 
   useEffect(() => {
     if (!user) {
@@ -189,7 +228,7 @@ export default function BookRide() {
                 <div className="flex items-center gap-2 text-primary-foreground/90">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <p className="text-sm sm:text-base truncate max-w-[200px] sm:max-w-xs">
-                    {currentLocation}
+                    {isAddressLoading ? 'Locating your address...' : currentAddress || currentLocation}
                   </p>
                 </div>
               </div>
@@ -216,21 +255,23 @@ export default function BookRide() {
 
         {/* Main Content */}
         <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto space-y-6">
-          {/* Recent Search */}
+          {/* Recent Ride */}
           {recentSearches.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Search</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Ride</h3>
               <ThemedCard 
-                className="bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="bg-primary/20 cursor-pointer hover:bg-primary/30 transition-colors shadow-md"
                 onClick={() => handleRecentSearchSelect(recentSearches[0])}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm sm:text-base truncate">{recentSearches[0].pickup}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate">to {recentSearches[0].dropoff}</p>
+                    <p className="font-semibold text-sm sm:text-base truncate">{recentSearches[0].dropoff}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Last booked {Math.floor((Date.now() - recentSearches[0].timestamp) / (1000 * 60 * 60 * 24))} days ago
+                    </p>
                   </div>
                 </div>
               </ThemedCard>
