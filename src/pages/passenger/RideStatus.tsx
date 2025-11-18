@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
@@ -12,6 +14,8 @@ export default function RideStatus() {
   const navigate = useNavigate();
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showFareConfirm, setShowFareConfirm] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   useEffect(() => {
     if (!rideId) {
@@ -21,7 +25,31 @@ export default function RideStatus() {
     }
 
     fetchRide();
-  }, [rideId]);
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel(`ride-${rideId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rides',
+          filter: `id=eq.${rideId}`,
+        },
+        (payload) => {
+          setRide(payload.new);
+          if (payload.new.status === 'accepted') {
+            setShowFareConfirm(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [rideId, navigate]);
 
   const fetchRide = async () => {
     try {
@@ -55,7 +83,56 @@ export default function RideStatus() {
 
   const getStatusDisplay = (status: string) => {
     if (status === 'requested') return 'SEARCHING FOR DRIVER';
+    if (status === 'accepted') return 'DRIVER FOUND - WAITING FOR YOUR CONFIRMATION';
+    if (status === 'in_progress') return 'DRIVER CONFIRMED - RIDE IN PROGRESS';
+    if (status === 'completed') return 'RIDE COMPLETED';
+    if (status === 'cancelled') return 'RIDE CANCELLED';
     return status.toUpperCase().replace('_', ' ');
+  };
+
+  const handleAcceptFare = async () => {
+    try {
+      setAccepting(true);
+      const { error } = await supabase
+        .from('rides')
+        .update({ status: 'in_progress' })
+        .eq('id', rideId);
+
+      if (error) throw error;
+
+      setShowFareConfirm(false);
+      toast.success('Ride confirmed! Your driver is on the way.');
+    } catch (error) {
+      console.error('Error accepting fare:', error);
+      toast.error('Failed to confirm ride');
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleRejectFare = async () => {
+    try {
+      setAccepting(true);
+      const { error } = await supabase
+        .from('rides')
+        .update({ 
+          status: 'requested',
+          driver_id: null,
+          top_up_fare: 0,
+          total_fare: ride.base_fare,
+        })
+        .eq('id', rideId);
+
+      if (error) throw error;
+
+      setShowFareConfirm(false);
+      toast.info('Searching for another driver...');
+    } catch (error) {
+      console.error('Error rejecting fare:', error);
+      toast.error('Failed to reject offer');
+    } finally {
+      setAccepting(false);
+    }
   };
 
   if (loading) {
@@ -103,7 +180,11 @@ export default function RideStatus() {
           <ThemedCard className="bg-primary/5 border-primary/20">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                {ride.status === 'requested' || ride.status === 'accepted' ? (
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                ) : (
+                  <Car className="w-6 h-6 text-primary" />
+                )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
@@ -175,10 +256,59 @@ export default function RideStatus() {
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Book Ride
-            </PrimaryButton>
+              </PrimaryButton>
+            </div>
           </div>
         </div>
-      </div>
-    </PageLayout>
-  );
-}
+
+        {/* Fare Confirmation Modal */}
+        <Dialog open={showFareConfirm} onOpenChange={setShowFareConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Driver Found!</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Base Fare</span>
+                  <span className="font-semibold">₱{ride?.base_fare || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Driver Top-Up</span>
+                  <span className="font-semibold">₱{ride?.top_up_fare || 0}</span>
+                </div>
+                <div className="pt-3 border-t border-border">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Total Fare</span>
+                    <span className="text-2xl font-bold text-primary">₱{ride?.total_fare || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground text-center">
+                Total fare is payable directly to the driver (cash or e-wallet).
+              </p>
+
+              <div className="space-y-3 pt-2">
+                <PrimaryButton
+                  onClick={handleAcceptFare}
+                  disabled={accepting}
+                  isLoading={accepting}
+                  className="w-full"
+                >
+                  Accept Fare
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={handleRejectFare}
+                  disabled={accepting}
+                  className="w-full"
+                >
+                  Reject Fare
+                </SecondaryButton>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </PageLayout>
+    );
+  }
