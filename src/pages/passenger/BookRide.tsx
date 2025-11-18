@@ -53,6 +53,7 @@ export default function BookRide() {
   const [pickupCoords, setPickupCoords] = useState<Coordinates | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [pickupError, setPickupError] = useState<string | null>(null);
 
   // Destination state
   const [destinationQuery, setDestinationQuery] = useState('');
@@ -95,6 +96,7 @@ export default function BookRide() {
   // Get GPS location on mount
   useEffect(() => {
     if (!navigator.geolocation) {
+      setPickupError('Device location not supported.');
       toast({
         title: 'GPS not available',
         description: 'Please enable location services',
@@ -106,14 +108,20 @@ export default function BookRide() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setPickupError(null);
       },
       (err) => {
         console.error('GPS error', err);
+        setPickupError('Unable to get your location. Please enable GPS and refresh.');
         toast({
           title: 'Location error',
-          description: 'Unable to get your location. Please search manually.',
+          description: 'Unable to get your location. Please enable GPS or search manually.',
           variant: 'destructive',
         });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
       }
     );
   }, []);
@@ -125,8 +133,11 @@ export default function BookRide() {
     setIsAddressLoading(true);
     mapProvider
       .reverseGeocode(pickupCoords)
-      .then(setCurrentAddress)
-      .catch(() => {
+      .then((addr) => {
+        setCurrentAddress(addr);
+      })
+      .catch((err) => {
+        console.error('Reverse geocoding failed:', err);
         setCurrentAddress(
           `Location at ${pickupCoords.lat.toFixed(4)}, ${pickupCoords.lng.toFixed(4)}`
         );
@@ -297,10 +308,10 @@ export default function BookRide() {
   };
 
   const handleRequestRide = async () => {
-    if (!pickupCoords || !currentAddress) {
+    if (pickupError || !pickupCoords || !currentAddress) {
       toast({
         title: 'Pickup location required',
-        description: 'Please enable GPS or select a pickup location',
+        description: pickupError || 'Please enable GPS or select a pickup location',
         variant: 'destructive',
       });
       return;
@@ -424,7 +435,11 @@ export default function BookRide() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MapPin className="w-4 h-4 flex-shrink-0" />
           <span className="truncate">
-            {isAddressLoading ? 'Locating your address…' : currentAddress || 'Getting location...'}
+            {pickupError 
+              ? pickupError
+              : isAddressLoading 
+              ? 'Locating your address…' 
+              : currentAddress || 'Getting location...'}
           </span>
         </div>
       </div>
