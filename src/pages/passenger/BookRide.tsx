@@ -33,11 +33,12 @@ const quickLocations = [
   { name: 'Terminal', icon: Building2, address: 'Calapan City Terminal' },
 ];
 
-interface RecentSearch {
-  pickup: string;
-  dropoff: string;
+type RecentSearch = {
+  id: string;
+  pickupAddress: string;
+  dropoffAddress: string;
   timestamp: number;
-}
+};
 
 export default function BookRide() {
   const { user, profile } = useAuth();
@@ -94,9 +95,14 @@ export default function BookRide() {
     }
 
     // Load recent searches from localStorage
-    const stored = localStorage.getItem('recentSearches');
-    if (stored) {
-      setRecentSearches(JSON.parse(stored));
+    try {
+      const raw = localStorage.getItem('kx_recent_searches');
+      if (raw) {
+        const parsed = JSON.parse(raw) as RecentSearch[];
+        setRecentSearches(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to load recent searches', e);
     }
 
     // Fetch recent rides from backend
@@ -169,9 +175,32 @@ export default function BookRide() {
     setSelectedQuickAccess(location.name);
   };
 
-  const handleRecentSearchSelect = (search: RecentSearch) => {
-    setPickup(search.pickup);
-    setDropoff(search.dropoff);
+  const saveRecentSearch = (pickupAddress: string, dropoffAddress: string) => {
+    setRecentSearches(prev => {
+      const next: RecentSearch[] = [
+        {
+          id: `${Date.now()}`,
+          pickupAddress,
+          dropoffAddress,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ]
+        // remove duplicates of the same pickup+dropoff
+        .filter(
+          (s, index, arr) =>
+            arr.findIndex(
+              t =>
+                t.pickupAddress === s.pickupAddress &&
+                t.dropoffAddress === s.dropoffAddress
+            ) === index
+        )
+        // keep only last 5
+        .slice(0, 5);
+
+      localStorage.setItem('kx_recent_searches', JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleBookRide = async (e: React.FormEvent) => {
@@ -196,14 +225,7 @@ export default function BookRide() {
       setLoading(true);
       
       // Save to recent searches
-      const newSearch: RecentSearch = {
-        pickup: pickup.trim(),
-        dropoff: dropoff.trim(),
-        timestamp: Date.now(),
-      };
-      const updatedSearches = [newSearch, ...recentSearches.slice(0, 4)];
-      setRecentSearches(updatedSearches);
-      localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+      saveRecentSearch(pickup.trim(), dropoff.trim());
 
       await ridesService.createRide(profile.id, {
         pickup_location: pickup.trim(),
@@ -270,20 +292,22 @@ export default function BookRide() {
 
         {/* Main Content */}
         <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto space-y-6">
-          {/* Recent Ride */}
-          {(recentRides.length > 0 || recentSearches.length > 0) && (
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Ride</h3>
-              <ThemedCard 
-                className="bg-[hsl(var(--primary)/0.15)] border-[hsl(var(--primary)/0.3)] cursor-pointer hover:bg-[hsl(var(--primary)/0.25)] transition-colors shadow-md"
+          {/* Recent Searches - Always Visible */}
+          <section>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Searches</h3>
+            
+            {recentSearches.length === 0 ? (
+              <div className="rounded-2xl bg-[hsl(var(--primary)/0.15)] border border-[hsl(var(--primary)/0.25)] px-4 py-3 text-xs text-foreground/70">
+                No recent searches yet. Start a booking and we'll show your last routes here.
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="w-full text-left rounded-2xl bg-[hsl(var(--primary)/0.2)] hover:bg-[hsl(var(--primary)/0.3)] border border-[hsl(var(--primary)/0.3)] shadow-md px-4 py-3 transition-colors"
                 onClick={() => {
-                  if (recentRides.length > 0) {
-                    const ride = recentRides[0];
-                    setPickup(ride.pickup_location);
-                    setDropoff(ride.dropoff_location);
-                  } else if (recentSearches.length > 0) {
-                    handleRecentSearchSelect(recentSearches[0]);
-                  }
+                  const last = recentSearches[0];
+                  setPickup(last.pickupAddress);
+                  setDropoff(last.dropoffAddress);
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -291,26 +315,18 @@ export default function BookRide() {
                     <MapPin className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    {recentRides.length > 0 ? (
-                      <>
-                        <p className="font-semibold text-sm sm:text-base truncate">{recentRides[0].dropoff_location}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          Last ride from {recentRides[0].pickup_location.substring(0, 30)}...
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-semibold text-sm sm:text-base truncate">{recentSearches[0].dropoff}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          Last booked {Math.floor((Date.now() - recentSearches[0].timestamp) / (1000 * 60 * 60 * 24))} days ago
-                        </p>
-                      </>
-                    )}
+                    <div className="text-xs text-muted-foreground mb-1">Last ride</div>
+                    <div className="text-sm font-semibold truncate">
+                      {recentSearches[0].dropoffAddress}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      From {recentSearches[0].pickupAddress}
+                    </div>
                   </div>
                 </div>
-              </ThemedCard>
-            </div>
-          )}
+              </button>
+            )}
+          </section>
 
           {/* Quick Locations */}
           <div>
