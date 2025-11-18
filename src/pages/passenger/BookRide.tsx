@@ -232,15 +232,19 @@ export default function BookRide() {
   };
 
   const saveQuickAccessSlot = (key: QuickAccessSlotKey, address: string, lat: number, lng: number) => {
-    const updated = { ...quickAccess[key], address, lat, lng };
-    setQuickAccess(prev => ({ ...prev, [key]: updated }));
-    localStorage.setItem(`kx_quick_access_${key}`, JSON.stringify(updated));
+    setQuickAccess(prev => {
+      const updated = { ...prev, [key]: { ...prev[key], address, lat, lng } };
+      localStorage.setItem('kx_quick_access', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const clearQuickAccessSlot = (key: QuickAccessSlotKey) => {
-    const cleared = { label: quickAccess[key].label };
-    setQuickAccess(prev => ({ ...prev, [key]: cleared }));
-    localStorage.removeItem(`kx_quick_access_${key}`);
+    setQuickAccess(prev => {
+      const updated = { ...prev, [key]: { label: prev[key].label } };
+      localStorage.setItem('kx_quick_access', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleQuickAccessTap = (key: QuickAccessSlotKey) => {
@@ -286,6 +290,7 @@ export default function BookRide() {
     try {
       setLoading(true);
       
+      // Save to recent searches
       saveRecentSearch(pickup.trim(), dropoff.trim());
 
       let rideType: 'motor' | 'tricycle' | 'car' = 'motor';
@@ -294,11 +299,17 @@ export default function BookRide() {
 
       await ridesService.createRide(profile.id, {
         pickup_location: pickup.trim(),
+        pickup_lat: currentLocationCoords?.lat,
+        pickup_lng: currentLocationCoords?.lng,
         dropoff_location: dropoff.trim(),
+        dropoff_lat: dropoffCoords?.lat,
+        dropoff_lng: dropoffCoords?.lng,
         ride_type: rideType,
         passenger_count: passengerCount,
         notes: notes.trim() || undefined,
         fare_estimate: selectedFare.base_fare,
+        base_fare: selectedFare.base_fare,
+        app_fee: appFee,
       });
 
       toast.success('Ride requested! Looking for a driver...');
@@ -322,7 +333,13 @@ export default function BookRide() {
             <div className="flex items-center gap-2 mt-1">
               <MapPin className="w-4 h-4 text-[hsl(30,40%,45%)]" />
               <p className="text-sm text-muted-foreground">
-                {isAddressLoading ? 'Locating...' : currentLocation}
+                {isAddressLoading ? (
+                  '📍 Locating your address…'
+                ) : currentAddress ? (
+                  <span className="truncate">📍 {currentAddress}</span>
+                ) : (
+                  currentLocation
+                )}
               </p>
             </div>
           </div>
@@ -351,16 +368,21 @@ export default function BookRide() {
           />
         </ThemedCard>
 
-        {recentSearches.length > 0 && (
-          <section>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Search</h3>
-            <button
+        <section>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Searches</h3>
+          {recentSearches.length === 0 ? (
+            <ThemedCard className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                No recent searches yet. Start a booking and we'll show your last routes here.
+              </p>
+            </ThemedCard>
+          ) : (
+            <ThemedCard
               onClick={() => {
-                setPickup(recentSearches[0].pickupAddress);
-                setDropoff(recentSearches[0].dropoffAddress);
-                setShowBookingSheet(true);
+                const recent = recentSearches[0];
+                setPickup(recent.pickupAddress);
+                setDropoff(recent.dropoffAddress);
               }}
-              className="w-full bg-card hover:bg-accent p-4 rounded-lg transition-colors border border-border text-left"
             >
               <div className="flex items-center gap-3">
                 <Search className="w-5 h-5 text-[hsl(30,40%,45%)]" />
@@ -373,9 +395,9 @@ export default function BookRide() {
                   </div>
                 </div>
               </div>
-            </button>
-          </section>
-        )}
+            </ThemedCard>
+          )}
+        </section>
 
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Access</h3>
