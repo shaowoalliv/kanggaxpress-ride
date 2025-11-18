@@ -40,6 +40,14 @@ type RecentSearch = {
   timestamp: number;
 };
 
+type QuickAccessSlotKey = "home" | "office" | "market" | "terminal";
+type QuickAccessSlot = {
+  label: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+};
+
 export default function BookRide() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -57,6 +65,14 @@ export default function BookRide() {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [recentRides, setRecentRides] = useState<any[]>([]);
   const [selectedQuickAccess, setSelectedQuickAccess] = useState<string | null>(null);
+  const [quickAccess, setQuickAccess] = useState<Record<QuickAccessSlotKey, QuickAccessSlot>>({
+    home: { label: "Home" },
+    office: { label: "Office" },
+    market: { label: "Market" },
+    terminal: { label: "Terminal" },
+  });
+  const [editingSlot, setEditingSlot] = useState<QuickAccessSlotKey | null>(null);
+  const [showQuickAccessEditor, setShowQuickAccessEditor] = useState(false);
 
   // Reverse geocoding helper
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -141,6 +157,31 @@ export default function BookRide() {
       });
   }, [currentLocationCoords]);
 
+  // Load Quick Access slots from localStorage
+  useEffect(() => {
+    const slots: QuickAccessSlotKey[] = ["home", "office", "market", "terminal"];
+    const loaded: Record<QuickAccessSlotKey, QuickAccessSlot> = {
+      home: { label: "Home" },
+      office: { label: "Office" },
+      market: { label: "Market" },
+      terminal: { label: "Terminal" },
+    };
+
+    slots.forEach((key) => {
+      try {
+        const raw = localStorage.getItem(`kx_quick_access_${key}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          loaded[key] = { ...loaded[key], ...parsed };
+        }
+      } catch (e) {
+        console.error(`Failed to load quick access ${key}`, e);
+      }
+    });
+
+    setQuickAccess(loaded);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -201,6 +242,35 @@ export default function BookRide() {
       localStorage.setItem('kx_recent_searches', JSON.stringify(next));
       return next;
     });
+  };
+
+  // Save Quick Access slot
+  const saveQuickAccessSlot = (key: QuickAccessSlotKey, address: string, lat: number, lng: number) => {
+    const updated = { ...quickAccess[key], address, lat, lng };
+    setQuickAccess(prev => ({ ...prev, [key]: updated }));
+    localStorage.setItem(`kx_quick_access_${key}`, JSON.stringify(updated));
+  };
+
+  // Clear Quick Access slot
+  const clearQuickAccessSlot = (key: QuickAccessSlotKey) => {
+    const cleared = { label: quickAccess[key].label };
+    setQuickAccess(prev => ({ ...prev, [key]: cleared }));
+    localStorage.removeItem(`kx_quick_access_${key}`);
+  };
+
+  // Handle Quick Access tap
+  const handleQuickAccessTap = (key: QuickAccessSlotKey) => {
+    const slot = quickAccess[key];
+    if (slot.address) {
+      setDropoff(slot.address);
+      if (currentAddress) {
+        saveRecentSearch(currentAddress, slot.address);
+      }
+      setShowBookingSheet(true);
+    } else {
+      setEditingSlot(key);
+      setShowQuickAccessEditor(true);
+    }
   };
 
   const handleBookRide = async (e: React.FormEvent) => {
@@ -488,6 +558,58 @@ export default function BookRide() {
                 Request Ride
               </PrimaryButton>
             </form>
+          </SheetContent>
+        </Sheet>
+
+        {/* Quick Access Editor Sheet */}
+        <Sheet open={showQuickAccessEditor} onOpenChange={setShowQuickAccessEditor}>
+          <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
+            <SheetHeader>
+              <SheetTitle className="text-xl sm:text-2xl">
+                {editingSlot && quickAccess[editingSlot]?.address ? 'Edit' : 'Set'} {editingSlot && quickAccess[editingSlot]?.label}
+              </SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <Label className="text-sm sm:text-base">Address</Label>
+                <AddressAutocompleteInput
+                  value={editingSlot ? quickAccess[editingSlot]?.address || '' : ''}
+                  onChange={(value) => {
+                    // Update temporary state only
+                  }}
+                  onSelectAddress={(location) => {
+                    if (editingSlot) {
+                      saveQuickAccessSlot(editingSlot, location.formattedAddress, location.lat, location.lng);
+                      toast.success(`${quickAccess[editingSlot].label} saved!`);
+                      setShowQuickAccessEditor(false);
+                      setEditingSlot(null);
+                    }
+                  }}
+                  placeholder={`Search for your ${editingSlot ? quickAccess[editingSlot]?.label.toLowerCase() : 'location'}`}
+                  proximityLocation={currentLocationCoords}
+                  className="h-12 sm:h-14"
+                />
+              </div>
+
+              {editingSlot && quickAccess[editingSlot]?.address && (
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => {
+                      if (editingSlot) {
+                        clearQuickAccessSlot(editingSlot);
+                        toast.success(`${quickAccess[editingSlot].label} cleared`);
+                        setShowQuickAccessEditor(false);
+                        setEditingSlot(null);
+                      }
+                    }}
+                    className="flex-1 px-4 py-3 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors text-sm sm:text-base font-medium"
+                  >
+                    Clear Address
+                  </button>
+                </div>
+              )}
+            </div>
           </SheetContent>
         </Sheet>
       </div>
