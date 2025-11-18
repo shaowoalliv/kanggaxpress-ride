@@ -432,43 +432,46 @@ export default function BookRide() {
         </div>
 
         {/* Bottom Sticky Request Ride Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-10">
-          <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-            {/* Summary */}
-            <div className="space-y-1 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="text-muted-foreground">From: </span>
-                  <span className="font-medium">{currentAddress || 'Not set'}</span>
+        <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-kx-yellow/95 to-kx-yellow/0 pb-3 pt-2">
+          <div className="mx-auto max-w-md px-3">
+            <div className="rounded-2xl bg-white shadow-lg px-3 py-2 space-y-1">
+              {/* From */}
+              <div className="flex items-center gap-2 text-xs">
+                <MapPin className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                <div className="truncate">
+                  <span className="font-semibold">From: </span>
+                  {currentAddress || 'Not set'}
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="text-muted-foreground">To: </span>
-                  <span className="font-medium">{dropoffAddress || 'Not set'}</span>
+              
+              {/* To */}
+              <div className="flex items-center gap-2 text-xs">
+                <MapPin className="h-3 w-3 text-rose-500 flex-shrink-0" />
+                <div className="truncate">
+                  <span className="font-semibold">To: </span>
+                  {dropoffAddress || 'Not set'}
                 </div>
               </div>
+              
+              {/* Service + Button */}
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Service: </span>
-                <span className="font-medium">{selectedService?.name || 'Not selected'}</span>
-                {selectedService && (
-                  <span className="text-primary font-bold">₱{selectedService.baseFare}</span>
-                )}
+                <div className="flex-1 text-[11px]">
+                  <div className="truncate">
+                    <span className="font-semibold">Service: </span>
+                    {selectedService ? `${selectedService.name} ₱${selectedService.baseFare}` : 'Not selected'}
+                  </div>
+                </div>
+                <PrimaryButton
+                  onClick={handleRequestRide}
+                  disabled={!isFormComplete || loading}
+                  isLoading={loading}
+                  className="h-9 px-4 rounded-full text-xs font-semibold"
+                >
+                  Request Ride
+                  <ArrowRight className="w-3 h-3 ml-1" />
+                </PrimaryButton>
               </div>
             </div>
-
-            {/* Request Ride Button */}
-            <PrimaryButton
-              onClick={handleRequestRide}
-              disabled={!isFormComplete || loading}
-              isLoading={loading}
-              className="w-full"
-            >
-              Request Ride
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </PrimaryButton>
           </div>
         </div>
       </div>
