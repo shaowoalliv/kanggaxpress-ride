@@ -1,6 +1,7 @@
 import { MapProvider } from './mapProviders/types';
 import { MapboxProvider } from './mapProviders/mapbox';
 import { GoogleMapsProvider } from './mapProviders/google';
+import { StubMapProvider } from './mapProviders/stub';
 
 let mapProviderInstance: MapProvider | null = null;
 
@@ -9,7 +10,7 @@ export function getMapProvider(): MapProvider {
     return mapProviderInstance;
   }
 
-  const provider = import.meta.env.VITE_MAP_PROVIDER || 'mapbox';
+  const provider = import.meta.env.VITE_MAPS_PROVIDER || 'stub';
   
   if (provider === 'google') {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -17,13 +18,15 @@ export function getMapProvider(): MapProvider {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
     mapProviderInstance = new GoogleMapsProvider(apiKey);
-  } else {
-    // Default to Mapbox
+  } else if (provider === 'mapbox') {
     const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     if (!accessToken) {
       throw new Error('MAPBOX_ACCESS_TOKEN is not configured');
     }
     mapProviderInstance = new MapboxProvider(accessToken);
+  } else {
+    // Default to stub provider for development
+    mapProviderInstance = new StubMapProvider();
   }
 
   return mapProviderInstance;
