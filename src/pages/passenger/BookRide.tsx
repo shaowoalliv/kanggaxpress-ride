@@ -422,13 +422,15 @@ export default function BookRide() {
                           }
                         }}
                         className={cn(
-                          "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background flex items-center justify-center shadow-md hover:shadow-lg transition-all",
-                          isConfigured ? "border-2 border-border" : "border-2 border-dashed border-border/50"
+                          "w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all",
+                          isConfigured 
+                            ? "bg-[hsl(var(--primary))] border-2 border-[hsl(var(--primary))]" 
+                            : "bg-[hsl(var(--primary)/0.15)] border-2 border-dashed border-[hsl(var(--primary)/0.4)]"
                         )}
                       >
                         <Icon className={cn(
                           "w-6 h-6 sm:w-7 sm:h-7",
-                          isConfigured ? "text-[hsl(var(--primary))]" : "text-[hsl(var(--primary)/0.4)]"
+                          isConfigured ? "text-white" : "text-[hsl(var(--primary))]"
                         )} />
                       </button>
                       {isConfigured && (
@@ -444,8 +446,8 @@ export default function BookRide() {
                         </button>
                       )}
                       <span className={cn(
-                        "text-xs sm:text-sm font-medium text-center",
-                        isConfigured ? "text-foreground" : "text-foreground/50"
+                        "text-xs sm:text-sm font-bold text-center",
+                        isConfigured ? "text-foreground" : "text-[hsl(var(--primary))]"
                       )}>
                         {slot.label}
                       </span>
