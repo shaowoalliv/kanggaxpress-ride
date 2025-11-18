@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { MapPin, User, Search, Bell, Home, Briefcase, ShoppingBag, Building2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AddressAutocompleteInput } from '@/components/AddressAutocompleteInput';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import motorIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
@@ -402,26 +403,71 @@ export default function BookRide() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Access</h3>
             <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-              {quickLocations.map((location) => (
-                <button
-                  key={location.name}
-                  className="flex flex-col items-center gap-2 min-w-[70px] sm:min-w-[80px]"
-                  onClick={() => handleQuickAccessSelect(location)}
-                >
-                  <div className={cn(
-                    "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background flex items-center justify-center shadow-md hover:shadow-lg transition-all",
-                    selectedQuickAccess === location.name 
-                      ? "border-3 border-primary ring-2 ring-primary/20" 
-                      : "border-2 border-border"
-                  )}>
-                    <location.icon className="w-6 h-6 sm:w-7 sm:h-7 text-foreground" />
-                  </div>
-                  <span className={cn(
-                    "text-xs sm:text-sm font-medium",
-                    selectedQuickAccess === location.name ? "text-primary font-bold" : "text-foreground"
-                  )}>{location.name}</span>
-                </button>
-              ))}
+              <TooltipProvider>
+                {(["home", "office", "market", "terminal"] as QuickAccessSlotKey[]).map((key) => {
+                  const slot = quickAccess[key];
+                  const icons = { home: Home, office: Briefcase, market: ShoppingBag, terminal: Building2 };
+                  const Icon = icons[key];
+                  const isConfigured = !!slot.address;
+                  
+                  const button = (
+                    <div key={key} className="relative flex flex-col items-center gap-2 group min-w-[70px] sm:min-w-[80px]">
+                      <button
+                        onClick={() => handleQuickAccessTap(key)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          if (isConfigured) {
+                            setEditingSlot(key);
+                            setShowQuickAccessEditor(true);
+                          }
+                        }}
+                        className={cn(
+                          "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background flex items-center justify-center shadow-md hover:shadow-lg transition-all",
+                          isConfigured ? "border-2 border-border" : "border-2 border-dashed border-border/50"
+                        )}
+                      >
+                        <Icon className={cn(
+                          "w-6 h-6 sm:w-7 sm:h-7",
+                          isConfigured ? "text-[hsl(var(--primary))]" : "text-[hsl(var(--primary)/0.4)]"
+                        )} />
+                      </button>
+                      {isConfigured && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSlot(key);
+                            setShowQuickAccessEditor(true);
+                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-background shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border border-border"
+                        >
+                          <span className="text-xs text-muted-foreground">⋯</span>
+                        </button>
+                      )}
+                      <span className={cn(
+                        "text-xs sm:text-sm font-medium text-center",
+                        isConfigured ? "text-foreground" : "text-foreground/50"
+                      )}>
+                        {slot.label}
+                      </span>
+                    </div>
+                  );
+
+                  if (!isConfigured) {
+                    return (
+                      <Tooltip key={key}>
+                        <TooltipTrigger asChild>
+                          {button}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Tap to set your {slot.label} address</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return button;
+                })}
+              </TooltipProvider>
             </div>
           </div>
 
