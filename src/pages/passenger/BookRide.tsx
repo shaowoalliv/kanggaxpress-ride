@@ -84,11 +84,19 @@ export default function BookRide() {
   // Redirect if not logged in or not a passenger
   useEffect(() => {
     if (!user) {
-      navigate('/auth/login');
+      navigate('/auth');
       return;
     }
     if (profile?.role === 'driver') {
       navigate('/driver/dashboard');
+      return;
+    }
+    if (profile?.role === 'courier') {
+      navigate('/courier/dashboard');
+      return;
+    }
+    if (profile?.role === 'sender') {
+      navigate('/sender/dashboard');
       return;
     }
   }, [user, profile, navigate]);
