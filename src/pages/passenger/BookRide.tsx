@@ -1,33 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapPin, Search, Home, Briefcase, ShoppingBag, Ship, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { ThemedCard } from '@/components/ui/ThemedCard';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ridesService } from '@/services/rides';
+import { getMapProvider } from '@/lib/mapProvider';
+import type { Coordinates, PlaceResult } from '@/lib/mapProvider';
 import { fareSettingsService } from '@/services/fareSettings';
-import { toast } from 'sonner';
-import { MapPin, Bell, Home, Briefcase, ShoppingBag, Building2, Search } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { getMapProvider, Coordinates, PlaceResult } from '@/lib/mapProvider';
-import { MapSearchInput } from '@/components/MapSearchInput';
-import motorIcon from '@/assets/motorcycle-icon.png';
-import tricycleIcon from '@/assets/tricycle-icon.png';
+import { ridesService } from '@/services/rides';
+import { toast } from '@/hooks/use-toast';
+import { ThemedCard } from '@/components/ui/ThemedCard';
 import carIcon from '@/assets/car-icon.png';
 import courierIcon from '@/assets/courier-icon.png';
-
-const getServiceIcon = (type: string) => {
-  if (type === 'MOTOR') return motorIcon;
-  if (type === 'TRICYCLE') return tricycleIcon;
-  if (type === 'CAR') return carIcon;
-  if (type === 'DELIVERY') return courierIcon;
-  return motorIcon;
-};
+import motorcycleIcon from '@/assets/motorcycle-icon.png';
+import tricycleIcon from '@/assets/tricycle-icon.png';
 
 type RecentSearch = {
   id: string;
@@ -36,44 +20,123 @@ type RecentSearch = {
   timestamp: number;
 };
 
-type QuickAccessSlotKey = "home" | "office" | "market" | "terminal";
 type QuickAccessSlot = {
-  label: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
+  name: string;
+  address: string;
+  coords: Coordinates;
 };
 
+type QuickAccessSlots = {
+  home: QuickAccessSlot | null;
+  office: QuickAccessSlot | null;
+  market: QuickAccessSlot | null;
+  terminal: QuickAccessSlot | null;
+};
+
+type ServiceType = 'car' | 'tricycle' | 'motor' | 'delivery';
+
+interface FareSetting {
+  id: string;
+  service_type: string;
+  display_name: string;
+  base_fare: number;
+  is_active: boolean;
+}
+
+const mapProvider = getMapProvider();
+
 export default function BookRide() {
-  const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [pickup, setPickup] = useState('');
-  const [dropoff, setDropoff] = useState('');
-  const [currentLocation, setCurrentLocation] = useState('Getting your location...');
+  const { user, profile } = useAuth();
+
+  // Location state
+  const [pickupCoords, setPickupCoords] = useState<Coordinates | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
-  const [currentLocationCoords, setCurrentLocationCoords] = useState<Coordinates | null>(null);
+
+  // Destination state
+  const [destinationQuery, setDestinationQuery] = useState('');
   const [dropoffCoords, setDropoffCoords] = useState<Coordinates | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [passengerCount, setPassengerCount] = useState(1);
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showBookingSheet, setShowBookingSheet] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [recentRides, setRecentRides] = useState<any[]>([]);
-  const [quickAccess, setQuickAccess] = useState<Record<QuickAccessSlotKey, QuickAccessSlot>>({
-    home: { label: "Home" },
-    office: { label: "Office" },
-    market: { label: "Market" },
-    terminal: { label: "Terminal" },
-  });
-  const [editingSlot, setEditingSlot] = useState<QuickAccessSlotKey | null>(null);
-  const [showQuickAccessEditor, setShowQuickAccessEditor] = useState(false);
-  const [fareSettings, setFareSettings] = useState<any[]>([]);
+  const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<PlaceResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Booking state
+  const [selectedServiceType, setSelectedServiceType] = useState<ServiceType | null>(null);
+  const [selectedBaseFare, setSelectedBaseFare] = useState<number | null>(null);
+  const [fareSettings, setFareSettings] = useState<FareSetting[]>([]);
   const [appFee, setAppFee] = useState(5);
 
+  // UI state
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [quickAccess, setQuickAccess] = useState<QuickAccessSlots>({
+    home: null,
+    office: null,
+    market: null,
+    terminal: null,
+  });
+  const [editingQuickAccess, setEditingQuickAccess] = useState<keyof QuickAccessSlots | null>(null);
+  const [quickAccessQuery, setQuickAccessQuery] = useState('');
+  const [quickAccessSuggestions, setQuickAccessSuggestions] = useState<PlaceResult[]>([]);
+  const [isCreatingRide, setIsCreatingRide] = useState(false);
+
+  // Redirect if not logged in or not a passenger
   useEffect(() => {
-    const loadFareSettings = async () => {
+    if (!user) {
+      navigate('/auth/login');
+      return;
+    }
+    if (profile?.role === 'driver') {
+      navigate('/driver/dashboard');
+      return;
+    }
+  }, [user, profile, navigate]);
+
+  // Get GPS location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      toast({
+        title: 'GPS not available',
+        description: 'Please enable location services',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => {
+        console.error('GPS error', err);
+        toast({
+          title: 'Location error',
+          description: 'Unable to get your location. Please search manually.',
+          variant: 'destructive',
+        });
+      }
+    );
+  }, []);
+
+  // Reverse geocode pickup location
+  useEffect(() => {
+    if (!pickupCoords) return;
+
+    setIsAddressLoading(true);
+    mapProvider
+      .reverseGeocode(pickupCoords)
+      .then(setCurrentAddress)
+      .catch(() => {
+        setCurrentAddress(
+          `Location at ${pickupCoords.lat.toFixed(4)}, ${pickupCoords.lng.toFixed(4)}`
+        );
+      })
+      .finally(() => setIsAddressLoading(false));
+  }, [pickupCoords]);
+
+  // Load fare settings and app fee
+  useEffect(() => {
+    const loadSettings = async () => {
       try {
         const [fares, fee] = await Promise.all([
           fareSettingsService.getFareSettings(),
@@ -82,147 +145,101 @@ export default function BookRide() {
         setFareSettings(fares);
         setAppFee(fee);
       } catch (error) {
-        console.error('Error loading fare settings:', error);
+        console.error('Failed to load settings:', error);
+        toast({
+          title: 'Error loading fares',
+          description: 'Using default values',
+          variant: 'destructive',
+        });
       }
     };
-    loadFareSettings();
+    loadSettings();
   }, []);
 
+  // Load recent searches from localStorage
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords: Coordinates = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setCurrentLocationCoords(coords);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setCurrentLocation('Calapan City Terminal');
-          setCurrentAddress('Calapan City Terminal');
-          setPickup('Calapan City Terminal');
-        }
-      );
-    } else {
-      setCurrentLocation('Calapan City Terminal');
-      setCurrentAddress('Calapan City Terminal');
-      setPickup('Calapan City Terminal');
-    }
-
-    try {
-      const raw = localStorage.getItem('kx_recent_searches');
-      if (raw) {
-        const parsed = JSON.parse(raw) as RecentSearch[];
-        setRecentSearches(parsed);
-      }
-    } catch (e) {
-      console.error('Failed to load recent searches', e);
-    }
-
-    const fetchRecentRides = async () => {
-      if (!user) return;
+    const stored = localStorage.getItem('kx_recent_searches');
+    if (stored) {
       try {
-        const rides = await ridesService.getPassengerRides(user.id);
-        setRecentRides(rides.slice(0, 5));
-      } catch (error) {
-        console.error('Error fetching recent rides:', error);
-      }
-    };
-
-    fetchRecentRides();
-  }, [user]);
-
-  useEffect(() => {
-    if (!currentLocationCoords) return;
-
-    setIsAddressLoading(true);
-    const mapProvider = getMapProvider();
-    mapProvider
-      .reverseGeocode(currentLocationCoords)
-      .then((address) => {
-        setCurrentAddress(address);
-        setCurrentLocation(address);
-        setPickup(address);
-      })
-      .catch(() => {
-        const fallback = `Lat ${currentLocationCoords.lat.toFixed(4)}, Lng ${currentLocationCoords.lng.toFixed(4)}`;
-        setCurrentAddress(fallback);
-        setCurrentLocation(fallback);
-        setPickup(fallback);
-      })
-      .finally(() => {
-        setIsAddressLoading(false);
-      });
-  }, [currentLocationCoords]);
-
-  useEffect(() => {
-    const slots: QuickAccessSlotKey[] = ["home", "office", "market", "terminal"];
-    const loaded: Record<QuickAccessSlotKey, QuickAccessSlot> = {
-      home: { label: "Home" },
-      office: { label: "Office" },
-      market: { label: "Market" },
-      terminal: { label: "Terminal" },
-    };
-
-    slots.forEach((key) => {
-      try {
-        const raw = localStorage.getItem(`kx_quick_access_${key}`);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          loaded[key] = { ...loaded[key], ...parsed };
-        }
+        setRecentSearches(JSON.parse(stored));
       } catch (e) {
-        console.error(`Failed to load quick access ${key}`, e);
+        console.error('Failed to parse recent searches:', e);
       }
-    });
-
-    setQuickAccess(loaded);
+    }
   }, []);
 
+  // Load quick access from localStorage
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    } else if (profile?.role === 'driver') {
-      navigate('/driver/dashboard');
+    const stored = localStorage.getItem('kx_quick_access');
+    if (stored) {
+      try {
+        setQuickAccess(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse quick access:', e);
+      }
     }
-  }, [user, profile, navigate]);
+  }, []);
 
-  const selectedFare = selectedType ? fareSettings.find(f => f.service_type === selectedType) : null;
+  // Debounced destination search
+  useEffect(() => {
+    if (!destinationQuery.trim()) {
+      setSuggestions([]);
+      return;
+    }
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  };
+    const handle = setTimeout(async () => {
+      try {
+        const results = await mapProvider.searchPlaces(destinationQuery, {
+          proximity: pickupCoords ?? undefined,
+        });
+        setSuggestions(results);
+      } catch (error) {
+        console.error('Search failed:', error);
+        toast({
+          title: 'Search error',
+          description: 'Unable to search location, please try again',
+          variant: 'destructive',
+        });
+      }
+    }, 300);
 
-  const displayName = profile?.full_name?.split(' ')[0] || 'Kanggaxpress Rider';
+    return () => clearTimeout(handle);
+  }, [destinationQuery, pickupCoords]);
 
-  const handleServiceSelect = (type: string) => {
-    setSelectedType(type);
-    setShowBookingSheet(true);
-  };
+  // Debounced quick access search
+  useEffect(() => {
+    if (!quickAccessQuery.trim() || !editingQuickAccess) {
+      setQuickAccessSuggestions([]);
+      return;
+    }
 
-  const saveRecentSearch = (pickupAddress: string, dropoffAddress: string) => {
-    setRecentSearches(prev => {
+    const handle = setTimeout(async () => {
+      try {
+        const results = await mapProvider.searchPlaces(quickAccessQuery, {
+          proximity: pickupCoords ?? undefined,
+        });
+        setQuickAccessSuggestions(results);
+      } catch (error) {
+        console.error('Quick access search failed:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [quickAccessQuery, editingQuickAccess, pickupCoords]);
+
+  const saveRecentSearch = (pickupAddr: string, dropoffAddr: string) => {
+    setRecentSearches((prev) => {
       const next: RecentSearch[] = [
-        {
-          id: `${Date.now()}`,
-          pickupAddress,
-          dropoffAddress,
-          timestamp: Date.now(),
-        },
+        { id: `${Date.now()}`, pickupAddress: pickupAddr, dropoffAddress: dropoffAddr, timestamp: Date.now() },
         ...prev,
       ]
         .filter(
-          (s, index, arr) =>
+          (s, i, arr) =>
             arr.findIndex(
-              t =>
+              (t) =>
                 t.pickupAddress === s.pickupAddress &&
                 t.dropoffAddress === s.dropoffAddress
-            ) === index
+            ) === i
         )
         .slice(0, 5);
 
@@ -231,353 +248,391 @@ export default function BookRide() {
     });
   };
 
-  const saveQuickAccessSlot = (key: QuickAccessSlotKey, address: string, lat: number, lng: number) => {
-    setQuickAccess(prev => {
-      const updated = { ...prev, [key]: { ...prev[key], address, lat, lng } };
+  const handleSuggestionClick = (suggestion: PlaceResult) => {
+    setDropoffCoords(suggestion.coords);
+    setDropoffAddress(suggestion.fullAddress);
+    setDestinationQuery(suggestion.fullAddress);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleRecentSearchClick = (search: RecentSearch) => {
+    setDropoffAddress(search.dropoffAddress);
+    setDestinationQuery(search.dropoffAddress);
+  };
+
+  const handleQuickAccessClick = (slot: keyof QuickAccessSlots) => {
+    const quickSlot = quickAccess[slot];
+    if (!quickSlot) {
+      setEditingQuickAccess(slot);
+      setQuickAccessQuery('');
+      return;
+    }
+    setDropoffCoords(quickSlot.coords);
+    setDropoffAddress(quickSlot.address);
+    setDestinationQuery(quickSlot.address);
+  };
+
+  const handleQuickAccessSave = (slot: keyof QuickAccessSlots, suggestion: PlaceResult) => {
+    setQuickAccess((prev) => {
+      const updated = {
+        ...prev,
+        [slot]: {
+          name: suggestion.name,
+          address: suggestion.fullAddress,
+          coords: suggestion.coords,
+        },
+      };
       localStorage.setItem('kx_quick_access', JSON.stringify(updated));
       return updated;
     });
+    setEditingQuickAccess(null);
+    setQuickAccessQuery('');
+    setQuickAccessSuggestions([]);
   };
 
-  const clearQuickAccessSlot = (key: QuickAccessSlotKey) => {
-    setQuickAccess(prev => {
-      const updated = { ...prev, [key]: { label: prev[key].label } };
-      localStorage.setItem('kx_quick_access', JSON.stringify(updated));
-      return updated;
-    });
+  const handleServiceSelect = (serviceType: ServiceType, baseFare: number) => {
+    setSelectedServiceType(serviceType);
+    setSelectedBaseFare(baseFare);
   };
 
-  const handleQuickAccessTap = (key: QuickAccessSlotKey) => {
-    const slot = quickAccess[key];
-    if (slot.address) {
-      setDropoff(slot.address);
-      if (slot.lat && slot.lng) {
-        setDropoffCoords({ lat: slot.lat, lng: slot.lng });
-      }
-      if (currentAddress) {
-        saveRecentSearch(currentAddress, slot.address);
-      }
-      setShowBookingSheet(true);
-    } else {
-      setEditingSlot(key);
-      setShowQuickAccessEditor(true);
-    }
-  };
-
-  const handleBookRide = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user || !profile) {
-      toast.error('Please sign in to book a ride');
+  const handleRequestRide = async () => {
+    if (!pickupCoords || !currentAddress) {
+      toast({
+        title: 'Pickup location required',
+        description: 'Please enable GPS or select a pickup location',
+        variant: 'destructive',
+      });
       return;
     }
 
-    if (!pickup.trim() || !dropoff.trim()) {
-      toast.error('Please enter both pickup and drop-off locations');
+    if (!dropoffCoords || !dropoffAddress) {
+      toast({
+        title: 'Destination required',
+        description: 'Please select where you want to go',
+        variant: 'destructive',
+      });
       return;
     }
 
-    if (!selectedType || !selectedFare) {
-      toast.error('Please select a service type');
+    if (!selectedServiceType || !selectedBaseFare) {
+      toast({
+        title: 'Service type required',
+        description: 'Please select a service',
+        variant: 'destructive',
+      });
       return;
     }
 
-    if (!currentLocationCoords || !dropoffCoords) {
-      toast.error('Location data is incomplete');
+    if (!user?.id) {
+      toast({
+        title: 'Not logged in',
+        description: 'Please log in to book a ride',
+        variant: 'destructive',
+      });
       return;
     }
 
+    setIsCreatingRide(true);
     try {
-      setLoading(true);
-      
-      // Save to recent searches
-      saveRecentSearch(pickup.trim(), dropoff.trim());
-
-      let rideType: 'motor' | 'tricycle' | 'car' = 'motor';
-      if (selectedType === 'TRICYCLE') rideType = 'tricycle';
-      else if (selectedType === 'CAR') rideType = 'car';
-
-      await ridesService.createRide(profile.id, {
-        pickup_location: pickup.trim(),
-        pickup_lat: currentLocationCoords?.lat,
-        pickup_lng: currentLocationCoords?.lng,
-        dropoff_location: dropoff.trim(),
-        dropoff_lat: dropoffCoords?.lat,
-        dropoff_lng: dropoffCoords?.lng,
-        ride_type: rideType,
-        passenger_count: passengerCount,
-        notes: notes.trim() || undefined,
-        fare_estimate: selectedFare.base_fare,
-        base_fare: selectedFare.base_fare,
+      const ride = await ridesService.createRide(user.id, {
+        pickup_location: currentAddress,
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        dropoff_location: dropoffAddress,
+        dropoff_lat: dropoffCoords.lat,
+        dropoff_lng: dropoffCoords.lng,
+        ride_type: selectedServiceType === 'delivery' ? 'motor' : selectedServiceType,
+        base_fare: selectedBaseFare,
         app_fee: appFee,
+        fare_estimate: selectedBaseFare,
       });
 
-      toast.success('Ride requested! Looking for a driver...');
-      navigate('/passenger/my-rides');
+      saveRecentSearch(currentAddress, dropoffAddress);
+
+      toast({
+        title: 'Ride requested!',
+        description: 'Searching for available drivers...',
+      });
+
+      navigate(`/passenger/my-rides`);
     } catch (error) {
-      console.error('Error booking ride:', error);
-      toast.error('Failed to book ride');
+      console.error('Failed to create ride:', error);
+      toast({
+        title: 'Booking failed',
+        description: 'Unable to request ride. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-      setLoading(false);
+      setIsCreatingRide(false);
     }
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getServiceIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'car':
+        return carIcon;
+      case 'motorcycle':
+      case 'motor':
+        return motorcycleIcon;
+      case 'tricycle':
+        return tricycleIcon;
+      case 'delivery':
+        return courierIcon;
+      default:
+        return motorcycleIcon;
+    }
+  };
+
+  const getQuickAccessIcon = (slot: keyof QuickAccessSlots) => {
+    switch (slot) {
+      case 'home':
+        return <Home className="w-6 h-6" />;
+      case 'office':
+        return <Briefcase className="w-6 h-6" />;
+      case 'market':
+        return <ShoppingBag className="w-6 h-6" />;
+      case 'terminal':
+        return <Ship className="w-6 h-6" />;
+    }
+  };
+
+  const canRequestRide = 
+    pickupCoords && 
+    currentAddress && 
+    dropoffCoords && 
+    dropoffAddress && 
+    selectedServiceType && 
+    selectedBaseFare;
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'User';
+
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              {getGreeting()}, {displayName}! 👋
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <MapPin className="w-4 h-4 text-[hsl(30,40%,45%)]" />
-              <p className="text-sm text-muted-foreground">
-                {isAddressLoading ? (
-                  '📍 Locating your address…'
-                ) : currentAddress ? (
-                  <span className="truncate">📍 {currentAddress}</span>
-                ) : (
-                  currentLocation
-                )}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/passenger/my-rides')}
-            className="p-2 rounded-full hover:bg-accent transition-colors relative"
-          >
-            <Bell className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-
-        <ThemedCard className="p-4">
-          <MapSearchInput
-            value={dropoff}
-            onChange={setDropoff}
-            onSelectPlace={(place) => {
-              setDropoff(place.fullAddress);
-              setDropoffCoords(place.coords);
-              if (currentAddress) {
-                saveRecentSearch(currentAddress, place.fullAddress);
-              }
-            }}
-            placeholder="Where are you heading?"
-            proximity={currentLocationCoords || undefined}
-            className="w-full"
-          />
-        </ThemedCard>
-
-        <section>
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Searches</h3>
-          {recentSearches.length === 0 ? (
-            <ThemedCard className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                No recent searches yet. Start a booking and we'll show your last routes here.
-              </p>
-            </ThemedCard>
-          ) : (
-            <ThemedCard
-              onClick={() => {
-                const recent = recentSearches[0];
-                setPickup(recent.pickupAddress);
-                setDropoff(recent.dropoffAddress);
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <Search className="w-5 h-5 text-[hsl(30,40%,45%)]" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">
-                    {recentSearches[0].dropoffAddress}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    From {recentSearches[0].pickupAddress}
-                  </div>
-                </div>
-              </div>
-            </ThemedCard>
-          )}
-        </section>
-
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Access</h3>
-          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-            <TooltipProvider>
-              {(["home", "office", "market", "terminal"] as QuickAccessSlotKey[]).map((key) => {
-                const slot = quickAccess[key];
-                const icons = { home: Home, office: Briefcase, market: ShoppingBag, terminal: Building2 };
-                const Icon = icons[key];
-                const isConfigured = !!slot.address;
-                
-                const button = (
-                  <div key={key} className="relative flex flex-col items-center gap-2 group min-w-[70px] sm:min-w-[80px]">
-                    <button
-                      onClick={() => handleQuickAccessTap(key)}
-                      className={cn(
-                        "w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all",
-                        isConfigured 
-                          ? "bg-[hsl(30,40%,45%)] border-2 border-[hsl(30,40%,45%)]" 
-                          : "bg-[hsl(30,40%,90%)] border-2 border-[hsl(30,40%,70%)]"
-                      )}
-                    >
-                      <Icon className={cn(
-                        "w-6 h-6 sm:w-7 sm:h-7",
-                        isConfigured ? "text-white" : "text-[hsl(30,40%,40%)]"
-                      )} />
-                    </button>
-                    <span className={cn(
-                      "text-xs sm:text-sm font-bold text-center",
-                      isConfigured ? "text-foreground" : "text-[hsl(30,40%,40%)]"
-                    )}>
-                      {slot.label}
-                    </span>
-                  </div>
-                );
-
-                if (!isConfigured) {
-                  return (
-                    <Tooltip key={key}>
-                      <TooltipTrigger asChild>
-                        {button}
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Tap to set your {slot.label} address</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                return button;
-              })}
-            </TooltipProvider>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">All Kanggaxpress Services</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {fareSettings.map((fare) => (
-              <button
-                key={fare.id}
-                onClick={() => handleServiceSelect(fare.service_type)}
-                className={cn(
-                  "p-4 rounded-lg border-2 transition-all hover:shadow-md",
-                  selectedType === fare.service_type
-                    ? "border-[hsl(30,40%,45%)] bg-[hsl(30,40%,95%)]"
-                    : "border-border bg-card hover:border-[hsl(30,40%,60%)]"
-                )}
-              >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2">
-                  <img
-                    src={getServiceIcon(fare.service_type)}
-                    alt={fare.display_name}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
-                <h4 className="font-semibold text-sm">{fare.display_name}</h4>
-                <p className="text-[hsl(30,40%,45%)] font-bold text-sm mt-1">
-                  ₱{fare.base_fare}
-                </p>
-              </button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-background pb-32">
+      {/* Greeting + Current Location */}
+      <div className="px-4 pt-6 pb-4">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          {getGreeting()}, {firstName}!
+        </h1>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">
+            {isAddressLoading ? 'Locating your address…' : currentAddress || 'Getting location...'}
+          </span>
         </div>
       </div>
 
-      <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Book {selectedFare?.display_name} Ride</SheetTitle>
-          </SheetHeader>
-          <form onSubmit={handleBookRide} className="space-y-4 mt-6">
-            <div>
-              <Label>Pickup Location</Label>
-              <Input value={pickup} onChange={(e) => setPickup(e.target.value)} className="mt-2" />
-            </div>
-            <div>
-              <Label>Drop-off Location</Label>
-              <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)} className="mt-2" />
-            </div>
-            <div>
-              <Label>Passenger Count</Label>
-              <Input
-                type="number"
-                min="1"
-                max="4"
-                value={passengerCount}
-                onChange={(e) => setPassengerCount(parseInt(e.target.value))}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label>Notes (optional)</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any special instructions..."
-                className="mt-2"
-              />
-            </div>
-            {selectedFare && (
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span>Base Fare:</span>
-                  <span className="font-semibold">₱{selectedFare.base_fare}</span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  Driver may add a top-up fare based on distance
-                </div>
-              </div>
-            )}
-            <PrimaryButton type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Requesting...' : 'Request Ride'}
-            </PrimaryButton>
-          </form>
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={showQuickAccessEditor} onOpenChange={setShowQuickAccessEditor}>
-        <SheetContent side="bottom" className="h-[70vh]">
-          <SheetHeader>
-            <SheetTitle>
-              {editingSlot && quickAccess[editingSlot]?.address 
-                ? `Edit ${quickAccess[editingSlot].label}`
-                : `Set ${editingSlot && quickAccess[editingSlot].label}`}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <MapSearchInput
-              value=""
-              onChange={() => {}}
-              onSelectPlace={(place) => {
-                if (editingSlot) {
-                  saveQuickAccessSlot(editingSlot, place.fullAddress, place.coords.lat, place.coords.lng);
-                  setShowQuickAccessEditor(false);
-                  toast.success(`${quickAccess[editingSlot].label} address saved!`);
-                }
+      {/* Destination Search */}
+      <div className="px-4 mb-4">
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <input
+              type="text"
+              value={destinationQuery}
+              onChange={(e) => {
+                setDestinationQuery(e.target.value);
+                setShowSuggestions(true);
               }}
-              placeholder={`Search for your ${editingSlot && quickAccess[editingSlot].label} address...`}
-              proximity={currentLocationCoords || undefined}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Where are you heading?"
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            {editingSlot && quickAccess[editingSlot]?.address && (
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">Current address:</p>
-                <p className="text-sm font-medium">{quickAccess[editingSlot].address}</p>
-                <button
-                  onClick={() => {
-                    clearQuickAccessSlot(editingSlot);
-                    setShowQuickAccessEditor(false);
-                    toast.success(`${quickAccess[editingSlot].label} address cleared`);
-                  }}
-                  className="text-sm text-destructive mt-2 hover:underline"
-                >
-                  Clear this address
-                </button>
-              </div>
-            )}
           </div>
-        </SheetContent>
-      </Sheet>
-    </PageLayout>
+          
+          {/* Suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-2 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion.id}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border last:border-b-0"
+                >
+                  <div className="font-medium text-foreground">{suggestion.name}</div>
+                  <div className="text-sm text-muted-foreground truncate">{suggestion.fullAddress}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Searches */}
+      <div className="px-4 mb-4">
+        <h2 className="text-lg font-semibold text-foreground mb-3">Recent Searches</h2>
+        {recentSearches.length === 0 ? (
+          <ThemedCard className="bg-accent/30">
+            <p className="text-sm text-muted-foreground text-center py-2">
+              No recent searches yet. Start a booking and we'll show your last routes here.
+            </p>
+          </ThemedCard>
+        ) : (
+          <ThemedCard
+            onClick={() => handleRecentSearchClick(recentSearches[0])}
+            className="cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground truncate">
+                  {recentSearches[0].dropoffAddress}
+                </div>
+                <div className="text-sm text-muted-foreground truncate">
+                  From {recentSearches[0].pickupAddress}
+                </div>
+              </div>
+            </div>
+          </ThemedCard>
+        )}
+      </div>
+
+      {/* Quick Access */}
+      <div className="px-4 mb-4">
+        <h2 className="text-lg font-semibold text-foreground mb-3">Quick Access</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {(['home', 'office', 'market', 'terminal'] as const).map((slot) => (
+            <button
+              key={slot}
+              onClick={() => handleQuickAccessClick(slot)}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl bg-card border border-border hover:bg-accent transition-colors"
+            >
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                {getQuickAccessIcon(slot)}
+              </div>
+              <span className="text-xs font-medium text-foreground capitalize">
+                {quickAccess[slot] ? slot : `Set ${slot}`}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* All Kanggaxpress Services */}
+      <div className="px-4 mb-6">
+        <h2 className="text-lg font-semibold text-foreground mb-3">All Kanggaxpress Services</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {fareSettings.map((fare) => {
+            const serviceType = fare.service_type.toLowerCase() as ServiceType;
+            const isSelected = selectedServiceType === serviceType;
+            
+            return (
+              <ThemedCard
+                key={fare.id}
+                onClick={() => handleServiceSelect(serviceType, fare.base_fare)}
+                className={`cursor-pointer transition-all ${
+                  isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3 py-2">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
+                    <img
+                      src={getServiceIcon(fare.service_type)}
+                      alt={fare.display_name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-foreground">{fare.display_name}</div>
+                    <div className="text-sm font-medium text-primary">₱{fare.base_fare}</div>
+                  </div>
+                </div>
+              </ThemedCard>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom Summary Bar */}
+      {canRequestRide && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Pickup:</span>
+                <span className="font-medium text-foreground truncate ml-2 max-w-[200px]">
+                  {currentAddress}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Drop-off:</span>
+                <span className="font-medium text-foreground truncate ml-2 max-w-[200px]">
+                  {dropoffAddress}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Service:</span>
+                <span className="font-medium text-foreground">
+                  {fareSettings.find(f => f.service_type.toLowerCase() === selectedServiceType)?.display_name}
+                </span>
+              </div>
+              <div className="flex justify-between text-base font-semibold pt-1 border-t border-border">
+                <span className="text-foreground">Base Fare:</span>
+                <span className="text-primary">₱{selectedBaseFare}</span>
+              </div>
+            </div>
+            <button
+              onClick={handleRequestRide}
+              disabled={isCreatingRide}
+              className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isCreatingRide ? 'Requesting...' : 'Request Ride'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Access Editor Modal */}
+      {editingQuickAccess && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-foreground mb-4 capitalize">
+              Set {editingQuickAccess} Address
+            </h3>
+            <div className="relative mb-4">
+              <input
+                type="text"
+                value={quickAccessQuery}
+                onChange={(e) => setQuickAccessQuery(e.target.value)}
+                placeholder="Search for address..."
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
+              {quickAccessSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-2 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {quickAccessSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      onClick={() => handleQuickAccessSave(editingQuickAccess, suggestion)}
+                      className="w-full px-4 py-3 text-left hover:bg-accent transition-colors border-b border-border last:border-b-0"
+                    >
+                      <div className="font-medium text-foreground">{suggestion.name}</div>
+                      <div className="text-sm text-muted-foreground truncate">{suggestion.fullAddress}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setEditingQuickAccess(null);
+                setQuickAccessQuery('');
+                setQuickAccessSuggestions([]);
+              }}
+              className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-xl font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
