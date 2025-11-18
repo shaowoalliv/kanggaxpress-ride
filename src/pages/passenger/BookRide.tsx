@@ -10,34 +10,77 @@ import { Textarea } from '@/components/ui/textarea';
 import { ridesService } from '@/services/rides';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Bike, Car as CarIcon, Search, Bell, Home, Briefcase, ShoppingBag, Building2, Package } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { MapPin, User, Search, Bell, Home, Briefcase, ShoppingBag, Building2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AddressAutocompleteInput } from '@/components/AddressAutocompleteInput';
+import { cn } from '@/lib/utils';
+import motorIcon from '@/assets/motorcycle-icon.png';
+import tricycleIcon from '@/assets/tricycle-icon.png';
+import carIcon from '@/assets/car-icon.png';
+import courierIcon from '@/assets/courier-icon.png';
 
 const serviceOptions = [
-  { type: 'motor' as RideType, name: 'Motor', icon: Bike, price: 50, description: 'Budget & fast' },
-  { type: 'tricycle' as RideType, name: 'Tricycle', icon: CarIcon, price: 80, description: 'Comfort for groups' },
-  { type: 'car' as RideType, name: 'Car', icon: CarIcon, price: 120, description: 'Premium comfort' },
-  { type: 'motor' as RideType, name: 'Delivery Rider', icon: Package, price: 45, description: 'Send packages' },
+  { type: 'motor' as RideType, name: 'Motor', image: motorIcon, price: 50, description: 'Budget & fast' },
+  { type: 'tricycle' as RideType, name: 'Tricycle', image: tricycleIcon, price: 80, description: 'Comfort for groups' },
+  { type: 'car' as RideType, name: 'Car', image: carIcon, price: 120, description: 'Premium comfort' },
+  { type: 'motor' as RideType, name: 'Delivery Rider', image: courierIcon, price: 45, description: 'Send packages' },
 ];
 
 const quickLocations = [
-  { name: 'Home', icon: Home },
-  { name: 'Office', icon: Briefcase },
-  { name: 'Market', icon: ShoppingBag },
-  { name: 'Terminal', icon: Building2 },
+  { name: 'Home', icon: Home, address: 'Saved Home Address' },
+  { name: 'Office', icon: Briefcase, address: 'Saved Office Address' },
+  { name: 'Market', icon: ShoppingBag, address: 'Calapan Public Market' },
+  { name: 'Terminal', icon: Building2, address: 'Calapan City Terminal' },
 ];
+
+interface RecentSearch {
+  pickup: string;
+  dropoff: string;
+  timestamp: number;
+}
 
 export default function BookRide() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [pickup, setPickup] = useState('Calapan City Terminal');
+  const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
+  const [currentLocation, setCurrentLocation] = useState('Getting your location...');
   const [selectedType, setSelectedType] = useState<RideType | null>(null);
   const [passengerCount, setPassengerCount] = useState(1);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
-  const [searchFocus, setSearchFocus] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [selectedQuickAccess, setSelectedQuickAccess] = useState<string | null>(null);
+
+  // Get GPS location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // Mock reverse geocoding - replace with actual API
+          const address = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)} - Calapan City`;
+          setCurrentLocation(address);
+          setPickup(address);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setCurrentLocation('Calapan City Terminal');
+          setPickup('Calapan City Terminal');
+        }
+      );
+    } else {
+      setCurrentLocation('Calapan City Terminal');
+      setPickup('Calapan City Terminal');
+    }
+
+    // Load recent searches from localStorage
+    const stored = localStorage.getItem('recentSearches');
+    if (stored) {
+      setRecentSearches(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -47,11 +90,8 @@ export default function BookRide() {
     }
 
     // Realtime presence subscriber stub (baseline wiring)
-    // Contract: presence:CALAPAN channel
     if (import.meta.env.VITE_ENABLE_REALTIME === 'true') {
       console.log('[Realtime] Subscribing to presence:CALAPAN for driver markers');
-      // TODO: Actual Supabase Realtime subscribe when configured
-      // On message: render green markers by vehicle_type (motor/tricycle/car)
     }
   }, [user, profile, navigate]);
 
@@ -69,6 +109,16 @@ export default function BookRide() {
   const handleServiceSelect = (type: RideType) => {
     setSelectedType(type);
     setShowBookingSheet(true);
+  };
+
+  const handleQuickAccessSelect = (location: typeof quickLocations[0]) => {
+    setDropoff(location.address);
+    setSelectedQuickAccess(location.name);
+  };
+
+  const handleRecentSearchSelect = (search: RecentSearch) => {
+    setPickup(search.pickup);
+    setDropoff(search.dropoff);
   };
 
   const handleBookRide = async (e: React.FormEvent) => {
@@ -91,6 +141,17 @@ export default function BookRide() {
 
     try {
       setLoading(true);
+      
+      // Save to recent searches
+      const newSearch: RecentSearch = {
+        pickup: pickup.trim(),
+        dropoff: dropoff.trim(),
+        timestamp: Date.now(),
+      };
+      const updatedSearches = [newSearch, ...recentSearches.slice(0, 4)];
+      setRecentSearches(updatedSearches);
+      localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+
       await ridesService.createRide(profile.id, {
         pickup_location: pickup.trim(),
         dropoff_location: dropoff.trim(),
@@ -128,7 +189,7 @@ export default function BookRide() {
                 <div className="flex items-center gap-2 text-primary-foreground/90">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <p className="text-sm sm:text-base truncate max-w-[200px] sm:max-w-xs">
-                    {pickup}
+                    {currentLocation}
                   </p>
                 </div>
               </div>
@@ -142,17 +203,13 @@ export default function BookRide() {
 
             {/* Search Bar */}
             <ThemedCard className="bg-background shadow-lg">
-              <div className="flex items-center gap-3">
-                <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                <Input
-                  placeholder="Where are you heading?"
-                  value={dropoff}
-                  onChange={(e) => setDropoff(e.target.value)}
-                  onFocus={() => setSearchFocus(true)}
-                  onBlur={() => setSearchFocus(false)}
-                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-base"
-                />
-              </div>
+              <AddressAutocompleteInput
+                value={dropoff}
+                onChange={setDropoff}
+                placeholder="Where are you heading?"
+                icon={<Search className="w-5 h-5 text-muted-foreground" />}
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-base"
+              />
             </ThemedCard>
           </div>
         </div>
@@ -160,20 +217,25 @@ export default function BookRide() {
         {/* Main Content */}
         <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto space-y-6">
           {/* Recent Search */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Search</h3>
-            <ThemedCard className="bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-primary" />
+          {recentSearches.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Recent Search</h3>
+              <ThemedCard 
+                className="bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleRecentSearchSelect(recentSearches[0])}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm sm:text-base truncate">{recentSearches[0].pickup}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">to {recentSearches[0].dropoff}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm sm:text-base truncate">Calapan Public Market</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">Last visited 2 days ago</p>
-                </div>
-              </div>
-            </ThemedCard>
-          </div>
+              </ThemedCard>
+            </div>
+          )}
 
           {/* Quick Locations */}
           <div>
@@ -183,12 +245,20 @@ export default function BookRide() {
                 <button
                   key={location.name}
                   className="flex flex-col items-center gap-2 min-w-[70px] sm:min-w-[80px]"
-                  onClick={() => setDropoff(location.name)}
+                  onClick={() => handleQuickAccessSelect(location)}
                 >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background border-2 border-primary flex items-center justify-center shadow-sm hover:shadow-md transition-shadow">
-                    <location.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                  <div className={cn(
+                    "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background flex items-center justify-center shadow-md hover:shadow-lg transition-all",
+                    selectedQuickAccess === location.name 
+                      ? "border-3 border-primary ring-2 ring-primary/20" 
+                      : "border-2 border-border"
+                  )}>
+                    <location.icon className="w-6 h-6 sm:w-7 sm:h-7 text-foreground" />
                   </div>
-                  <span className="text-xs sm:text-sm font-medium text-foreground">{location.name}</span>
+                  <span className={cn(
+                    "text-xs sm:text-sm font-medium",
+                    selectedQuickAccess === location.name ? "text-primary font-bold" : "text-foreground"
+                  )}>{location.name}</span>
                 </button>
               ))}
             </div>
@@ -208,7 +278,7 @@ export default function BookRide() {
                       : 'hover:bg-muted/50'
                   }`}
                 >
-                  <service.icon className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-primary" />
+                  <img src={service.image} alt={service.name} className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 object-contain" />
                   <p className="font-semibold text-sm sm:text-base mb-1">{service.name}</p>
                   <p className="text-xs text-muted-foreground mb-2">{service.description}</p>
                   <p className="text-primary font-bold text-sm sm:text-base">₱{service.price}</p>
@@ -234,12 +304,11 @@ export default function BookRide() {
                       <MapPin className="w-4 h-4 text-primary" />
                       Pickup Location
                     </Label>
-                    <Input
-                      id="pickup"
-                      placeholder="Enter pickup location"
+                    <AddressAutocompleteInput
                       value={pickup}
-                      onChange={(e) => setPickup(e.target.value)}
-                      required
+                      onChange={setPickup}
+                      placeholder="Enter pickup location"
+                      icon={<MapPin className="w-4 h-4 text-primary" />}
                       className="h-12 sm:h-14"
                     />
                   </div>
@@ -249,12 +318,11 @@ export default function BookRide() {
                       <MapPin className="w-4 h-4 text-destructive" />
                       Drop-off Location
                     </Label>
-                    <Input
-                      id="dropoff"
-                      placeholder="Enter drop-off location"
+                    <AddressAutocompleteInput
                       value={dropoff}
-                      onChange={(e) => setDropoff(e.target.value)}
-                      required
+                      onChange={setDropoff}
+                      placeholder="Enter drop-off location"
+                      icon={<MapPin className="w-4 h-4 text-destructive" />}
                       className="h-12 sm:h-14"
                     />
                   </div>
@@ -265,7 +333,7 @@ export default function BookRide() {
               {selectedOption && (
                 <ThemedCard className="bg-primary/5">
                   <div className="flex items-center gap-4">
-                    <selectedOption.icon className="w-12 h-12 text-primary" />
+                    <img src={selectedOption.image} alt={selectedOption.name} className="w-12 h-12 object-contain" />
                     <div className="flex-1">
                       <p className="font-semibold text-base sm:text-lg">{selectedOption.name}</p>
                       <p className="text-sm text-muted-foreground">{selectedOption.description}</p>
