@@ -37,6 +37,7 @@ export const searchPlaces = async (
       limit: '5',
       autocomplete: 'true',
       types: 'poi,address,place',
+      bbox: '121.0,13.3,121.3,13.6', // Calapan / NE Mindoro area
     });
 
     if (options?.proximity) {
@@ -47,18 +48,25 @@ export const searchPlaces = async (
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error('Mapbox search failed');
+      console.error('Mapbox search failed', response.status);
+      return [];
     }
     
     const data = await response.json();
     
-    return (data.features || []).map((f: any) => ({
-      id: f.id,
-      primary: f.text || f.place_name,
-      secondary: f.context ? f.context.map((c: any) => c.text).join(', ') : '',
-      fullAddress: f.place_name,
-      coords: { lat: f.center[1], lng: f.center[0] },
-    }));
+    return (data.features || [])
+      .filter((f: any) => 
+        Array.isArray(f.place_type) &&
+        !f.place_type.includes('country') &&
+        !f.place_type.includes('region')
+      )
+      .map((f: any) => ({
+        id: f.id,
+        primary: f.text || f.place_name,
+        secondary: f.context ? f.context.map((c: any) => c.text).join(', ') : '',
+        fullAddress: f.place_name,
+        coords: { lat: f.center[1], lng: f.center[0] },
+      }));
   } catch (error) {
     console.error('Search places error:', error);
     return [];
