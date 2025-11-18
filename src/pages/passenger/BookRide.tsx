@@ -262,6 +262,7 @@ export default function BookRide() {
                 placeholder="Where are you heading?"
                 icon={<Search className="w-5 h-5 text-muted-foreground" />}
                 className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-base"
+                proximityLocation={currentLocationCoords || undefined}
               />
             </ThemedCard>
           </div>
