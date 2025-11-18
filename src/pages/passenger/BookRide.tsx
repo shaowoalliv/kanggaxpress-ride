@@ -305,8 +305,25 @@ export default function BookRide() {
             </ThemedCard>
             
             {/* Suggestions dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && (suggestions.length > 0 || destinationQuery.trim().length >= 3) && (
               <ThemedCard className="absolute top-full left-0 right-0 mt-2 z-10 max-h-60 overflow-y-auto">
+                {/* Custom "use exactly what I typed" option */}
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-3 border-b border-border hover:bg-muted/50 transition-colors"
+                  onClick={() => {
+                    const text = destinationQuery.trim();
+                    if (!text) return;
+                    setDropoffAddress(text);
+                    setDropoffCoords(null);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  <span className="text-sm">Use this address: </span>
+                  <span className="text-sm font-medium">"{destinationQuery.trim()}"</span>
+                </button>
+
+                {/* Mapbox suggestions */}
                 {suggestions.map((suggestion) => (
                   <button
                     key={suggestion.id}
