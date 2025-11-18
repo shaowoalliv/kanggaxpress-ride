@@ -84,13 +84,13 @@ export default function Landing() {
                 e?.preventDefault?.();
                 e?.stopPropagation?.();
                 try {
-                  navigate('/choose-role');
+                  navigate('/auth');
                 } catch (err) {
                   console.error('Navigation error:', err);
                 }
                 setTimeout(() => {
-                  if (window.location.pathname !== '/choose-role') {
-                    window.location.href = '/choose-role';
+                  if (window.location.pathname !== '/auth') {
+                    window.location.href = '/auth';
                   }
                 }, 400);
               }}
