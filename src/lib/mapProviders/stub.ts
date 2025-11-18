@@ -2,7 +2,18 @@ import { MapProvider, Coordinates, PlaceResult } from './types';
 
 export class StubMapProvider implements MapProvider {
   async reverseGeocode(coords: Coordinates): Promise<string> {
-    return `Location at ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+    // Return realistic Philippine addresses for development
+    const addresses = [
+      'Calapan City Terminal, Oriental Mindoro, Philippines',
+      'SM City Calapan, Masipit, Calapan City, Oriental Mindoro',
+      'Calapan City Hall, Calapan City, Oriental Mindoro',
+      'Nautical Highway, Calapan City, Oriental Mindoro',
+      'Calapan Port, Calapan City, Oriental Mindoro',
+    ];
+    
+    // Use coordinates to pseudo-randomly select an address (deterministic)
+    const index = Math.floor((coords.lat + coords.lng) * 1000) % addresses.length;
+    return addresses[index];
   }
 
   async searchPlaces(
