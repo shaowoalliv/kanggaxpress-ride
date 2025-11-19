@@ -511,83 +511,48 @@ export default function BookRide() {
           <div className="h-32" />
         </div>
 
-        {/* Bottom Sticky Card - Option 1: Simplified Summary */}
-        {pickupAddress && (
-          <div className="fixed inset-x-0 bottom-0 z-30 bg-primary border-t-2 border-primary-foreground/20 shadow-xl pb-safe">
+        {/* Bottom Sticky Card - Simplified Summary */}
+        {selectedService && dropoffAddress && (
+          <div className="fixed inset-x-0 bottom-0 z-30 bg-accent/30 backdrop-blur-sm border-t border-border shadow-xl pb-safe">
             <div className="mx-auto max-w-md px-4 py-4">
               <div className="space-y-3">
-                {/* Trip Summary */}
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 text-primary-foreground/90 text-sm">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <p className="line-clamp-1 font-medium">{pickupAddress}</p>
+                {/* Trip Summary - Only show service and fare */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 flex items-center justify-center bg-card rounded-lg">
+                    <img 
+                      src={selectedService.icon} 
+                      alt="Service" 
+                      className="w-8 h-8 object-contain"
+                    />
                   </div>
-                  {dropoffAddress && (
-                    <div className="flex items-start gap-2 text-primary-foreground text-sm">
-                      <Navigation className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <p className="line-clamp-1 font-medium">{dropoffAddress}</p>
-                    </div>
-                  )}
-                  {selectedService && (
-                    <>
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/20">
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <img 
-                            src={selectedService.icon} 
-                            alt="Service" 
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-primary-foreground font-semibold text-sm">
-                            {selectedService.name}
-                          </p>
-                          <p className="text-primary-foreground/80 text-xs">
-                            Base Price: ₱{selectedService.baseFare}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3 mt-4 pt-3 border-t border-primary-foreground/20">
-                        <button
-                          onClick={() => {
-                            setPickupAddress('');
-                            setDropoffAddress('');
-                            setSelectedService(null);
-                          }}
-                          className="flex-1 py-3 px-4 bg-primary-foreground/10 text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary-foreground/20 active:scale-[0.98] transition-all"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleRequestRide}
-                          disabled={loading || !dropoffAddress || !selectedService}
-                          className="flex-1 py-3 px-4 bg-primary-foreground text-primary rounded-lg font-semibold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
-                        >
-                          {loading ? 'Requesting...' : 'Request Ride'}
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <div className="flex-1">
+                    <p className="text-foreground font-semibold text-base">
+                      {selectedService.name}
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      Base Price: ₱{selectedService.baseFare}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      setPickupAddress('');
-                      setDropoffAddress('');
+                      setPickupAddress(null);
+                      setDropoffAddress(null);
                       setSelectedService(null);
+                      setDestinationQuery('');
+                      setDropoffCoords(null);
                     }}
-                    className="flex-1 py-3 px-4 rounded-xl bg-primary-foreground/10 text-primary-foreground font-heading font-semibold hover:bg-primary-foreground/20 active:scale-[0.98] transition-all duration-200"
+                    className="flex-1 py-3 px-4 rounded-xl bg-muted text-foreground font-heading font-semibold hover:bg-muted/80 active:scale-[0.98] transition-all duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleRequestRide}
                     disabled={!dropoffAddress || !selectedService || loading}
-                    className="flex-1 py-3 px-4 rounded-xl bg-primary-foreground text-primary font-heading font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    className="flex-1 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-heading font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   >
                     {loading ? 'Requesting...' : 'Request Ride'}
                   </button>
