@@ -590,6 +590,7 @@ export default function BookRide() {
             onClose={() => setShowMapPicker(null)}
           />
         )}
+        </main>
       </div>
     </PageLayout>
   );
