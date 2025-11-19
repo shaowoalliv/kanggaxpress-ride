@@ -144,14 +144,14 @@ export default function JobDetail() {
     try {
       setSending(true);
       
-      // Fetch app fee from platform_settings
-      const { data: platformSettings } = await supabase
+      // Fetch platform app_fee setting
+      const { data: settingData } = await supabase
         .from('platform_settings')
         .select('setting_value')
         .eq('setting_key', 'app_fee_per_ride')
-        .single();
-
-      const appFee = platformSettings?.setting_value || 5;
+        .maybeSingle();
+      
+      const appFee = settingData?.setting_value ?? 5;
       const fareFinal = ride.total_fare || ride.base_fare || 0;
 
       const { error } = await supabase
@@ -166,7 +166,7 @@ export default function JobDetail() {
 
       if (error) throw error;
 
-      toast.success(`Ride completed! Total fare ₱${fareFinal}, app fee ₱${appFee}.`);
+      toast.success('Ride completed!');
       await fetchRide();
     } catch (error) {
       console.error('Error completing ride:', error);
