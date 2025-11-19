@@ -11,14 +11,19 @@ export interface CreateRideData {
 }
 
 export const ridesService = {
-  // Create a new ride request
-  async createRide(passengerId: string, data: CreateRideData) {
+  // Create a new ride request with location coordinates
+  async createRide(passengerId: string, data: CreateRideData & { 
+    pickup_lat?: number; 
+    pickup_lng?: number;
+    dropoff_lat?: number;
+    dropoff_lng?: number;
+  }) {
     const { data: ride, error } = await supabase
       .from('rides')
       .insert({
         passenger_id: passengerId,
         ...data,
-        status: 'requested' as RideStatus,
+        status: 'searching' as RideStatus,
       })
       .select()
       .single();

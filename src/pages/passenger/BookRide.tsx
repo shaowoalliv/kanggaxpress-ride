@@ -13,6 +13,8 @@ import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowR
 import { supabase } from '@/integrations/supabase/client';
 import { reverseGeocode, searchPlaces } from '@/lib/geocoding';
 import { DestinationMapPicker } from '@/components/DestinationMapPicker';
+import { ridesService } from '@/services/rides';
+import { driverMatchingService, type DriverProposal } from '@/services/driverMatching';
 import carIcon from '@/assets/car-icon.png';
 import motorcycleIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
@@ -83,6 +85,9 @@ export default function BookRide() {
   const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null);
   const [passengerCount, setPassengerCount] = useState(1);
   const [notes, setNotes] = useState('');
+  const [isRequestingRide, setIsRequestingRide] = useState(false);
+  const [driverProposals, setDriverProposals] = useState<DriverProposal[]>([]);
+  const [currentRideId, setCurrentRideId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
@@ -237,41 +242,36 @@ export default function BookRide() {
     setShowMapPicker({ mode: 'dropoff' });
   };
 
-  
   const handleRequestRide = async () => {
     if (!user || !profile) {
       toast.error('Please sign in to book a ride');
       return;
     }
 
-    if (!selectedService || !pickupAddress || !dropoffAddress) {
+    if (!selectedService || !pickupAddress || !dropoffAddress || !pickupCoords || !dropoffCoords) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      setLoading(true);
-      
-      const { data: ride, error } = await supabase
-        .from('rides')
-        .insert([{
-          passenger_id: user.id,
-          pickup_location: pickupAddress,
-          dropoff_location: dropoffAddress,
-          pickup_lat: pickupCoords?.lat,
-          pickup_lng: pickupCoords?.lng,
-          dropoff_lat: dropoffCoords?.lat,
-          dropoff_lng: dropoffCoords?.lng,
-          base_fare: selectedService.baseFare,
-          ride_type: selectedService.type as RideType,
-          status: 'requested',
-          passenger_count: passengerCount,
-          notes: notes.trim() || null,
-        }])
-        .select()
-        .single();
+      setIsRequestingRide(true);
 
-      if (error) throw error;
+      const rideData = {
+        pickup_location: pickupAddress,
+        dropoff_location: dropoffAddress,
+        ride_type: selectedService.type as RideType,
+        passenger_count: passengerCount,
+        notes: notes.trim() || undefined,
+        fare_estimate: selectedService.baseFare,
+        base_fare: selectedService.baseFare,
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        dropoff_lat: dropoffCoords.lat,
+        dropoff_lng: dropoffCoords.lng,
+      };
+
+      const ride = await ridesService.createRide(user.id, rideData);
+      setCurrentRideId(ride.id);
 
       // Save to recent searches
       const newSearch = {
@@ -283,14 +283,79 @@ export default function BookRide() {
       setRecentSearches(updated);
       localStorage.setItem('kanggaxpress_recent_searches', JSON.stringify(updated));
 
-      toast.success('Ride requested! Finding a driver...');
-      navigate(`/passenger/ride-status/${ride.id}`);
+      // Subscribe to ride updates for proposals
+      const channel = supabase
+        .channel(`ride:${ride.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+            filter: `id=eq.${ride.id}`,
+          },
+          (payload) => {
+            const updatedRide = payload.new as any;
+            if (updatedRide.proposals && Array.isArray(updatedRide.proposals)) {
+              setDriverProposals(updatedRide.proposals);
+            }
+          }
+        )
+        .subscribe();
+
+      // Start beaming process
+      driverMatchingService.startBeaming(
+        ride.id,
+        pickupCoords.lat,
+        pickupCoords.lng,
+        selectedService.type as RideType
+      ).then((result) => {
+        if (!result.success) {
+          toast.error('No drivers available', {
+            description: 'Please try again in a few moments',
+          });
+          setIsRequestingRide(false);
+          setCurrentRideId(null);
+          supabase.removeChannel(channel);
+        }
+      });
+
     } catch (error) {
       console.error('Error requesting ride:', error);
-      toast.error('Failed to request ride. Please try again.');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to request ride', {
+        description: 'Please try again',
+      });
+      setIsRequestingRide(false);
     }
+  };
+
+  // Handle accepting a driver proposal
+  const handleAcceptProposal = async (driverId: string) => {
+    if (!currentRideId) return;
+
+    try {
+      await driverMatchingService.acceptProposal(currentRideId, driverId);
+      toast.success('Driver accepted!', {
+        description: 'Your ride will start shortly',
+      });
+      navigate(`/passenger/ride-status/${currentRideId}`);
+    } catch (error) {
+      console.error('Error accepting proposal:', error);
+      toast.error('Failed to accept driver');
+    }
+  };
+
+  // Cancel ride request
+  const handleCancelRideRequest = () => {
+    if (currentRideId) {
+      supabase
+        .from('rides')
+        .update({ status: 'cancelled' as any })
+        .eq('id', currentRideId);
+    }
+    setIsRequestingRide(false);
+    setCurrentRideId(null);
+    setDriverProposals([]);
   };
 
   if (!user || !profile || profile.role !== 'passenger') {
@@ -511,8 +576,8 @@ export default function BookRide() {
           <div className="h-32" />
         </div>
 
-        {/* Bottom Sticky Card - Simplified Summary */}
-        {selectedService && dropoffAddress && (
+        {/* Bottom Sticky Card - Show only when service selected and NOT requesting */}
+        {selectedService && dropoffAddress && !isRequestingRide && (
           <div className="fixed inset-x-0 bottom-0 z-30 bg-accent/30 backdrop-blur-sm border-t border-border shadow-xl pb-safe">
             <div className="mx-auto max-w-md px-4 py-4">
               <div className="space-y-3">
@@ -551,13 +616,83 @@ export default function BookRide() {
                   </button>
                   <button
                     onClick={handleRequestRide}
-                    disabled={!dropoffAddress || !selectedService || loading}
+                    disabled={!dropoffAddress || !selectedService || isRequestingRide}
                     className="flex-1 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-heading font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   >
-                    {loading ? 'Requesting...' : 'Request Ride'}
+                    {isRequestingRide ? 'Requesting...' : 'Request Ride'}
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Driver Proposals Overlay */}
+        {isRequestingRide && driverProposals.length > 0 && (
+          <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 p-4 overflow-y-auto">
+            <div className="max-w-md mx-auto pt-20">
+              <div className="bg-card rounded-2xl p-6 shadow-xl border border-border/50">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Driver Offers</h2>
+                <p className="text-muted-foreground mb-6">Choose the best offer for your ride</p>
+
+                <div className="space-y-3">
+                  {driverProposals.map((proposal: any) => (
+                    <div
+                      key={proposal.driverId}
+                      className="bg-accent/20 rounded-xl p-4 border border-border/50 hover:border-primary/50 transition-all cursor-pointer"
+                      onClick={() => handleAcceptProposal(proposal.driverId)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">{proposal.driverName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {proposal.vehicleType} • {proposal.vehiclePlate}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {(proposal.distance / 1000).toFixed(1)}km away • ⭐ {proposal.rating.toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-foreground">₱{proposal.totalFare.toFixed(2)}</p>
+                          {proposal.proposedTopUpFare > 0 && (
+                            <p className="text-xs text-primary">+₱{proposal.proposedTopUpFare} tip</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleCancelRideRequest}
+                  className="w-full mt-6 px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground font-semibold hover:bg-accent/50 active:scale-95 transition-all"
+                >
+                  Cancel Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Searching for drivers overlay */}
+        {isRequestingRide && driverProposals.length === 0 && (
+          <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl p-8 shadow-xl border border-border/50 max-w-sm w-full text-center">
+              <div className="animate-pulse mb-4">
+                <div className="w-16 h-16 mx-auto bg-primary/20 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-primary/40 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Searching for drivers...</h3>
+              <p className="text-muted-foreground">Expanding search radius to find the best match</p>
+              <button
+                onClick={handleCancelRideRequest}
+                className="w-full mt-6 px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground font-semibold hover:bg-accent/50 active:scale-95 transition-all"
+              >
+                Cancel Search
+              </button>
             </div>
           </div>
         )}

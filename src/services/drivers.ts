@@ -37,11 +37,20 @@ export const driversService = {
     return data as DriverProfile | null;
   },
 
-  // Update driver availability
-  async updateAvailability(userId: string, isAvailable: boolean) {
+  // Update driver availability with location tracking
+  async updateAvailability(userId: string, isAvailable: boolean, coords?: { lat: number; lng: number }) {
+    const updates: any = { is_available: isAvailable };
+    
+    // Update location when toggling availability
+    if (coords) {
+      updates.current_lat = coords.lat;
+      updates.current_lng = coords.lng;
+      updates.location_updated_at = new Date().toISOString();
+    }
+
     const { data, error } = await supabase
       .from('driver_profiles')
-      .update({ is_available: isAvailable })
+      .update(updates)
       .eq('user_id', userId)
       .select()
       .single();

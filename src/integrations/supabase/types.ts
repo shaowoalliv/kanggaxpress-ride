@@ -166,9 +166,12 @@ export type Database = {
       driver_profiles: {
         Row: {
           created_at: string | null
+          current_lat: number | null
+          current_lng: number | null
           id: string
           is_available: boolean | null
           license_number: string | null
+          location_updated_at: string | null
           rating: number | null
           total_rides: number | null
           updated_at: string | null
@@ -180,9 +183,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           is_available?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           rating?: number | null
           total_rides?: number | null
           updated_at?: string | null
@@ -194,9 +200,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           is_available?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           rating?: number | null
           total_rides?: number | null
           updated_at?: string | null
@@ -419,12 +428,14 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           driver_id: string | null
+          drivers_notified: Json | null
           dropoff_lat: number | null
           dropoff_lng: number | null
           dropoff_location: string
           fare_estimate: number | null
           fare_final: number | null
           id: string
+          max_radius_reached: boolean | null
           negotiation_notes: string | null
           negotiation_status: string | null
           notes: string | null
@@ -433,8 +444,10 @@ export type Database = {
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string
+          proposals: Json | null
           proposed_top_up_fare: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
+          search_radius: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
           top_up_fare: number | null
@@ -448,12 +461,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
+          drivers_notified?: Json | null
           dropoff_lat?: number | null
           dropoff_lng?: number | null
           dropoff_location: string
           fare_estimate?: number | null
           fare_final?: number | null
           id?: string
+          max_radius_reached?: boolean | null
           negotiation_notes?: string | null
           negotiation_status?: string | null
           notes?: string | null
@@ -462,8 +477,10 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location: string
+          proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
+          search_radius?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           top_up_fare?: number | null
@@ -477,12 +494,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
+          drivers_notified?: Json | null
           dropoff_lat?: number | null
           dropoff_lng?: number | null
           dropoff_location?: string
           fare_estimate?: number | null
           fare_final?: number | null
           id?: string
+          max_radius_reached?: boolean | null
           negotiation_notes?: string | null
           negotiation_status?: string | null
           notes?: string | null
@@ -491,8 +510,10 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string
+          proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type?: Database["public"]["Enums"]["ride_type"]
+          search_radius?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           top_up_fare?: number | null
@@ -542,6 +563,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
