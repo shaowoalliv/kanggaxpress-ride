@@ -40,6 +40,7 @@ import { UserRole } from '@/types';
 import { PhotoCaptureCard } from '@/components/PhotoCaptureCard';
 import { AuthHelpModal } from '@/components/auth/AuthHelpModal';
 import { kycService } from '@/services/kyc';
+import { driversService } from '@/services/drivers';
 import { DocType } from '@/types/kyc';
 import { z } from 'zod';
 
@@ -81,6 +82,7 @@ const driverSchema = z.object({
   emergencyContactRelation: z.string().min(2, 'Relationship required'),
   emergencyContact: z.string().min(10, 'Valid emergency contact required'),
   completeAddress: z.string().min(5, 'Complete address required'),
+  vehicleType: z.enum(['motor', 'tricycle', 'car'], { required_error: 'Vehicle type required' }),
   vehicleColor: z.string().min(2, 'Vehicle color required'),
   vehiclePlate: z.string().min(2, 'Plate number required'),
   licenseExpiry: z.string().min(1, 'License expiry date required'),
@@ -158,6 +160,7 @@ export default function Auth() {
     emergencyContactRelation: '',
     emergencyContact: '',
     completeAddress: '',
+    vehicleType: '' as 'motor' | 'tricycle' | 'car' | '',
     vehicleColor: '',
     vehiclePlate: '',
     licenseExpiry: '',
@@ -184,15 +187,45 @@ export default function Auth() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!loading && user && profile) {
-      const routes: Record<UserRole, string> = {
-        passenger: '/passenger/book-ride',
-        driver: '/driver/dashboard',
-        courier: '/courier/dashboard',
-        sender: '/sender/dashboard',
-      };
-      navigate(routes[profile.role] || routes.passenger);
-    }
+    const redirect = async () => {
+      if (!loading && user && profile) {
+        // For driver/courier, check if profile exists
+        if (profile.role === 'driver') {
+          const { data: driverProfile } = await supabase
+            .from('driver_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (driverProfile) {
+            navigate('/driver/dashboard');
+          } else {
+            navigate('/driver/setup');
+          }
+        } else if (profile.role === 'courier') {
+          const { data: courierProfile } = await supabase
+            .from('courier_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (courierProfile) {
+            navigate('/courier/dashboard');
+          } else {
+            navigate('/courier/setup');
+          }
+        } else {
+          const routes: Record<UserRole, string> = {
+            passenger: '/passenger/book-ride',
+            driver: '/driver/dashboard',
+            courier: '/courier/dashboard',
+            sender: '/sender/dashboard',
+          };
+          navigate(routes[profile.role] || routes.passenger);
+        }
+      }
+    };
+    redirect();
   }, [user, profile, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -361,10 +394,34 @@ export default function Auth() {
       }
 
       toast({
-        title: 'Account Created!',
-        description: 'Please check your email to verify your account, then download the KanggaXpress app to get started.',
-        duration: 8000,
+        title: 'Registration Complete!',
+        description: 'Your account has been created. You can now log in.',
+        duration: 5000,
       });
+
+      // Sign out the user to force them to login
+      await supabase.auth.signOut();
+      
+      // Redirect to login page
+      setActiveTab('login');
+      
+      // Reset form
+      setPassengerData({
+        email: '',
+        password: '',
+        passwordConfirm: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        birthdate: '',
+        personalMobile: '',
+        emergencyContactName: '',
+        emergencyContactRelation: '',
+        emergencyContact: '',
+        completeAddress: '',
+        privacyConsent: false,
+      });
+      setPhotosStaged([]);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -461,25 +518,51 @@ export default function Auth() {
         });
       }
 
-      // Create driver profile so they can access dashboard
-      const { error: profileError } = await supabase
-        .from('driver_profiles')
-        .insert({
-          user_id: userId,
-          vehicle_type: 'motor', // Default, can be changed later
+      // Create driver profile using service
+      if (driverData.vehicleType) {
+        await driversService.createDriverProfile(userId, {
+          vehicle_type: driverData.vehicleType,
           vehicle_plate: driverData.vehiclePlate,
           vehicle_color: driverData.vehicleColor,
           vehicle_model: '',
           license_number: '',
         });
-
-      if (profileError) throw profileError;
+      }
 
       toast({
-        title: 'Account Created!',
-        description: 'Please check your email to verify your account, then download the KanggaXpress app to get started.',
-        duration: 8000,
+        title: 'Registration Complete!',
+        description: 'Your account has been created. You can now log in.',
+        duration: 5000,
       });
+
+      // Sign out the user to force them to login
+      await supabase.auth.signOut();
+      
+      // Redirect to login page
+      setActiveTab('login');
+      
+      // Reset form
+      setDriverData({
+        email: '',
+        password: '',
+        passwordConfirm: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        birthdate: '',
+        personalMobile: '',
+        emergencyContactName: '',
+        emergencyContactRelation: '',
+        emergencyContact: '',
+        completeAddress: '',
+        vehicleType: '',
+        vehicleColor: '',
+        vehiclePlate: '',
+        licenseExpiry: '',
+        crExpiry: '',
+        privacyConsent: false,
+      });
+      setDriverPhotosStaged([]);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -1035,6 +1118,22 @@ export default function Auth() {
                     <div className="space-y-2 sm:space-y-3 pt-3 border-t border-border">
                       <h3 className="text-sm sm:text-base font-semibold text-foreground">Vehicle Information</h3>
                       
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="driver-vehicleType" className="text-xs sm:text-sm font-bold">Vehicle Type *</Label>
+                        <select
+                          id="driver-vehicleType"
+                          value={driverData.vehicleType}
+                          onChange={(e) => setDriverData(prev => ({ ...prev, vehicleType: e.target.value as 'motor' | 'tricycle' | 'car' }))}
+                          required
+                          className="flex h-9 sm:h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <option value="">Select vehicle type</option>
+                          <option value="motor">Motorcycle</option>
+                          <option value="tricycle">Tricycle</option>
+                          <option value="car">Car</option>
+                        </select>
+                      </div>
+
                       <div className="space-y-1.5 sm:space-y-2">
                         <Label htmlFor="driver-vehicleColor" className="text-xs sm:text-sm font-bold">Vehicle Color *</Label>
                         <Input

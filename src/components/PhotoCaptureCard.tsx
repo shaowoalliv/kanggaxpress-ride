@@ -83,7 +83,7 @@ export function PhotoCaptureCard({ title, description, onCapture, captured }: Ph
         ) : (
           <div className="border-2 border-dashed rounded-lg p-6 text-center">
             <Camera className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-4">Take or upload a photo</p>
+            <p className="text-sm text-muted-foreground mb-4">Tap camera button to capture photo</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -96,10 +96,10 @@ export function PhotoCaptureCard({ title, description, onCapture, captured }: Ph
             <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-12 flex items-center justify-center"
+              className="w-12 h-12 rounded-full flex items-center justify-center p-0"
               aria-label={`Capture ${title}`}
             >
-              <Camera className="w-5 h-5" aria-hidden="true" />
+              <Camera className="w-6 h-6" aria-hidden="true" />
               <span className="sr-only">Capture {title}</span>
             </Button>
           </div>
