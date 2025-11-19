@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight, Map } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { reverseGeocode, searchPlaces } from '@/lib/geocoding';
+import { DestinationMapPicker } from '@/components/DestinationMapPicker';
 import carIcon from '@/assets/car-icon.png';
 import motorcycleIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
@@ -85,6 +86,7 @@ export default function BookRide() {
   const [loading, setLoading] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Check if form is complete for Request Ride button
   const isFormComplete = Boolean(currentAddress && dropoffAddress && selectedService);
@@ -204,6 +206,14 @@ export default function BookRide() {
     setShowSuggestions(false);
   };
 
+  const handleMapPickerConfirm = (destination: { address: string; coords: { lat: number; lng: number } }) => {
+    setDestinationQuery(destination.address);
+    setDropoffAddress(destination.address);
+    setDropoffCoords(destination.coords);
+    setShowMapPicker(false);
+    toast.success('Destination set on map');
+  };
+
   
   const handleRequestRide = async () => {
     if (!user || !profile) {
@@ -300,8 +310,16 @@ export default function BookRide() {
                 value={destinationQuery}
                 onChange={(e) => setDestinationQuery(e.target.value)}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-base"
+                className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-base flex-1"
               />
+              <button
+                onClick={() => setShowMapPicker(true)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 whitespace-nowrap px-2 py-1 rounded hover:bg-primary/5 transition-colors"
+                type="button"
+              >
+                <Map className="w-4 h-4" />
+                <span className="hidden sm:inline">Set on map</span>
+              </button>
             </ThemedCard>
             
             {/* Suggestions dropdown */}
@@ -487,6 +505,15 @@ export default function BookRide() {
             </div>
           </div>
         </div>
+
+        {/* Map Picker Modal */}
+        {showMapPicker && (
+          <DestinationMapPicker
+            initialCenter={pickupCoords || undefined}
+            onConfirm={handleMapPickerConfirm}
+            onClose={() => setShowMapPicker(false)}
+          />
+        )}
       </div>
     </PageLayout>
   );
