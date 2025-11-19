@@ -869,13 +869,13 @@ export default function Auth() {
                         <span className="font-semibold">Data Privacy Act of 2012 (Republic Act No. 10173):</span> Your personal information will be collected, stored, and processed in accordance with the Data Privacy Act. Your data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting your privacy and will not share your information with third parties without your consent.
                       </p>
                       
-                      <label htmlFor="privacy-consent" className="flex items-start gap-2 leading-relaxed cursor-pointer">
+                      <label htmlFor="privacy-consent" className="flex items-center justify-center gap-2 leading-relaxed cursor-pointer">
                         <input
                           type="checkbox"
                           id="privacy-consent"
                           checked={passengerData.privacyConsent}
                           onChange={(e) => setPassengerData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
-                          className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
+                          className="h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
                           required
                         />
                         <span>
@@ -1174,13 +1174,13 @@ export default function Auth() {
                         <span className="font-semibold">Data Privacy Act of 2012 (Republic Act No. 10173):</span> Your personal information will be collected, stored, and processed in accordance with the Data Privacy Act. Your data will be used solely for service delivery, account verification, and communication purposes. KanggaXpress is committed to protecting your privacy and will not share your information with third parties without your consent.
                       </p>
                       
-                      <label htmlFor="driver-privacy-consent" className="flex items-start gap-2 leading-relaxed cursor-pointer">
+                      <label htmlFor="driver-privacy-consent" className="flex items-center justify-center gap-2 leading-relaxed cursor-pointer">
                         <input
                           type="checkbox"
                           id="driver-privacy-consent"
                           checked={driverData.privacyConsent}
                           onChange={(e) => setDriverData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
-                          className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
+                          className="h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
                           required
                         />
                         <span>
