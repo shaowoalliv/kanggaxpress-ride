@@ -461,6 +461,20 @@ export default function Auth() {
         });
       }
 
+      // Create driver profile so they can access dashboard
+      const { error: profileError } = await supabase
+        .from('driver_profiles')
+        .insert({
+          user_id: userId,
+          vehicle_type: 'motor', // Default, can be changed later
+          vehicle_plate: driverData.vehiclePlate,
+          vehicle_color: driverData.vehicleColor,
+          vehicle_model: '',
+          license_number: '',
+        });
+
+      if (profileError) throw profileError;
+
       toast({
         title: 'Account Created!',
         description: 'Please check your email to verify your account, then download the KanggaXpress app to get started.',
