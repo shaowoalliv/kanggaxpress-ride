@@ -90,6 +90,111 @@ export default function RideStatus() {
     return status.toUpperCase().replace('_', ' ');
   };
 
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!ride) {
+    return (
+      <PageLayout>
+        <div className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">Ride not found</p>
+          <PrimaryButton onClick={() => navigate('/passenger/book-ride')}>
+            Book a Ride
+          </PrimaryButton>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // COMPLETED RIDE VIEW
+  if (ride.status === 'completed') {
+    const finalFare = ride.fare_final ?? ride.total_fare ?? ride.base_fare ?? 0;
+    
+    return (
+      <PageLayout>
+        <div className="p-6 max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate('/passenger/my-rides')}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to My Rides
+          </button>
+
+          <ThemedCard className="p-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                <Car className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Ride Completed!</h2>
+              <p className="text-sm text-muted-foreground">Thank you for riding with KanggaXpress</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-3 pb-3 border-b border-border">
+                <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">From</p>
+                  <p className="text-sm font-medium">{ride.pickup_location}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 pb-3 border-b border-border">
+                <MapPin className="w-5 h-5 text-secondary flex-shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">To</p>
+                  <p className="text-sm font-medium">{ride.dropoff_location}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Car className="w-5 h-5 text-accent flex-shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">Service</p>
+                  <p className="text-sm font-medium">{getServiceName(ride.ride_type)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Base Fare</span>
+                <span className="font-medium">₱{(ride.base_fare || 0).toFixed(2)}</span>
+              </div>
+              {ride.top_up_fare > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Top-up Fare</span>
+                  <span className="font-medium">₱{ride.top_up_fare.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
+                <span>Total Fare</span>
+                <span className="text-primary">₱{finalFare.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+              <p className="text-xs text-amber-900">
+                <strong>Note:</strong> Fare is payable directly to the driver (cash or e-wallet).
+              </p>
+            </div>
+
+            <PrimaryButton onClick={() => navigate('/passenger/my-rides')} className="w-full">
+              Back to My Rides
+            </PrimaryButton>
+          </ThemedCard>
+        </div>
+      </PageLayout>
+    );
+  };
+
   const handleAcceptFare = async () => {
     try {
       setAccepting(true);

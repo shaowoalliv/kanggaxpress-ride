@@ -111,7 +111,7 @@ export default function MyRides() {
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-primary">
-                          ₱{ride.fare_final ?? ride.total_fare ?? ride.base_fare ?? '—'}
+                          ₱{(ride.fare_final ?? ride.total_fare ?? ride.base_fare ?? 0).toFixed(2)}
                         </p>
                       </div>
                     </div>
