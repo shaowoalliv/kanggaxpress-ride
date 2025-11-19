@@ -6,7 +6,9 @@ import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { ridesService } from '@/services/rides';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
 
@@ -19,7 +21,8 @@ export default function JobDetail() {
   const [sending, setSending] = useState(false);
   const [selectedTopUp, setSelectedTopUp] = useState<number>(0);
   const [customTopUp, setCustomTopUp] = useState<string>('');
-  const [offerSent, setOfferSent] = useState(false);
+  const [negotiationNotes, setNegotiationNotes] = useState<string>('');
+  const [tipOptions, setTipOptions] = useState<number[]>([20, 50, 100]);
   const [driverProfileId, setDriverProfileId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,6 +37,7 @@ export default function JobDetail() {
     
     fetchDriverProfile();
     fetchRide();
+    fetchTipOptions();
   }, [user, profile, rideId, navigate]);
 
   const fetchDriverProfile = async () => {
@@ -49,6 +53,24 @@ export default function JobDetail() {
     } catch (error) {
       console.error('Error fetching driver profile:', error);
       toast.error('Failed to load driver profile');
+    }
+  };
+
+  const fetchTipOptions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['tip_option_1', 'tip_option_2', 'tip_option_3']);
+      
+      if (!error && data && data.length > 0) {
+        const options = data
+          .sort((a, b) => a.setting_key.localeCompare(b.setting_key))
+          .map(item => item.setting_value);
+        setTipOptions(options);
+      }
+    } catch (error) {
+      console.error('Error fetching tip options:', error);
     }
   };
 
@@ -91,27 +113,44 @@ export default function JobDetail() {
       return;
     }
 
+    if (!negotiationNotes.trim()) {
+      toast.error('Please provide a reason for the bonus fare');
+      return;
+    }
+
     try {
       setSending(true);
-      const total = (ride.base_fare || 0) + selectedTopUp;
+      await ridesService.proposeFareNegotiation(
+        rideId!,
+        driverProfileId,
+        selectedTopUp,
+        negotiationNotes
+      );
 
-      const { error } = await supabase
-        .from('rides')
-        .update({
-          driver_id: driverProfileId,
-          top_up_fare: selectedTopUp,
-          total_fare: total,
-          status: 'accepted',
-        })
-        .eq('id', rideId);
-
-      if (error) throw error;
-
-      setOfferSent(true);
-      toast.success('Offer sent successfully!');
-    } catch (error) {
+      toast.success('Bonus fare proposal sent! Waiting for passenger approval...');
+      navigate('/driver/dashboard');
+    } catch (error: any) {
       console.error('Error sending offer:', error);
-      toast.error('Failed to send offer');
+      toast.error(error.message || 'Failed to send offer');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleAcceptWithoutBonus = async () => {
+    if (!driverProfileId) {
+      toast.error('Driver profile not found');
+      return;
+    }
+
+    try {
+      setSending(true);
+      await ridesService.acceptRide(rideId!, driverProfileId);
+      toast.success('Ride accepted!');
+      navigate('/driver/dashboard');
+    } catch (error: any) {
+      console.error('Error accepting ride:', error);
+      toast.error(error.message || 'Failed to accept ride');
     } finally {
       setSending(false);
     }
@@ -245,10 +284,10 @@ export default function JobDetail() {
             </ThemedCard>
           )}
 
-          {offerSent && ride.status === 'accepted' && (
-            <ThemedCard className="bg-primary/5 border-primary/20 text-center py-8">
-              <p className="text-lg font-semibold text-primary mb-2">Offer Sent!</p>
-              <p className="text-sm text-muted-foreground">Waiting for passenger to confirm.</p>
+          {ride.negotiation_status === 'pending' && (
+            <ThemedCard className="bg-accent/20 border-primary/20 text-center py-8">
+              <p className="text-lg font-semibold text-primary mb-2">Proposal Sent!</p>
+              <p className="text-sm text-muted-foreground">Waiting for passenger approval.</p>
             </ThemedCard>
           )}
 
@@ -386,7 +425,7 @@ export default function JobDetail() {
           )}
 
           {/* Action Buttons - Start/Complete Ride */}
-          {ride.status === 'accepted' && ride.driver_id && !offerSent && (
+          {ride.status === 'accepted' && ride.negotiation_status === 'accepted' && ride.driver_id && (
             <div className="space-y-3 pt-4">
               <PrimaryButton
                 onClick={handleStartRide}

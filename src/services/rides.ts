@@ -108,4 +108,71 @@ export const ridesService = {
   async cancelRide(rideId: string) {
     return this.updateRideStatus(rideId, 'cancelled');
   },
+
+  // Driver proposes bonus fare
+  async proposeFareNegotiation(rideId: string, driverId: string, topUpFare: number, notes: string) {
+    const { data, error } = await supabase
+      .from('rides')
+      .update({
+        driver_id: driverId,
+        proposed_top_up_fare: topUpFare,
+        negotiation_status: 'pending',
+        negotiation_notes: notes,
+      })
+      .eq('id', rideId)
+      .eq('status', 'requested')
+      .is('driver_id', null)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Ride;
+  },
+
+  // Passenger accepts negotiated fare
+  async acceptFareNegotiation(rideId: string) {
+    const { data: ride, error: fetchError } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('id', rideId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { data, error } = await supabase
+      .from('rides')
+      .update({
+        top_up_fare: ride.proposed_top_up_fare,
+        total_fare: (ride.base_fare || 0) + (ride.proposed_top_up_fare || 0),
+        negotiation_status: 'accepted',
+        status: 'accepted' as RideStatus,
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', rideId)
+      .eq('negotiation_status', 'pending')
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Ride;
+  },
+
+  // Passenger rejects negotiated fare
+  async rejectFareNegotiation(rideId: string) {
+    const { data, error } = await supabase
+      .from('rides')
+      .update({
+        driver_id: null,
+        proposed_top_up_fare: 0,
+        negotiation_status: 'rejected',
+        negotiation_notes: null,
+      })
+      .eq('id', rideId)
+      .eq('negotiation_status', 'pending')
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Ride;
+  },
 };
