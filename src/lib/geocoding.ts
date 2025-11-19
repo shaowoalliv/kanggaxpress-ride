@@ -40,7 +40,22 @@ export const searchPlaces = async (
     });
 
     if (options?.proximity) {
-      params.set('proximity', `${options.proximity.lng},${options.proximity.lat}`);
+      const { lat, lng } = options.proximity;
+
+      // Create a ~20km bbox around the user's location
+      const deltaLat = 0.2;
+      const deltaLng = 0.2;
+
+      const minLat = lat - deltaLat;
+      const maxLat = lat + deltaLat;
+      const minLng = lng - deltaLng;
+      const maxLng = lng + deltaLng;
+
+      // Dynamic bbox centered around user location
+      params.set('bbox', `${minLng},${minLat},${maxLng},${maxLat}`);
+      
+      // Also set proximity for scoring within the bbox
+      params.set('proximity', `${lng},${lat}`);
     }
 
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?${params.toString()}`;
