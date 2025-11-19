@@ -13,6 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { walletService } from '@/services/wallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -28,7 +36,7 @@ interface WalletUser {
 
 export default function AdminWallets() {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [wallets, setWallets] = useState<WalletUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<WalletUser | null>(null);
@@ -37,7 +45,8 @@ export default function AdminWallets() {
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) {
       toast({
         title: 'Search Required',
         description: 'Please enter an account number, name, or email',
@@ -48,7 +57,7 @@ export default function AdminWallets() {
 
     setIsLoading(true);
     try {
-      const results = await walletService.searchWallets(searchQuery);
+      const results = await walletService.searchWallets(trimmed);
       setWallets(results);
       
       if (results.length === 0) {
@@ -130,10 +139,17 @@ export default function AdminWallets() {
         <div className="flex gap-3">
           <div className="flex-1">
             <Input
+              type="text"
               placeholder="Search by Account Number, Name, or Email"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              disabled={isLoading}
+              className="w-full"
             />
           </div>
           <PrimaryButton onClick={handleSearch} disabled={isLoading}>
@@ -146,39 +162,54 @@ export default function AdminWallets() {
       {/* Results */}
       {wallets.length > 0 && (
         <ThemedCard>
-          <h2 className="text-xl font-semibold mb-4">Results</h2>
-          <div className="space-y-3">
-            {wallets.map((wallet) => (
-              <div
-                key={wallet.id}
-                className="p-4 border border-border rounded-lg flex items-center justify-between"
-              >
-                <div className="flex-1">
-                  <div className="font-semibold">{wallet.full_name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {wallet.account_number}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {wallet.email} • {wallet.role === 'driver' ? 'Driver' : 'Courier'}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Balance</div>
-                    <div className="text-xl font-bold">
-                      ₱{wallet.balance.toFixed(2)}
-                    </div>
-                  </div>
-                  <PrimaryButton
-                    onClick={() => handleOpenLoadDialog(wallet)}
-                    className="text-sm px-3 py-1 h-8"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Load
-                  </PrimaryButton>
-                </div>
-              </div>
-            ))}
+          <h2 className="text-xl font-semibold mb-4">Results ({wallets.length})</h2>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Account Number</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {wallets.map((wallet) => (
+                  <TableRow key={wallet.id}>
+                    <TableCell className="font-mono text-sm">
+                      {wallet.account_number || 'N/A'}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {wallet.full_name}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {wallet.email}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                        {wallet.role === 'driver' ? 'Driver' : 'Courier'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="font-bold text-lg">
+                        ₱{wallet.balance.toFixed(2)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <PrimaryButton
+                        onClick={() => handleOpenLoadDialog(wallet)}
+                        className="text-sm px-3 py-1 h-8"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Load
+                      </PrimaryButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </ThemedCard>
       )}
