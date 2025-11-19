@@ -296,82 +296,66 @@ export default function BookRide() {
   return (
     <PageLayout>
       <main className="flex-1 w-full bg-background pb-32">
-        {/* 🔒 SECTION 1: Greeting + Location */}
-        <div className="bg-primary px-4 py-6 text-primary-foreground">
-          <h1 className="text-2xl font-heading font-bold mb-2">
+        {/* 🔒 SECTION 1: Greeting */}
+        <div className="bg-primary px-4 py-4 text-primary-foreground">
+          <h1 className="text-2xl font-heading font-bold">
             {greeting}, {firstName}!
           </h1>
-          <div className="flex items-center gap-2 text-sm opacity-90">
-            <MapPin className="w-4 h-4" />
-            {pickupError ? (
-              <span>📍 {pickupError}</span>
-            ) : isAddressLoading ? (
-              <span>📍 Locating your address…</span>
-            ) : pickupAddress ? (
-              <span className="truncate">📍 {pickupAddress}</span>
-            ) : (
-              <span>📍 Getting your location…</span>
-            )}
-          </div>
         </div>
 
-        <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+        <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto">
           {/* 🔒 SECTION 2: TNVS-Style Pickup + Destination Card */}
           <section>
-            <div className="rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-3">
+            <div className="rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-2.5">
               {/* Pickup row */}
               <div className="space-y-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900 flex items-center justify-between">
-                  <span>Pickup</span>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
+                  Pickup
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Address field */}
                   <button
                     type="button"
                     onClick={handleChangePickupOnMap}
-                    className="text-[11px] font-medium underline-offset-2 hover:underline"
+                    className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm"
                   >
-                    Change on map
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleChangePickupOnMap}
-                  className="w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-3 w-3 rounded-full border border-amber-500 flex-shrink-0" />
-                    <div className="flex-1 min-w-0 text-left">
+                    <div className="h-3 w-3 rounded-full border border-amber-500 mr-2 flex-shrink-0" />
+                    <div className="min-w-0 text-left">
                       <div className="text-[11px] text-gray-500">From</div>
                       <div className="text-xs font-medium truncate">
                         {pickupAddress || 'Use current location or set on map'}
                       </div>
                     </div>
-                  </div>
-                  <MapPin className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                </button>
+                  </button>
+
+                  {/* Map icon button outside field */}
+                  <button
+                    type="button"
+                    onClick={handleChangePickupOnMap}
+                    className="flex-shrink-0 rounded-full bg-amber-50 p-2 shadow-sm hover:bg-amber-100"
+                  >
+                    <MapPin className="h-4 w-4 text-amber-700" />
+                  </button>
+                </div>
               </div>
 
               {/* Destination row */}
               <div className="space-y-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900 flex items-center justify-between">
-                  <span>Destination</span>
-                  <button
-                    type="button"
-                    onClick={handleOpenDestinationMapPicker}
-                    className="text-[11px] font-medium underline-offset-2 hover:underline"
-                  >
-                    Set on map
-                  </button>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
+                  Destination
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Focus on the search input - we'll handle this differently
-                  }}
-                  className="w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="h-3 w-3 rounded-full border border-rose-500 flex-shrink-0" />
+                <div className="flex items-center gap-2">
+                  {/* Address field with search input */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Focus on the search input
+                    }}
+                    className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm"
+                  >
+                    <div className="h-3 w-3 rounded-full border border-rose-500 mr-2 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] text-gray-500">To</div>
                       <input
@@ -399,18 +383,17 @@ export default function BookRide() {
                         ✕
                       </button>
                     )}
-                  </div>
+                  </button>
+
+                  {/* Map icon button outside field */}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDestinationMapPicker();
-                    }}
-                    className="flex-shrink-0"
+                    onClick={handleOpenDestinationMapPicker}
+                    className="flex-shrink-0 rounded-full bg-rose-50 p-2 shadow-sm hover:bg-rose-100"
                   >
-                    <MapPin className="h-4 w-4 text-rose-500" />
+                    <MapPin className="h-4 w-4 text-rose-700" />
                   </button>
-                </button>
+                </div>
               </div>
             </div>
 
