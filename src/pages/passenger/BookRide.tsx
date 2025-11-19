@@ -77,7 +77,7 @@ export default function BookRide() {
   
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pickupError, setPickupError] = useState<string | null>(null);
-  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [pickupAddress, setPickupAddress] = useState<string | null>(null);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   
   const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null);
@@ -86,10 +86,10 @@ export default function BookRide() {
   const [loading, setLoading] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
-  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState<{ mode: 'pickup' | 'dropoff' } | null>(null);
 
   // Check if form is complete for Request Ride button
-  const isFormComplete = Boolean(currentAddress && dropoffAddress && selectedService);
+  const isFormComplete = Boolean(pickupAddress && dropoffAddress && selectedService);
 
   // Get greeting based on time of day
   useEffect(() => {
@@ -128,9 +128,9 @@ export default function BookRide() {
 
     setIsAddressLoading(true);
     reverseGeocode(pickupCoords.lat, pickupCoords.lng)
-      .then((addr) => setCurrentAddress(addr))
+      .then((addr) => setPickupAddress(addr))
       .catch(() => {
-        setCurrentAddress(
+        setPickupAddress(
           `Location at ${pickupCoords.lat.toFixed(4)}, ${pickupCoords.lng.toFixed(4)}`
         );
       })
@@ -206,12 +206,27 @@ export default function BookRide() {
     setShowSuggestions(false);
   };
 
-  const handleMapPickerConfirm = (destination: { address: string; coords: { lat: number; lng: number } }) => {
-    setDestinationQuery(destination.address);
-    setDropoffAddress(destination.address);
-    setDropoffCoords(destination.coords);
-    setShowMapPicker(false);
-    toast.success('Destination set on map');
+  const handleMapPickerConfirm = (result: { address: string; coords: { lat: number; lng: number } }) => {
+    if (showMapPicker?.mode === 'pickup') {
+      setPickupAddress(result.address);
+      setPickupCoords(result.coords);
+      setShowMapPicker(null);
+      toast.success('Pickup location updated');
+    } else {
+      setDestinationQuery(result.address);
+      setDropoffAddress(result.address);
+      setDropoffCoords(result.coords);
+      setShowMapPicker(null);
+      toast.success('Destination set on map');
+    }
+  };
+
+  const handleChangePickupOnMap = () => {
+    setShowMapPicker({ mode: 'pickup' });
+  };
+
+  const handleOpenDestinationMapPicker = () => {
+    setShowMapPicker({ mode: 'dropoff' });
   };
 
   
@@ -221,7 +236,7 @@ export default function BookRide() {
       return;
     }
 
-    if (!selectedService || !currentAddress || !dropoffAddress) {
+    if (!selectedService || !pickupAddress || !dropoffAddress) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -233,7 +248,7 @@ export default function BookRide() {
         .from('rides')
         .insert([{
           passenger_id: user.id,
-          pickup_location: currentAddress,
+          pickup_location: pickupAddress,
           dropoff_location: dropoffAddress,
           pickup_lat: pickupCoords?.lat,
           pickup_lng: pickupCoords?.lng,
@@ -255,7 +270,7 @@ export default function BookRide() {
       // Save to recent searches
       const newSearch = {
         destination: dropoffAddress,
-        pickup: currentAddress,
+        pickup: pickupAddress,
         timestamp: Date.now(),
       };
       const updated = [newSearch, ...recentSearches.slice(0, 4)];
@@ -292,8 +307,8 @@ export default function BookRide() {
               <span>📍 {pickupError}</span>
             ) : isAddressLoading ? (
               <span>📍 Locating your address…</span>
-            ) : currentAddress ? (
-              <span className="truncate">📍 {currentAddress}</span>
+            ) : pickupAddress ? (
+              <span className="truncate">📍 {pickupAddress}</span>
             ) : (
               <span>📍 Getting your location…</span>
             )}
@@ -301,80 +316,136 @@ export default function BookRide() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
-          {/* 🔒 SECTION 2: Destination Search Bar */}
-          <div className="relative">
-            <ThemedCard className="flex items-center gap-3 py-3">
-              <Search className="w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Where are you heading?"
-                value={destinationQuery}
-                onChange={(e) => setDestinationQuery(e.target.value)}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-base flex-1"
-              />
-              <button
-                onClick={() => setShowMapPicker(true)}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 whitespace-nowrap px-2 py-1 rounded hover:bg-primary/5 transition-colors"
-                type="button"
-              >
-                <Map className="w-4 h-4" />
-                <span className="hidden sm:inline">Set on map</span>
-              </button>
-            </ThemedCard>
-            
-            {/* Suggestions dropdown */}
-            {showSuggestions && (suggestions.length > 0 || destinationQuery.trim().length >= 3) && (
-              <ThemedCard className="absolute top-full left-0 right-0 mt-2 z-10 max-h-60 overflow-y-auto">
-                {/* Custom "use exactly what I typed" option */}
+          {/* 🔒 SECTION 2: TNVS-Style Pickup + Destination Card */}
+          <section>
+            <div className="rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-3">
+              {/* Pickup row */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-amber-900">
+                  <span className="font-semibold uppercase tracking-wide">Pickup</span>
+                  <button
+                    type="button"
+                    onClick={handleChangePickupOnMap}
+                    className="text-[11px] font-medium underline-offset-2 hover:underline"
+                  >
+                    Change on map
+                  </button>
+                </div>
                 <button
                   type="button"
-                  className="w-full text-left px-4 py-3 border-b border-border hover:bg-muted/50 transition-colors"
-                  onClick={() => {
-                    const text = destinationQuery.trim();
-                    if (!text) return;
-                    setDropoffAddress(text);
-                    setDropoffCoords(null);
-                    setShowSuggestions(false);
-                  }}
+                  onClick={handleChangePickupOnMap}
+                  className="w-full flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm hover:shadow transition-shadow"
                 >
-                  <span className="text-sm">Use this address: </span>
-                  <span className="text-sm font-medium">"{destinationQuery.trim()}"</span>
+                  <MapPin className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-[11px] text-gray-500">Pickup location</div>
+                    <div className="text-xs font-medium truncate">
+                      {pickupAddress || 'Use current location'}
+                    </div>
+                  </div>
                 </button>
+              </div>
 
-                {/* Mapbox suggestions */}
-                {suggestions.map((suggestion) => (
+              {/* Destination row */}
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
+                  Destination
+                </div>
+
+                {/* Search pill */}
+                <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm">
+                  <Search className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Where are you heading?"
+                    value={destinationQuery}
+                    onChange={(e) => setDestinationQuery(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-0 placeholder:text-gray-400"
+                  />
+                  {destinationQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDestinationQuery('');
+                        setDropoffAddress(null);
+                        setDropoffCoords(null);
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                      }}
+                      className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Map picker button for destination */}
+                <button
+                  type="button"
+                  onClick={handleOpenDestinationMapPicker}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-amber-50 py-2 text-xs font-medium text-amber-900 hover:bg-amber-100 transition"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span>Set destination on map</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Suggestions dropdown */}
+            {showSuggestions && (suggestions.length > 0 || destinationQuery.trim().length >= 3) && (
+              <div className="mt-1">
+                <div className="rounded-2xl bg-white shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                  {/* Custom "use exactly what I typed" option */}
                   <button
-                    key={suggestion.id}
-                    onClick={() => handleSuggestionClick(suggestion)}
                     type="button"
-                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                    className="w-full text-left px-4 py-3 border-b border-border hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      const text = destinationQuery.trim();
+                      if (!text) return;
+                      setDropoffAddress(text);
+                      setDropoffCoords(null);
+                      setShowSuggestions(false);
+                    }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
-                          {suggestion.primary}
+                    <span className="text-sm">Use this address: </span>
+                    <span className="text-sm font-medium">"{destinationQuery.trim()}"</span>
+                  </button>
+
+                  {/* Mapbox suggestions */}
+                  {suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      type="button"
+                      className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {suggestion.primary}
+                          </div>
+                          {suggestion.secondary && (
+                            <div className="text-xs text-muted-foreground truncate mt-1">
+                              {suggestion.secondary}
+                            </div>
+                          )}
                         </div>
-                        {suggestion.secondary && (
-                          <div className="text-xs text-muted-foreground truncate mt-1">
-                            {suggestion.secondary}
+                        {suggestion.distanceKm !== undefined && (
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {suggestion.distanceKm < 1 
+                              ? `${Math.round(suggestion.distanceKm * 1000)}m`
+                              : `${suggestion.distanceKm.toFixed(1)}km`
+                            }
                           </div>
                         )}
                       </div>
-                      {suggestion.distanceKm !== undefined && (
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          {suggestion.distanceKm < 1 
-                            ? `${Math.round(suggestion.distanceKm * 1000)}m`
-                            : `${suggestion.distanceKm.toFixed(1)}km`
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-
-              </ThemedCard>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
+          </section>
 
           {/* 🔒 SECTION 3: Recent Searches */}
           <div>
@@ -471,7 +542,7 @@ export default function BookRide() {
                 <MapPin className="h-3 w-3 text-amber-500 flex-shrink-0" />
                 <div className="truncate">
                   <span className="font-semibold">From: </span>
-                  {currentAddress || 'Not set'}
+                  {pickupAddress || 'Not set'}
                 </div>
               </div>
               
@@ -509,9 +580,14 @@ export default function BookRide() {
         {/* Map Picker Modal */}
         {showMapPicker && (
           <DestinationMapPicker
-            initialCenter={pickupCoords || undefined}
+            mode={showMapPicker.mode}
+            initialCenter={
+              showMapPicker.mode === 'pickup' 
+                ? (pickupCoords || undefined)
+                : (dropoffCoords || pickupCoords || undefined)
+            }
             onConfirm={handleMapPickerConfirm}
-            onClose={() => setShowMapPicker(false)}
+            onClose={() => setShowMapPicker(null)}
           />
         )}
       </div>
