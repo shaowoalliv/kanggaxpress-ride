@@ -8,39 +8,7 @@ import { KanggaLogo } from '@/components/KanggaLogo';
 import { MapPin, Shield, Zap, Package, Heart, Users, Clock } from 'lucide-react';
 
 export default function Landing() {
-  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user && profile) {
-      // Redirect logged-in users to their dashboard based on role
-      switch (profile.role) {
-        case 'driver':
-          navigate('/driver/dashboard');
-          break;
-        case 'courier':
-          navigate('/courier/dashboard');
-          break;
-        case 'sender':
-          navigate('/sender/dashboard');
-          break;
-        case 'passenger':
-        default:
-          navigate('/passenger/book-ride');
-          break;
-      }
-    }
-  }, [user, profile, loading, navigate]);
-
-  if (loading) {
-    return (
-      <PageLayout showHeader={false}>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-        </div>
-      </PageLayout>
-    );
-  }
 
   return (
     <PageLayout showHeader={false}>
