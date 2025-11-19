@@ -9,12 +9,13 @@ import { SecondaryButton } from './ui/SecondaryButton';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTVtdG5zYWwwMDhpMmpzYzBkdGM4ZXg3In0.VwrG0qJKs0R_0Gfqhzierw';
 
 interface DestinationMapPickerProps {
+  mode?: 'pickup' | 'dropoff';
   initialCenter?: { lat: number; lng: number };
   onConfirm: (destination: { address: string; coords: { lat: number; lng: number } }) => void;
   onClose: () => void;
 }
 
-export function DestinationMapPicker({ initialCenter, onConfirm, onClose }: DestinationMapPickerProps) {
+export function DestinationMapPicker({ mode = 'dropoff', initialCenter, onConfirm, onClose }: DestinationMapPickerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   
@@ -113,7 +114,9 @@ export function DestinationMapPicker({ initialCenter, onConfirm, onClose }: Dest
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
       <div className="bg-primary text-primary-foreground px-4 py-4 flex items-center justify-between shadow-md">
-        <h2 className="text-lg font-semibold">Set Destination on Map</h2>
+        <h2 className="text-lg font-semibold">
+          {mode === 'pickup' ? 'Set Pickup Location' : 'Set Destination on Map'}
+        </h2>
         <button
           onClick={onClose}
           className="p-1 hover:bg-primary-foreground/10 rounded-full transition-colors"
@@ -125,7 +128,10 @@ export function DestinationMapPicker({ initialCenter, onConfirm, onClose }: Dest
 
       {/* Instructions */}
       <div className="bg-muted/50 px-4 py-2 text-sm text-center">
-        Drag the map to position the pin on your drop-off location
+        {mode === 'pickup' 
+          ? 'Drag the map to position the pin on your pickup location'
+          : 'Drag the map to position the pin on your drop-off location'
+        }
       </div>
 
       {/* Map */}
@@ -147,7 +153,9 @@ export function DestinationMapPicker({ initialCenter, onConfirm, onClose }: Dest
         <div className="px-4 py-4 space-y-3">
           {/* Address display */}
           <div className="bg-muted/30 rounded-lg px-3 py-3">
-            <div className="text-xs text-muted-foreground mb-1">Drop-off location:</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              {mode === 'pickup' ? 'Pickup location:' : 'Drop-off location:'}
+            </div>
             <div className="font-medium text-sm">
               {isLoadingAddress ? (
                 <span className="text-muted-foreground">Loading address...</span>
@@ -174,7 +182,7 @@ export function DestinationMapPicker({ initialCenter, onConfirm, onClose }: Dest
               isLoading={isConfirming}
               className="flex-1"
             >
-              Confirm Destination
+              {mode === 'pickup' ? 'Confirm Pickup' : 'Confirm Destination'}
             </PrimaryButton>
           </div>
         </div>
