@@ -136,26 +136,31 @@ export default function AdminWallets() {
       {/* Search */}
       <ThemedCard>
         <h2 className="text-xl font-semibold mb-4">Search</h2>
-        <div className="flex gap-3">
+        <form
+          className="flex flex-col gap-3 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
+          }}
+        >
           <div className="flex-1">
             <Input
               type="text"
               placeholder="Search by Account Number, Name, or Email"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
               className="w-full"
             />
           </div>
-          <PrimaryButton onClick={handleSearch} disabled={isLoading}>
+          <PrimaryButton
+            type="submit"
+            disabled={isLoading}
+            className="sm:w-auto"
+          >
             <Search className="w-4 h-4 mr-2" />
             Search
           </PrimaryButton>
-        </div>
+        </form>
       </ThemedCard>
 
       {/* Results */}
