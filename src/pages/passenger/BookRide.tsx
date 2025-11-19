@@ -304,17 +304,17 @@ export default function BookRide() {
         </div>
 
         <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto">
-          {/* 🔒 SECTION 2: TNVS-Style Pickup + Destination Card */}
+          {/* PICKUP + DESTINATION */}
           <section>
-            <div className="rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-2.5">
-              {/* Pickup row */}
+            <div className="mx-auto max-w-md rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-3">
+              {/* PICKUP */}
               <div className="space-y-1">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
                   Pickup
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Address field */}
+                  {/* Pickup address card */}
                   <button
                     type="button"
                     onClick={handleChangePickupOnMap}
@@ -329,7 +329,7 @@ export default function BookRide() {
                     </div>
                   </button>
 
-                  {/* Map icon button outside field */}
+                  {/* Map button */}
                   <button
                     type="button"
                     onClick={handleChangePickupOnMap}
@@ -340,58 +340,33 @@ export default function BookRide() {
                 </div>
               </div>
 
-              {/* Destination row */}
+              {/* DESTINATION */}
               <div className="space-y-1">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
                   Destination
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Address field with search input */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Focus on the search input
-                    }}
-                    className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm"
-                  >
-                    <div className="h-3 w-3 rounded-full border border-rose-500 mr-2 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-gray-500">To</div>
-                      <input
-                        type="text"
-                        placeholder="Where are you heading?"
-                        value={destinationQuery}
-                        onChange={(e) => setDestinationQuery(e.target.value)}
-                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                        className="w-full border-0 bg-transparent text-xs font-medium focus:outline-none focus:ring-0 placeholder:text-gray-400 p-0"
-                      />
-                    </div>
-                    {destinationQuery && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDestinationQuery('');
-                          setDropoffAddress(null);
-                          setDropoffCoords(null);
-                          setSuggestions([]);
-                          setShowSuggestions(false);
-                        }}
-                        className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </button>
+                  {/* Destination input card */}
+                  <div className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm">
+                    <Search className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Where are you heading?"
+                      value={destinationQuery}
+                      onChange={(e) => setDestinationQuery(e.target.value)}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                      className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-0 placeholder:text-gray-400"
+                    />
+                  </div>
 
-                  {/* Map icon button outside field */}
+                  {/* Map button */}
                   <button
                     type="button"
                     onClick={handleOpenDestinationMapPicker}
-                    className="flex-shrink-0 rounded-full bg-rose-50 p-2 shadow-sm hover:bg-rose-100"
+                    className="flex-shrink-0 rounded-full bg-amber-50 p-2 shadow-sm hover:bg-amber-100"
                   >
-                    <MapPin className="h-4 w-4 text-rose-700" />
+                    <MapPin className="h-4 w-4 text-amber-700" />
                   </button>
                 </div>
               </div>
