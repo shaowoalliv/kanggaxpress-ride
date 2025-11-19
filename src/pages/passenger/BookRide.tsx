@@ -321,8 +321,8 @@ export default function BookRide() {
             <div className="rounded-2xl bg-amber-400/15 p-3 shadow-sm space-y-3">
               {/* Pickup row */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-amber-900">
-                  <span className="font-semibold uppercase tracking-wide">Pickup</span>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900 flex items-center justify-between">
+                  <span>Pickup</span>
                   <button
                     type="button"
                     onClick={handleChangePickupOnMap}
@@ -331,63 +331,85 @@ export default function BookRide() {
                     Change on map
                   </button>
                 </div>
+
                 <button
                   type="button"
                   onClick={handleChangePickupOnMap}
-                  className="w-full flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm hover:shadow transition-shadow"
+                  className="w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
                 >
-                  <MapPin className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="text-[11px] text-gray-500">Pickup location</div>
-                    <div className="text-xs font-medium truncate">
-                      {pickupAddress || 'Use current location'}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-3 w-3 rounded-full border border-amber-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="text-[11px] text-gray-500">From</div>
+                      <div className="text-xs font-medium truncate">
+                        {pickupAddress || 'Use current location or set on map'}
+                      </div>
                     </div>
                   </div>
+                  <MapPin className="h-4 w-4 text-amber-500 flex-shrink-0" />
                 </button>
               </div>
 
               {/* Destination row */}
               <div className="space-y-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">
-                  Destination
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-900 flex items-center justify-between">
+                  <span>Destination</span>
+                  <button
+                    type="button"
+                    onClick={handleOpenDestinationMapPicker}
+                    className="text-[11px] font-medium underline-offset-2 hover:underline"
+                  >
+                    Set on map
+                  </button>
                 </div>
 
-                {/* Search pill */}
-                <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm">
-                  <Search className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Where are you heading?"
-                    value={destinationQuery}
-                    onChange={(e) => setDestinationQuery(e.target.value)}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-0 placeholder:text-gray-400"
-                  />
-                  {destinationQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDestinationQuery('');
-                        setDropoffAddress(null);
-                        setDropoffCoords(null);
-                        setSuggestions([]);
-                        setShowSuggestions(false);
-                      }}
-                      className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
-                {/* Map picker button for destination */}
                 <button
                   type="button"
-                  onClick={handleOpenDestinationMapPicker}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-amber-50 py-2 text-xs font-medium text-amber-900 hover:bg-amber-100 transition"
+                  onClick={() => {
+                    // Focus on the search input - we'll handle this differently
+                  }}
+                  className="w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
                 >
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>Set destination on map</span>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="h-3 w-3 rounded-full border border-rose-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] text-gray-500">To</div>
+                      <input
+                        type="text"
+                        placeholder="Where are you heading?"
+                        value={destinationQuery}
+                        onChange={(e) => setDestinationQuery(e.target.value)}
+                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                        className="w-full border-0 bg-transparent text-xs font-medium focus:outline-none focus:ring-0 placeholder:text-gray-400 p-0"
+                      />
+                    </div>
+                    {destinationQuery && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDestinationQuery('');
+                          setDropoffAddress(null);
+                          setDropoffCoords(null);
+                          setSuggestions([]);
+                          setShowSuggestions(false);
+                        }}
+                        className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenDestinationMapPicker();
+                    }}
+                    className="flex-shrink-0"
+                  >
+                    <MapPin className="h-4 w-4 text-rose-500" />
+                  </button>
                 </button>
               </div>
             </div>
