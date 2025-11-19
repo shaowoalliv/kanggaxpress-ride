@@ -15,6 +15,7 @@ import {
   Scale,
   FileText,
   Settings,
+  BadgeDollarSign,
 } from 'lucide-react';
 
 const sections = [
@@ -27,6 +28,7 @@ const sections = [
   { name: 'KYC', path: '/admin/kyc', icon: FileCheck },
   { name: 'Finance', path: '/admin/finance', icon: Wallet },
   { name: 'Fare Matrix', path: '/admin/fare-matrix', icon: Grid3x3 },
+  { name: 'Fare Tips', path: '/admin/fare-tips', icon: BadgeDollarSign },
   { name: 'Promotions', path: '/admin/promotions', icon: Sparkles },
   { name: 'Ops', path: '/admin/ops', icon: Briefcase },
   { name: 'Disputes', path: '/admin/disputes', icon: Scale },
