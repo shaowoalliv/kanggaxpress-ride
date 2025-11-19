@@ -879,7 +879,7 @@ export default function Auth() {
                           required
                         />
                         <span>
-                          I understand and agree to the data privacy policy
+                          Yes, I understand and agree.
                         </span>
                       </label>
                     </div>
@@ -1184,7 +1184,7 @@ export default function Auth() {
                           required
                         />
                         <span>
-                          I understand and agree to the data privacy policy
+                          Yes, I understand and agree.
                         </span>
                       </label>
                     </div>
