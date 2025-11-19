@@ -7,9 +7,10 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { ridesService } from '@/services/rides';
 import { driversService } from '@/services/drivers';
+import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { DriverProfile } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Clock, Power, PowerOff } from 'lucide-react';
+import { MapPin, User, Clock, Power, PowerOff, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function DriverDashboard() {
@@ -30,6 +31,14 @@ export default function DriverDashboard() {
       loadDriverData();
     }
   }, [user, profile, navigate]);
+
+  // GPS location publishing - calculate active ride status
+  const hasActiveRide = myRides.some(r => r.status === 'in_progress' || r.status === 'accepted');
+  const { location: gpsLocation, error: gpsError } = useDriverLocationPublisher({
+    driverId: user?.id || null,
+    isAvailable: driverProfile?.is_available || false,
+    hasActiveRide,
+  });
 
   const loadDriverData = async () => {
     if (!profile) return;
