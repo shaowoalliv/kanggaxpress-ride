@@ -425,12 +425,15 @@ export type Database = {
           fare_estimate: number | null
           fare_final: number | null
           id: string
+          negotiation_notes: string | null
+          negotiation_status: string | null
           notes: string | null
           passenger_count: number | null
           passenger_id: string
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string
+          proposed_top_up_fare: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
           started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
@@ -451,12 +454,15 @@ export type Database = {
           fare_estimate?: number | null
           fare_final?: number | null
           id?: string
+          negotiation_notes?: string | null
+          negotiation_status?: string | null
           notes?: string | null
           passenger_count?: number | null
           passenger_id: string
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location: string
+          proposed_top_up_fare?: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
@@ -477,12 +483,15 @@ export type Database = {
           fare_estimate?: number | null
           fare_final?: number | null
           id?: string
+          negotiation_notes?: string | null
+          negotiation_status?: string | null
           notes?: string | null
           passenger_count?: number | null
           passenger_id?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string
+          proposed_top_up_fare?: number | null
           ride_type?: Database["public"]["Enums"]["ride_type"]
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
