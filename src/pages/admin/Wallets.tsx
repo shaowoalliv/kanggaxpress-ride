@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, History } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { walletService } from '@/services/wallet';
+import { walletService, WalletTransaction } from '@/services/wallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -43,6 +43,9 @@ export default function AdminWallets() {
   const [loadAmount, setLoadAmount] = useState('');
   const [loadReference, setLoadReference] = useState('');
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
   const handleSearch = async () => {
     const trimmed = searchTerm.trim();
@@ -85,6 +88,24 @@ export default function AdminWallets() {
     setIsLoadDialogOpen(true);
   };
 
+  const handleViewTransactions = async (userId: string) => {
+    setSelectedUserId(userId);
+    setIsLoadingTransactions(true);
+    try {
+      const txns = await walletService.getTransactions(userId, 20);
+      setTransactions(txns);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch transaction history',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
+
   const handleLoadBalance = async () => {
     if (!selectedWallet || !user) return;
 
@@ -114,6 +135,11 @@ export default function AdminWallets() {
 
       setIsLoadDialogOpen(false);
       handleSearch(); // Refresh the list
+      
+      // Refresh transactions if viewing this user's history
+      if (selectedUserId === selectedWallet.id) {
+        handleViewTransactions(selectedWallet.id);
+      }
     } catch (error) {
       console.error('Error loading balance:', error);
       toast({
@@ -176,7 +202,7 @@ export default function AdminWallets() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -202,19 +228,101 @@ export default function AdminWallets() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <PrimaryButton
-                        onClick={() => handleOpenLoadDialog(wallet)}
-                        className="text-sm px-3 py-1 h-8"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Load
-                      </PrimaryButton>
+                      <div className="flex gap-2 justify-end">
+                        <SecondaryButton
+                          onClick={() => handleViewTransactions(wallet.id)}
+                          className="text-sm px-3 py-1 h-8"
+                        >
+                          <History className="w-4 h-4 mr-1" />
+                          History
+                        </SecondaryButton>
+                        <PrimaryButton
+                          onClick={() => handleOpenLoadDialog(wallet)}
+                          className="text-sm px-3 py-1 h-8"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Load
+                        </PrimaryButton>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
+        </ThemedCard>
+      )}
+
+      {/* Transaction History */}
+      {selectedUserId && (
+        <ThemedCard>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Transaction History</h2>
+            <SecondaryButton
+              onClick={() => setSelectedUserId(null)}
+              className="text-sm"
+            >
+              Close
+            </SecondaryButton>
+          </div>
+          {isLoadingTransactions ? (
+            <p className="text-muted-foreground">Loading transactions...</p>
+          ) : transactions.length === 0 ? (
+            <p className="text-muted-foreground">No transactions found</p>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead>Related ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((txn) => (
+                    <TableRow key={txn.id}>
+                      <TableCell className="text-sm">
+                        {new Date(txn.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                            txn.type === 'load'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : txn.type === 'deduct'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          }`}
+                        >
+                          {txn.type.toUpperCase()}
+                        </span>
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-semibold ${
+                          txn.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {txn.amount > 0 ? '+' : ''}₱{txn.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {txn.reference || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-sm font-mono">
+                        {txn.related_ride_id
+                          ? `Ride: ${txn.related_ride_id.slice(0, 8)}...`
+                          : txn.related_delivery_id
+                          ? `Delivery: ${txn.related_delivery_id.slice(0, 8)}...`
+                          : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </ThemedCard>
       )}
 
