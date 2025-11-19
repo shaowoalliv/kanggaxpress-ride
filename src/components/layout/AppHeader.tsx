@@ -33,19 +33,18 @@ export function AppHeader({ title }: AppHeaderProps) {
         {/* LOCKED: Only hamburger menu - DO NOT ADD LOGO OR BRANDING */}
         <HamburgerMenu />
         
-        {/* Title (e.g., greeting) */}
-        {title && (
-          <div className="flex-1 min-w-0">
-            <h1 className="text-primary-foreground font-semibold text-base sm:text-lg truncate">
-              {title}
-            </h1>
-          </div>
-        )}
-        {!title && <div className="flex-1" />}
+        {/* Spacer */}
+        <div className="flex-1" />
 
+        {/* Right section: Greeting + User name */}
         {user && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-primary-foreground text-sm font-medium hidden sm:inline truncate max-w-[150px]">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {title && (
+              <h1 className="text-primary-foreground font-semibold text-sm sm:text-base truncate max-w-[200px]">
+                {title}
+              </h1>
+            )}
+            <span className="text-primary-foreground text-sm font-medium hidden sm:inline truncate max-w-[120px]">
               {profile?.full_name}
             </span>
           </div>
