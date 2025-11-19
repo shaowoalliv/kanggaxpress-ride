@@ -321,11 +321,8 @@ export default function BookRide() {
                     className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm"
                   >
                     <div className="h-3 w-3 rounded-full border border-amber-500 mr-2 flex-shrink-0" />
-                    <div className="min-w-0 text-left">
-                      <div className="text-[11px] text-gray-500">From</div>
-                      <div className="text-xs font-medium truncate">
-                        {pickupAddress || 'Use current location or set on map'}
-                      </div>
+                    <div className="text-sm font-medium truncate">
+                      {pickupAddress || 'Use current location or set on map'}
                     </div>
                   </button>
 
