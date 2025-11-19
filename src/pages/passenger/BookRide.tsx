@@ -316,16 +316,16 @@ export default function BookRide() {
 
                 <div className="flex items-center gap-2">
                   {/* Pickup address card */}
-                  <button
-                    type="button"
-                    onClick={handleChangePickupOnMap}
-                    className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm"
-                  >
+                  <div className="flex-1 flex items-center rounded-xl bg-white px-3 py-2 shadow-sm">
                     <div className="h-3 w-3 rounded-full border border-amber-500 mr-2 flex-shrink-0" />
-                    <div className="text-sm font-medium truncate">
+                    <button
+                      type="button"
+                      onClick={handleChangePickupOnMap}
+                      className="flex-1 border-0 bg-transparent text-sm text-left focus:outline-none focus:ring-0"
+                    >
                       {pickupAddress || 'Use current location or set on map'}
-                    </div>
-                  </button>
+                    </button>
+                  </div>
 
                   {/* Map button */}
                   <button
