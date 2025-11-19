@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
-import { DevPreviewBanner } from "@/components/DevPreviewBanner";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
@@ -81,7 +80,6 @@ const App = () => {
             <Toaster />
             <Sonner />
             <InstallPromptBanner />
-            <DevPreviewBanner />
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/choose-role" element={<ChooseRole />} />
