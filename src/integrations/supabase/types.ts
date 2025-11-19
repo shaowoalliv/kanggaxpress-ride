@@ -392,6 +392,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_number: string | null
           created_at: string | null
           email: string
           full_name: string
@@ -401,6 +402,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_number?: string | null
           created_at?: string | null
           email: string
           full_name: string
@@ -410,6 +412,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_number?: string | null
           created_at?: string | null
           email?: string
           full_name?: string
@@ -558,6 +561,81 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          reference: string | null
+          related_delivery_id: string | null
+          related_ride_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reference?: string | null
+          related_delivery_id?: string | null
+          related_ride_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reference?: string | null
+          related_delivery_id?: string | null
+          related_ride_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_related_delivery_id_fkey"
+            columns: ["related_delivery_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_related_ride_id_fkey"
+            columns: ["related_ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -573,6 +651,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      wallet_apply_transaction: {
+        Args: {
+          p_actor_user_id?: string
+          p_amount: number
+          p_delivery_id?: string
+          p_reference?: string
+          p_ride_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: number
       }
     }
     Enums: {

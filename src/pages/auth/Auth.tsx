@@ -529,11 +529,25 @@ export default function Auth() {
         });
       }
 
-      toast({
-        title: 'Registration Complete!',
-        description: 'Your account has been created. You can now log in.',
-        duration: 5000,
-      });
+      // Generate account number for driver/courier
+      if (driverData.vehicleType) {
+        const { walletService } = await import('@/services/wallet');
+        const role = registrationData.role as 'driver' | 'courier';
+        const accountNumber = walletService.generateAccountNumber(role, data.user!.id);
+        await walletService.updateAccountNumber(data.user!.id, accountNumber);
+        
+        toast({
+          title: 'Registration Complete!',
+          description: `Your KanggaXpress Account Number: ${accountNumber}. Please save this for reloading your balance.`,
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: 'Registration Complete!',
+          description: 'Your account has been created. You can now log in.',
+          duration: 5000,
+        });
+      }
 
       // Sign out the user to force them to login
       await supabase.auth.signOut();
