@@ -54,6 +54,8 @@ import AdminOps from "./pages/admin/Ops";
 import AdminDisputes from "./pages/admin/Disputes";
 import AdminAudit from "./pages/admin/Audit";
 import AdminSettings from "./pages/admin/Settings";
+import AdminWallets from "./pages/admin/Wallets";
+import AdminWallets from "./pages/admin/Wallets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -125,6 +127,7 @@ const App = () => {
               <Route path="pricing" element={<Pricing />} />
               <Route path="kyc" element={<AdminKYC />} />
               <Route path="finance" element={<AdminFinance />} />
+              <Route path="wallets" element={<AdminWallets />} />
               <Route path="fare-matrix" element={<AdminFareMatrix />} />
               <Route path="fare-tips" element={<AdminFareTips />} />
               <Route path="promotions" element={<AdminPromotions />} />
