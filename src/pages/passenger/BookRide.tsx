@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight, Map } from 'lucide-react';
+import { MapPin, Search, Home, Building2, ShoppingCart, MapPinned, Clock, ArrowRight, Map, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { reverseGeocode, searchPlaces } from '@/lib/geocoding';
 import { DestinationMapPicker } from '@/components/DestinationMapPicker';
@@ -512,49 +512,68 @@ export default function BookRide() {
           <div className="h-32" />
         </div>
 
-        {/* Bottom Sticky Request Ride Bar */}
-        <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-kx-yellow/95 to-kx-yellow/0 pb-3 pt-2">
-          <div className="mx-auto max-w-md px-3">
-            <div className="rounded-2xl bg-white shadow-lg px-3 py-3 space-y-2">
-              {/* Compact Status Row */}
-              <div className="flex items-center justify-between text-[11px] text-gray-700">
-                <div className="flex items-center gap-1">
-                  <span className={pickupAddress ? 'text-emerald-600' : 'text-red-500'}>
-                    ●
-                  </span>
-                  <span>{pickupAddress ? 'Pickup set' : 'Pickup not set'}</span>
+        {/* Bottom Sticky Card - Option 1: Simplified Summary */}
+        {pickupAddress && (
+          <div className="fixed inset-x-0 bottom-0 z-30 bg-primary border-t-2 border-primary-foreground/20 shadow-xl pb-safe">
+            <div className="mx-auto max-w-md px-4 py-4">
+              <div className="space-y-3">
+                {/* Trip Summary */}
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 text-primary-foreground/90 text-sm">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <p className="line-clamp-1 font-medium">{pickupAddress}</p>
+                  </div>
+                  {dropoffAddress && (
+                    <div className="flex items-start gap-2 text-primary-foreground text-sm">
+                      <Navigation className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <p className="line-clamp-1 font-medium">{dropoffAddress}</p>
+                    </div>
+                  )}
+                  {selectedService && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/20">
+                      <div className="w-8 h-8 flex items-center justify-center">
+                        <img 
+                          src={selectedService.icon} 
+                          alt="Service" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-primary-foreground font-semibold text-sm">
+                          {selectedService.name}
+                        </p>
+                        <p className="text-primary-foreground/80 text-xs">
+                          Base Price: ₱{selectedService.baseFare}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className={dropoffAddress ? 'text-emerald-600' : 'text-red-500'}>
-                    ●
-                  </span>
-                  <span>{dropoffAddress ? 'Destination set' : 'Destination not set'}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className={selectedService ? 'text-emerald-600' : 'text-gray-400'}>
-                    ●
-                  </span>
-                  <span>
-                    {selectedService
-                      ? `${selectedService.name} ₱${selectedService.baseFare}`
-                      : 'Service'}
-                  </span>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setPickupAddress('');
+                      setDropoffAddress('');
+                      setSelectedService(null);
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl bg-primary-foreground/10 text-primary-foreground font-heading font-semibold hover:bg-primary-foreground/20 active:scale-[0.98] transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRequestRide}
+                    disabled={!dropoffAddress || !selectedService || loading}
+                    className="flex-1 py-3 px-4 rounded-xl bg-primary-foreground text-primary font-heading font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  >
+                    {loading ? 'Requesting...' : 'Request Ride'}
+                  </button>
                 </div>
               </div>
-              
-              {/* Request Ride Button */}
-              <PrimaryButton
-                onClick={handleRequestRide}
-                disabled={!isFormComplete || loading}
-                isLoading={loading}
-                className="h-11 rounded-full text-sm font-semibold"
-              >
-                Request Ride
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </PrimaryButton>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Map Picker Modal */}
         {showMapPicker && (
