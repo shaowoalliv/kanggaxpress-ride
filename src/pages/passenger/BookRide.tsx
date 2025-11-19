@@ -496,10 +496,11 @@ export default function BookRide() {
                       : 'hover:shadow-lg'
                   }`}
                 >
-                  <div className="w-16 h-16 flex items-center justify-center mb-3">
+                  <div className="w-12 h-12 flex items-center justify-center mb-2">
                     <img src={service.icon} alt={service.name} className="w-full h-full object-contain" />
                   </div>
-                  <p className="font-semibold text-center mb-1">{service.name}</p>
+                  <p className="font-semibold text-center text-sm mb-1">{service.name}</p>
+                  <p className="text-xs text-muted-foreground">Base Price</p>
                   <p className="text-primary font-bold">₱{service.baseFare}</p>
                 </ThemedCard>
               ))}
