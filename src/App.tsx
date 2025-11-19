@@ -55,7 +55,6 @@ import AdminDisputes from "./pages/admin/Disputes";
 import AdminAudit from "./pages/admin/Audit";
 import AdminSettings from "./pages/admin/Settings";
 import AdminWallets from "./pages/admin/Wallets";
-import AdminWallets from "./pages/admin/Wallets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

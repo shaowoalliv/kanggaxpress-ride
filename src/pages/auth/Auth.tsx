@@ -532,9 +532,9 @@ export default function Auth() {
       // Generate account number for driver/courier
       if (driverData.vehicleType) {
         const { walletService } = await import('@/services/wallet');
-        const role = registrationData.role as 'driver' | 'courier';
-        const accountNumber = walletService.generateAccountNumber(role, data.user!.id);
-        await walletService.updateAccountNumber(data.user!.id, accountNumber);
+        const role = driverData.email.includes('courier') ? 'courier' : 'driver';
+        const accountNumber = walletService.generateAccountNumber(role, userId);
+        await walletService.updateAccountNumber(userId, accountNumber);
         
         toast({
           title: 'Registration Complete!',

@@ -27,6 +27,7 @@ const sections = [
   { name: 'Pricing', path: '/admin/pricing', icon: DollarSign },
   { name: 'KYC', path: '/admin/kyc', icon: FileCheck },
   { name: 'Finance', path: '/admin/finance', icon: Wallet },
+  { name: 'Wallets', path: '/admin/wallets', icon: BadgeDollarSign },
   { name: 'Fare Matrix', path: '/admin/fare-matrix', icon: Grid3x3 },
   { name: 'Fare Tips', path: '/admin/fare-tips', icon: BadgeDollarSign },
   { name: 'Promotions', path: '/admin/promotions', icon: Sparkles },
