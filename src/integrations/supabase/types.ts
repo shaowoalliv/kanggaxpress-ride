@@ -394,6 +394,7 @@ export type Database = {
         Row: {
           account_number: string | null
           created_at: string | null
+          current_session_token: string | null
           email: string
           full_name: string
           id: string
@@ -404,6 +405,7 @@ export type Database = {
         Insert: {
           account_number?: string | null
           created_at?: string | null
+          current_session_token?: string | null
           email: string
           full_name: string
           id: string
@@ -414,6 +416,7 @@ export type Database = {
         Update: {
           account_number?: string | null
           created_at?: string | null
+          current_session_token?: string | null
           email?: string
           full_name?: string
           id?: string

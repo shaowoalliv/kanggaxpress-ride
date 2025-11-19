@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
+import { useSessionValidator } from "@/hooks/useSessionValidator";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
@@ -59,6 +60,12 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Wrapper component for session validation
+function SessionValidatorWrapper() {
+  useSessionValidator();
+  return null;
+}
+
 const App = () => {
   // Keyboard shortcut: Ctrl/Cmd + Alt + D to open dev preview
   useEffect(() => {
@@ -78,6 +85,7 @@ const App = () => {
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
+            <SessionValidatorWrapper />
             <Toaster />
             <Sonner />
             <InstallPromptBanner />
