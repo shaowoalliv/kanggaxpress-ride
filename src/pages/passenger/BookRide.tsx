@@ -88,6 +88,13 @@ export default function BookRide() {
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
   const [showMapPicker, setShowMapPicker] = useState<{ mode: 'pickup' | 'dropoff' } | null>(null);
 
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth?role=passenger');
+    }
+  }, [user, navigate]);
+
   // Check if form is complete for Request Ride button
   const isFormComplete = Boolean(pickupAddress && dropoffAddress && selectedService);
 
