@@ -148,7 +148,6 @@ export default function AdminWallets() {
                   handleSearch();
                 }
               }}
-              disabled={isLoading}
               className="w-full"
             />
           </div>
