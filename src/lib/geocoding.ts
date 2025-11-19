@@ -7,7 +7,21 @@ export interface PlaceSuggestion {
   secondary: string;    // city, region, country for second line
   fullAddress: string;  // full place_name
   coords: { lat: number; lng: number };
+  distanceKm?: number;  // distance from proximity point, if known
 }
+
+// Haversine formula to calculate distance between two coordinates in km
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 export const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
   try {
@@ -68,19 +82,40 @@ export const searchPlaces = async (
     
     const data = await response.json();
     
-    return (data.features || [])
+    const suggestions = (data.features || [])
       .filter((f: any) => 
         Array.isArray(f.place_type) &&
         !f.place_type.includes('country') &&
         !f.place_type.includes('region')
       )
-      .map((f: any) => ({
-        id: f.id,
-        primary: f.text || f.place_name,
-        secondary: f.context ? f.context.map((c: any) => c.text).join(', ') : '',
-        fullAddress: f.place_name,
-        coords: { lat: f.center[1], lng: f.center[0] },
-      }));
+      .map((f: any) => {
+        const suggestion: PlaceSuggestion = {
+          id: f.id,
+          primary: f.text || f.place_name,
+          secondary: f.context ? f.context.map((c: any) => c.text).join(', ') : '',
+          fullAddress: f.place_name,
+          coords: { lat: f.center[1], lng: f.center[0] },
+        };
+        
+        // Calculate distance if proximity was provided
+        if (options?.proximity) {
+          suggestion.distanceKm = calculateDistance(
+            options.proximity.lat,
+            options.proximity.lng,
+            suggestion.coords.lat,
+            suggestion.coords.lng
+          );
+        }
+        
+        return suggestion;
+      });
+    
+    // Sort by distance if we have it
+    if (options?.proximity) {
+      suggestions.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+    }
+    
+    return suggestions;
   } catch (error) {
     console.error('Search places error:', error);
     return [];

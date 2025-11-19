@@ -331,16 +331,29 @@ export default function BookRide() {
                     type="button"
                     className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
                   >
-                    <div className="font-medium text-sm truncate">
-                      {suggestion.primary}
-                    </div>
-                    {suggestion.secondary && (
-                      <div className="text-xs text-muted-foreground truncate mt-1">
-                        {suggestion.secondary}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {suggestion.primary}
+                        </div>
+                        {suggestion.secondary && (
+                          <div className="text-xs text-muted-foreground truncate mt-1">
+                            {suggestion.secondary}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      {suggestion.distanceKm !== undefined && (
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {suggestion.distanceKm < 1 
+                            ? `${Math.round(suggestion.distanceKm * 1000)}m`
+                            : `${suggestion.distanceKm.toFixed(1)}km`
+                          }
+                        </div>
+                      )}
+                    </div>
                   </button>
                 ))}
+
               </ThemedCard>
             )}
           </div>
