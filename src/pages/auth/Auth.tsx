@@ -643,6 +643,94 @@ export default function Auth() {
     return roleType.charAt(0).toUpperCase() + roleType.slice(1);
   };
 
+  // DEV ONLY: Quick bypass for testing
+  const handleDevBypass = async (bypassRole: UserRole) => {
+    if (import.meta.env.VITE_DEV_PREVIEW_ON !== 'true') return;
+    
+    try {
+      // Create a dev test account
+      const devEmail = `dev-${bypassRole}-${Date.now()}@test.com`;
+      const devPassword = 'devtest123';
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: devEmail,
+        password: devPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: `Dev ${bypassRole.charAt(0).toUpperCase() + bypassRole.slice(1)}`,
+            phone: '09123456789',
+            role: bypassRole,
+          },
+        },
+      });
+
+      if (authError || !authData.user) throw new Error('Dev account creation failed');
+
+      const userId = authData.user.id;
+      const sessionToken = generateSessionToken();
+
+      // Create driver/courier profile if needed
+      if (bypassRole === 'driver') {
+        await driversService.createDriverProfile(userId, {
+          vehicle_type: 'tricycle',
+          vehicle_plate: 'DEV123',
+          vehicle_color: 'Yellow',
+          vehicle_model: 'Dev Tricycle',
+          license_number: 'DEV-LICENSE',
+        });
+        
+        const { walletService } = await import('@/services/wallet');
+        const accountNumber = walletService.generateAccountNumber('driver', userId);
+        await supabase
+          .from('profiles')
+          .update({ account_number: accountNumber, current_session_token: sessionToken })
+          .eq('id', userId);
+      } else if (bypassRole === 'courier') {
+        await supabase.from('courier_profiles').insert({
+          user_id: userId,
+          vehicle_type: 'motor',
+          vehicle_plate: 'DEV456',
+          vehicle_color: 'Red',
+          vehicle_model: 'Dev Motor',
+          license_number: 'DEV-LICENSE',
+        });
+        
+        const { walletService } = await import('@/services/wallet');
+        const accountNumber = walletService.generateAccountNumber('courier', userId);
+        await supabase
+          .from('profiles')
+          .update({ account_number: accountNumber, current_session_token: sessionToken })
+          .eq('id', userId);
+      } else {
+        await supabase
+          .from('profiles')
+          .update({ current_session_token: sessionToken })
+          .eq('id', userId);
+      }
+
+      // Store session token
+      setLocalSessionToken(sessionToken);
+
+      // Auto sign in
+      await supabase.auth.signInWithPassword({
+        email: devEmail,
+        password: devPassword,
+      });
+
+      toast({
+        title: 'Dev Bypass Active',
+        description: `Logged in as ${bypassRole}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Dev Bypass Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <PageLayout>
@@ -696,6 +784,7 @@ export default function Auth() {
                             size="sm"
                             variant={role === r ? 'default' : 'outline'}
                             onClick={() => setRole(r)}
+                            onDoubleClick={() => handleDevBypass(r)}
                             className={`flex flex-col gap-2.5 sm:gap-1.5 h-auto py-4 px-4 sm:py-2 sm:px-3 transition-all min-h-[72px] sm:min-h-[60px] ${
                               role === r 
                                 ? 'shadow-lg scale-105 border-2 border-primary' 
