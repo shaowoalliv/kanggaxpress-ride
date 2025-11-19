@@ -43,6 +43,7 @@ import { kycService } from '@/services/kyc';
 import { driversService } from '@/services/drivers';
 import { DocType } from '@/types/kyc';
 import { z } from 'zod';
+import { generateSessionToken, setLocalSessionToken } from '@/lib/sessionToken';
 
 const passengerSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -233,12 +234,23 @@ export default function Auth() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
       });
 
       if (error) throw error;
+      if (!data.user) throw new Error('No user returned');
+
+      // Generate and store session token
+      const sessionToken = generateSessionToken();
+      setLocalSessionToken(sessionToken);
+
+      // Update profile with new session token
+      await supabase
+        .from('profiles')
+        .update({ current_session_token: sessionToken })
+        .eq('id', data.user.id);
 
       toast({
         title: 'Success',
@@ -372,6 +384,17 @@ export default function Auth() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('User creation failed');
 
+      const userId = authData.user.id;
+
+      // Generate session token for passenger
+      const sessionToken = generateSessionToken();
+      
+      // Update profile with session token
+      await supabase
+        .from('profiles')
+        .update({ current_session_token: sessionToken })
+        .eq('id', userId);
+
       /* 🔒 LOCKED: Upload photos WITHOUT OCR data
        * 
        * Always upload with:
@@ -382,9 +405,9 @@ export default function Auth() {
        * DO NOT add OCR processing here
        */
       for (const photo of photosStaged) {
-        const imagePath = await kycService.uploadDocumentImage(authData.user.id, photo.docType, photo.imageBlob);
+        const imagePath = await kycService.uploadDocumentImage(userId, photo.docType, photo.imageBlob);
         await kycService.createKycDocument({
-          user_id: authData.user.id,
+          user_id: userId,
           doc_type: photo.docType,
           parsed: {}, // 🔒 ALWAYS empty - no OCR data
           confidence: 1.0, // 🔒 ALWAYS 1.0 - no OCR confidence
@@ -529,12 +552,23 @@ export default function Auth() {
         });
       }
 
-      // Generate account number for driver/courier
+      // Generate account number and session token for driver/courier
       if (driverData.vehicleType) {
         const { walletService } = await import('@/services/wallet');
         const role = driverData.email.includes('courier') ? 'courier' : 'driver';
         const accountNumber = walletService.generateAccountNumber(role, userId);
-        await walletService.updateAccountNumber(userId, accountNumber);
+        
+        // Generate session token
+        const sessionToken = generateSessionToken();
+        
+        // Update both account number and session token
+        await supabase
+          .from('profiles')
+          .update({ 
+            account_number: accountNumber,
+            current_session_token: sessionToken
+          })
+          .eq('id', userId);
         
         toast({
           title: 'Registration Complete!',

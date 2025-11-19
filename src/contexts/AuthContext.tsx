@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
 import { useDevPreviewSession } from '@/hooks/useDevPreviewSession';
+import { clearLocalSessionToken } from '@/lib/sessionToken';
 
 interface AuthContextType {
   user: User | null;
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    clearLocalSessionToken(); // Clear session token on logout
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
