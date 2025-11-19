@@ -5,6 +5,7 @@ import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RideMap } from '@/components/RideMap';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function RideStatus() {
   const [loading, setLoading] = useState(true);
   const [showFareConfirm, setShowFareConfirm] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!rideId) {
@@ -26,8 +28,8 @@ export default function RideStatus() {
 
     fetchRide();
 
-    // Set up realtime subscription
-    const channel = supabase
+    // Set up realtime subscription for ride updates
+    const rideChannel = supabase
       .channel(`ride-${rideId}`)
       .on(
         'postgres_changes',
@@ -47,9 +49,46 @@ export default function RideStatus() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(rideChannel);
     };
   }, [rideId, navigate]);
+
+  // Subscribe to driver location updates
+  useEffect(() => {
+    if (!ride?.driver_id) return;
+
+    console.log('[RideStatus] Subscribing to driver location:', ride.driver_id);
+
+    const driverChannel = supabase
+      .channel(`driver_presence:${ride.driver_id}`)
+      .on('broadcast', { event: 'location_update' }, (payload) => {
+        console.log('[RideStatus] Received driver location:', payload);
+        setDriverLocation({
+          lat: payload.payload.lat,
+          lng: payload.payload.lng,
+        });
+      })
+      .subscribe();
+
+    // Also fetch initial driver location from driver_profiles
+    supabase
+      .from('driver_profiles')
+      .select('current_lat, current_lng')
+      .eq('user_id', ride.driver_id)
+      .single()
+      .then(({ data }) => {
+        if (data?.current_lat && data?.current_lng) {
+          setDriverLocation({
+            lat: data.current_lat,
+            lng: data.current_lng,
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(driverChannel);
+    };
+  }, [ride?.driver_id]);
 
   const fetchRide = async () => {
     try {
@@ -368,6 +407,26 @@ export default function RideStatus() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+          {/* Map */}
+          {(ride?.status === 'accepted' || ride?.status === 'in_progress') && (
+            <ThemedCard className="p-0 overflow-hidden">
+              <RideMap
+                pickupLat={ride.pickup_lat}
+                pickupLng={ride.pickup_lng}
+                dropoffLat={ride.dropoff_lat}
+                dropoffLng={ride.dropoff_lng}
+                driverLat={driverLocation?.lat}
+                driverLng={driverLocation?.lng}
+                className="h-64 sm:h-80"
+              />
+              {!driverLocation && (
+                <div className="px-4 py-2 bg-muted/50 text-xs text-muted-foreground text-center">
+                  Waiting for driver location...
+                </div>
+              )}
+            </ThemedCard>
+          )}
+
           {/* Status Banner */}
           <ThemedCard className="bg-secondary/5 border-secondary/20">
             <div className="text-center py-4">

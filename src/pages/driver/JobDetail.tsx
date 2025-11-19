@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { ridesService } from '@/services/rides';
+import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
 
@@ -39,6 +40,14 @@ export default function JobDetail() {
     fetchRide();
     fetchTipOptions();
   }, [user, profile, rideId, navigate]);
+
+  // GPS location publishing for active ride
+  const isActiveRide = ride?.status === 'in_progress' || ride?.status === 'accepted';
+  useDriverLocationPublisher({
+    driverId: user?.id || null,
+    isAvailable: false,
+    hasActiveRide: isActiveRide,
+  });
 
   const fetchDriverProfile = async () => {
     try {
