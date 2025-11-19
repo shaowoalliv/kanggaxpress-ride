@@ -295,7 +295,7 @@ export default function BookRide() {
 
   return (
     <PageLayout>
-      <div className="flex-1 w-full bg-background">
+      <main className="flex-1 w-full bg-background pb-32">
         {/* 🔒 SECTION 1: Greeting + Location */}
         <div className="bg-primary px-4 py-6 text-primary-foreground">
           <h1 className="text-2xl font-heading font-bold mb-2">
@@ -590,8 +590,7 @@ export default function BookRide() {
             onClose={() => setShowMapPicker(null)}
           />
         )}
-        </main>
-      </div>
+      </main>
     </PageLayout>
   );
 }
