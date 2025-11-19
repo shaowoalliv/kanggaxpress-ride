@@ -11,6 +11,7 @@ import { CourierProfile } from '@/types';
 import { toast } from 'sonner';
 import { MapPin, Package, User, Phone, Clock, Power, PowerOff, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 const statusColors = {
   requested: 'text-primary',
@@ -38,6 +39,8 @@ export default function CourierDashboard() {
   const [myDeliveries, setMyDeliveries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [accountNumber, setAccountNumber] = useState<string>('');
 
   useEffect(() => {
     if (!user) {
@@ -46,6 +49,34 @@ export default function CourierDashboard() {
       navigate('/');
     } else {
       loadCourierData();
+
+      // Subscribe to wallet balance changes (Realtime)
+      const channel = supabase
+        .channel('courier-wallet-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'wallet_accounts',
+            filter: `user_id=eq.${user!.id}`,
+          },
+          (payload) => {
+            const previousBalance = walletBalance;
+            const newBalance = payload.new.balance as number;
+            setWalletBalance(newBalance);
+            
+            // Notify if balance was reloaded from < 5 to >= 5
+            if (previousBalance < 5 && newBalance >= 5) {
+              toast.success(`Balance reloaded to ₱${newBalance.toFixed(2)}. You can now accept jobs!`);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, profile, navigate]);
 
@@ -54,13 +85,17 @@ export default function CourierDashboard() {
 
     try {
       setLoading(true);
-      const [courierData, available, my] = await Promise.all([
+      const [courierData, available, my, userProfile, wallet] = await Promise.all([
         couriersService.getCourierProfile(profile.id),
         deliveriesService.getAvailableDeliveries(),
         profile.id ? deliveriesService.getCourierDeliveries(profile.id) : Promise.resolve([]),
+        supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
+        import('@/services/wallet').then(({ walletService }) => walletService.getWalletAccount(profile.id)),
       ]);
 
       setCourierProfile(courierData);
+      setAccountNumber(userProfile.data?.account_number || '');
+      setWalletBalance(wallet?.balance || 0);
       
       if (!courierData) {
         navigate('/courier/setup');
@@ -79,6 +114,12 @@ export default function CourierDashboard() {
 
   const toggleAvailability = async () => {
     if (!profile || !courierProfile) return;
+
+    // Check balance before going online
+    if (!courierProfile.is_available && walletBalance < 5) {
+      toast.error('Insufficient balance. You need at least ₱5.00 to accept jobs. Please reload to continue.');
+      return;
+    }
 
     try {
       setActionLoading(true);
@@ -101,6 +142,12 @@ export default function CourierDashboard() {
   const handleAcceptDelivery = async (deliveryId: string) => {
     if (!profile || !courierProfile) return;
 
+    // Check balance before accepting delivery
+    if (walletBalance < 5) {
+      toast.error('Insufficient balance. You need at least ₱5.00 to accept jobs. Please reload to continue.');
+      return;
+    }
+
     try {
       setActionLoading(true);
       await deliveriesService.acceptDelivery(deliveryId, courierProfile.id);
@@ -119,6 +166,28 @@ export default function CourierDashboard() {
       setActionLoading(true);
       await deliveriesService.updateDeliveryStatus(deliveryId, newStatus);
       toast.success('Delivery status updated');
+      
+      // Deduct ₱5 when delivery is completed
+      if (newStatus === 'delivered') {
+        try {
+          const { walletService } = await import('@/services/wallet');
+          const newBalance = await walletService.applyTransaction({
+            userId: user!.id,
+            amount: -5,
+            type: 'deduct',
+            reference: 'Delivery fee',
+            deliveryId: deliveryId,
+          });
+          setWalletBalance(newBalance);
+          toast.success('₱5 service fee deducted from your wallet');
+        } catch (walletError: any) {
+          console.error('Wallet deduction error:', walletError);
+          if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
+            toast.error('Delivery completed but wallet deduction failed due to insufficient funds');
+          }
+        }
+      }
+      
       await loadCourierData();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -152,14 +221,22 @@ export default function CourierDashboard() {
         <div className="space-y-6">
           {/* Courier Status */}
           <ThemedCard>
-            <div className="flex justify-between items-center">
-              <div>
+             <div className="flex justify-between items-center">
+              <div className="flex-1">
                 <h2 className="text-xl font-heading font-bold">
                   {courierProfile.is_available ? 'You\'re Online' : 'You\'re Offline'}
                 </h2>
-                <p className="text-sm text-muted-foreground capitalize">
+                <p className="text-sm text-muted-foreground capitalize mb-2">
                   {courierProfile.vehicle_type} • {courierProfile.vehicle_plate}
                 </p>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    <strong>Account No:</strong> {accountNumber || 'Pending'}
+                  </span>
+                  <span className={`font-semibold ${walletBalance < 5 ? 'text-destructive' : 'text-foreground'}`}>
+                    <strong>Balance:</strong> ₱{walletBalance.toFixed(2)}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={toggleAvailability}

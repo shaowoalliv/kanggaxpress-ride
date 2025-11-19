@@ -11,7 +11,8 @@ import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
 import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { FileText, CheckCircle, AlertCircle, Clock, Camera } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle, Clock, Camera, Wallet } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   GOVT_ID: 'Government ID',
@@ -23,12 +24,13 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
 };
 
 export default function KycStatus() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<KycDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [reuploadDoc, setReuploadDoc] = useState<DocType | null>(null);
+  const [accountNumber, setAccountNumber] = useState<string>('');
   const [reviewModal, setReviewModal] = useState<{
     open: boolean;
     docType: DocType;
@@ -43,7 +45,24 @@ export default function KycStatus() {
       return;
     }
     loadDocuments();
+    loadAccountNumber();
   }, [user, navigate]);
+
+  const loadAccountNumber = async () => {
+    if (!user || !profile) return;
+    if (profile.role !== 'driver' && profile.role !== 'courier') return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('account_number')
+        .eq('id', user.id)
+        .single();
+      setAccountNumber(data?.account_number || '');
+    } catch (error) {
+      console.error('Error loading account number:', error);
+    }
+  };
 
   const loadDocuments = async () => {
     if (!user) return;
@@ -137,6 +156,24 @@ export default function KycStatus() {
           <h1 className="text-3xl font-heading font-bold text-foreground">KYC Status</h1>
           <p className="text-muted-foreground mt-2">View and manage your verification documents</p>
         </div>
+
+        {/* Account Number Section for drivers/couriers */}
+        {accountNumber && (profile?.role === 'driver' || profile?.role === 'courier') && (
+          <ThemedCard className="p-6 bg-primary/5 border-primary/20">
+            <div className="flex items-start gap-4">
+              <Wallet className="w-6 h-6 text-primary mt-1" />
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-foreground mb-1">KanggaXpress Account Details</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <span className="text-foreground font-mono text-lg font-bold">{accountNumber}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Use this account number when reloading your KanggaXpress balance through the operator.
+                </p>
+              </div>
+            </div>
+          </ThemedCard>
+        )}
 
         {documents.length === 0 ? (
           <ThemedCard className="p-8 text-center">

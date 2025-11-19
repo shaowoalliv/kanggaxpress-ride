@@ -214,7 +214,26 @@ export default function JobDetail() {
 
       if (error) throw error;
 
-      toast.success('Ride completed!');
+      // Deduct ₱5 from driver's wallet
+      try {
+        const { walletService } = await import('@/services/wallet');
+        await walletService.applyTransaction({
+          userId: user!.id,
+          amount: -5,
+          type: 'deduct',
+          reference: 'Ride fee',
+          rideId: rideId,
+        });
+        toast.success('Ride completed! ₱5 service fee deducted from your wallet');
+      } catch (walletError: any) {
+        console.error('Wallet deduction error:', walletError);
+        if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
+          toast.error('Ride completed but wallet deduction failed due to insufficient funds');
+        } else {
+          toast.success('Ride completed!');
+        }
+      }
+
       await fetchRide();
     } catch (error) {
       console.error('Error completing ride:', error);
