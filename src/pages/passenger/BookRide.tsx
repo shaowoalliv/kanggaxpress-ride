@@ -301,14 +301,8 @@ export default function BookRide() {
   const mostRecentSearch = recentSearches[0];
 
   return (
-    <PageLayout>
+    <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
       <main className="flex-1 w-full bg-background pb-32">
-        {/* 🔒 SECTION 1: Greeting */}
-        <div className="bg-primary px-4 py-4 text-primary-foreground">
-          <h1 className="text-2xl font-heading font-bold">
-            {greeting}, {firstName}!
-          </h1>
-        </div>
 
         <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto">
           {/* PICKUP + DESTINATION */}
