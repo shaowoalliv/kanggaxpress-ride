@@ -49,6 +49,7 @@ import AdminDeliveries from "./pages/admin/Deliveries";
 import AdminKYC from "./pages/admin/KYC";
 import AdminFinance from "./pages/admin/Finance";
 import AdminFareMatrix from "./pages/admin/FareMatrix";
+import AdminFareTips from "./pages/admin/FareTips";
 import AdminPromotions from "./pages/admin/Promotions";
 import AdminOps from "./pages/admin/Ops";
 import AdminDisputes from "./pages/admin/Disputes";
@@ -127,6 +128,7 @@ const App = () => {
               <Route path="kyc" element={<AdminKYC />} />
               <Route path="finance" element={<AdminFinance />} />
               <Route path="fare-matrix" element={<AdminFareMatrix />} />
+              <Route path="fare-tips" element={<AdminFareTips />} />
               <Route path="promotions" element={<AdminPromotions />} />
               <Route path="ops" element={<AdminOps />} />
               <Route path="disputes" element={<AdminDisputes />} />

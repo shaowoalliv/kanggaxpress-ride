@@ -65,6 +65,9 @@ const quickAccessItems = [
 ];
 
 export default function BookRide() {
+  const [tipAmount, setTipAmount] = useState(0);
+  const [tipOptions, setTipOptions] = useState([20, 50, 100]);
+  const [customTip, setCustomTip] = useState('');
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   
@@ -185,6 +188,26 @@ export default function BookRide() {
     }
   }, [user, profile, navigate]);
 
+  // Fetch tip options from platform settings
+  useEffect(() => {
+    const fetchTipOptions = async () => {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['tip_option_1', 'tip_option_2', 'tip_option_3']);
+      
+      if (!error && data) {
+        const options = data
+          .sort((a, b) => a.setting_key.localeCompare(b.setting_key))
+          .map(item => item.setting_value);
+        if (options.length > 0) {
+          setTipOptions(options);
+        }
+      }
+    };
+    fetchTipOptions();
+  }, []);
+
   const firstName = profile?.full_name?.split(' ')[0] || 'User';
   
   const handleServiceClick = (service: typeof services[0]) => {
@@ -266,8 +289,8 @@ export default function BookRide() {
           status: 'requested',
           passenger_count: passengerCount,
           notes: notes.trim() || null,
-          top_up_fare: 0,
-          total_fare: selectedService.baseFare,
+          top_up_fare: tipAmount,
+          total_fare: selectedService.baseFare + tipAmount,
         }])
         .select()
         .single();
@@ -530,23 +553,77 @@ export default function BookRide() {
                     </div>
                   )}
                   {selectedService && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/20">
-                      <div className="w-8 h-8 flex items-center justify-center">
-                        <img 
-                          src={selectedService.icon} 
-                          alt="Service" 
-                          className="w-full h-full object-contain"
-                        />
+                    <>
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/20">
+                        <div className="w-8 h-8 flex items-center justify-center">
+                          <img 
+                            src={selectedService.icon} 
+                            alt="Service" 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-primary-foreground font-semibold text-sm">
+                            {selectedService.name}
+                          </p>
+                          <p className="text-primary-foreground/80 text-xs">
+                            Base Price: ₱{selectedService.baseFare}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-primary-foreground font-semibold text-sm">
-                          {selectedService.name}
-                        </p>
-                        <p className="text-primary-foreground/80 text-xs">
-                          Base Price: ₱{selectedService.baseFare}
-                        </p>
+
+                      {/* Fare Tip/Bonus Section */}
+                      <div className="mt-3 pt-3 border-t border-primary-foreground/20 space-y-2">
+                        <p className="text-primary-foreground/90 text-xs font-medium">Add Bonus Fare (Optional)</p>
+                        <div className="flex gap-2">
+                          {tipOptions.map((amount) => (
+                            <button
+                              key={amount}
+                              onClick={() => {
+                                setTipAmount(amount);
+                                setCustomTip('');
+                              }}
+                              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                tipAmount === amount
+                                  ? 'bg-primary-foreground text-primary'
+                                  : 'bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20'
+                              }`}
+                            >
+                              +₱{amount}
+                            </button>
+                          ))}
+                          <input
+                            type="number"
+                            placeholder="Custom"
+                            value={customTip}
+                            onChange={(e) => {
+                              setCustomTip(e.target.value);
+                              setTipAmount(Number(e.target.value) || 0);
+                            }}
+                            className="flex-1 py-2 px-3 rounded-lg text-xs text-center bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50 border border-primary-foreground/20 focus:outline-none focus:border-primary-foreground/40"
+                          />
+                        </div>
+                        {tipAmount > 0 && (
+                          <button
+                            onClick={() => {
+                              setTipAmount(0);
+                              setCustomTip('');
+                            }}
+                            className="text-primary-foreground/70 text-xs underline hover:text-primary-foreground"
+                          >
+                            Remove bonus
+                          </button>
+                        )}
+                        
+                        {/* Total Fare Display */}
+                        <div className="flex items-center justify-between pt-2 border-t border-primary-foreground/20">
+                          <span className="text-primary-foreground/90 text-sm font-medium">Total Fare:</span>
+                          <span className="text-primary-foreground text-lg font-bold">
+                            ₱{selectedService.baseFare + tipAmount}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
 
