@@ -56,6 +56,7 @@ export default function AdminKYC() {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     loadDriversData();
