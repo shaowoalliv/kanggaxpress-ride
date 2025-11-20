@@ -28,6 +28,8 @@ interface UserProfile {
   created_at: string;
   balance: number;
   kyc_status: string | null;
+  kyc_submitted_at: string | null;
+  kyc_updated_at: string | null;
 }
 
 export default function AdminDrivers() {
@@ -88,7 +90,7 @@ export default function AdminDrivers() {
       // Get KYC status for all users
       const { data: kycDocs, error: kycError } = await supabase
         .from('kyc_documents')
-        .select('user_id, status')
+        .select('user_id, status, created_at, updated_at')
         .in('user_id', userIds)
         .order('created_at', { ascending: false });
 
@@ -103,6 +105,8 @@ export default function AdminDrivers() {
           ...profile,
           balance: wallet?.balance || 0,
           kyc_status: kycDoc?.status || null,
+          kyc_submitted_at: kycDoc?.created_at || null,
+          kyc_updated_at: kycDoc?.updated_at || null,
         };
       });
 
@@ -228,6 +232,8 @@ export default function AdminDrivers() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>KYC Status</TableHead>
+                    <TableHead>KYC Submitted</TableHead>
+                    <TableHead>Last Updated</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -273,6 +279,30 @@ export default function AdminDrivers() {
                           </span>
                         ) : (
                           <span className="text-sm text-muted-foreground">No KYC</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {user.kyc_submitted_at ? (
+                          <div>
+                            <div>{new Date(user.kyc_submitted_at).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(user.kyc_submitted_at).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {user.kyc_updated_at ? (
+                          <div>
+                            <div>{new Date(user.kyc_updated_at).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(user.kyc_updated_at).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
