@@ -16,6 +16,7 @@ import {
   FileText,
   Settings,
   BadgeDollarSign,
+  Menu,
 } from 'lucide-react';
 
 const sections = [
@@ -42,6 +43,19 @@ export function AdminSidebar() {
 
   return (
     <aside className="w-64 bg-card border-r border-border flex-shrink-0">
+      {/* Header with hamburger icon */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <Menu className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-lg font-bold text-foreground">
+              KanggaXpress Admin
+            </h1>
+            <p className="text-xs text-muted-foreground">Management Console</p>
+          </div>
+        </div>
+      </div>
+      
       <nav className="p-4 space-y-1">
         {sections.map((section) => {
           const Icon = section.icon;
