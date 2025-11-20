@@ -79,9 +79,6 @@ const driverSchema = z.object({
   lastName: z.string().min(1, 'Last name required'),
   birthdate: z.string().min(1, 'Birthdate required'),
   personalMobile: z.string().min(10, 'Valid mobile number required'),
-  emergencyContactName: z.string().min(2, 'Emergency contact name required'),
-  emergencyContactRelation: z.string().min(2, 'Relationship required'),
-  emergencyContact: z.string().min(10, 'Valid emergency contact required'),
   completeAddress: z.string().min(5, 'Complete address required'),
   vehicleType: z.enum(['motor', 'tricycle', 'car'], { required_error: 'Vehicle type required' }),
   vehicleColor: z.string().min(2, 'Vehicle color required'),
@@ -157,9 +154,6 @@ export default function Auth() {
     lastName: '',
     birthdate: '',
     personalMobile: '',
-    emergencyContactName: '',
-    emergencyContactRelation: '',
-    emergencyContact: '',
     completeAddress: '',
     vehicleType: '' as 'motor' | 'tricycle' | 'car' | '',
     vehicleColor: '',
@@ -599,9 +593,6 @@ export default function Auth() {
         lastName: '',
         birthdate: '',
         personalMobile: '',
-        emergencyContactName: '',
-        emergencyContactRelation: '',
-        emergencyContact: '',
         completeAddress: '',
         vehicleType: '',
         vehicleColor: '',
@@ -1196,44 +1187,6 @@ export default function Auth() {
                       />
                     </div>
 
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="driver-emergencyContactName" className="text-xs sm:text-sm font-bold">Emergency Contact Name *</Label>
-                      <Input
-                        id="driver-emergencyContactName"
-                        type="text"
-                        placeholder="Maria dela Cruz"
-                        value={driverData.emergencyContactName}
-                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContactName: e.target.value }))}
-                        required
-                        className="bg-white h-9 sm:h-10 text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="driver-emergencyContactRelation" className="text-xs sm:text-sm font-bold">Relation *</Label>
-                      <Input
-                        id="driver-emergencyContactRelation"
-                        type="text"
-                        placeholder="Mother, Father, Spouse, etc."
-                        value={driverData.emergencyContactRelation}
-                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
-                        required
-                        className="bg-white h-9 sm:h-10 text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="driver-emergencyContact" className="text-xs sm:text-sm font-bold">Emergency Contact Number *</Label>
-                      <Input
-                        id="driver-emergencyContact"
-                        type="tel"
-                        placeholder="+63 912 345 6789"
-                        value={driverData.emergencyContact}
-                        onChange={(e) => setDriverData(prev => ({ ...prev, emergencyContact: e.target.value }))}
-                        required
-                        className="bg-white h-9 sm:h-10 text-sm"
-                      />
-                    </div>
 
                     <div className="space-y-1.5 sm:space-y-2">
                       <Label htmlFor="driver-completeAddress" className="text-xs sm:text-sm font-bold">Complete Address *</Label>
