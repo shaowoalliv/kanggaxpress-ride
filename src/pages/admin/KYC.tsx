@@ -368,32 +368,45 @@ export default function AdminKYC() {
 
                           {/* Driver License */}
                           <TableCell className="align-top">
-                            {dlDoc ? (
-                              <div className="space-y-2">
-                                <div className={`text-xs font-medium ${
-                                  dlDoc.status === 'APPROVED' ? 'text-green-600' :
-                                  dlDoc.status === 'REJECTED' ? 'text-red-600' :
-                                  'text-yellow-600'
-                                }`}>
-                                  {statusLabel[dlDoc.status]}
-                                </div>
-                                {getExpiryDate(dlDoc) && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Exp: {getExpiryDate(dlDoc)}
-                                  </div>
+                            <div className="flex flex-col items-start gap-1">
+                              {/* Status text container with fixed height */}
+                              <div className="min-h-[36px]">
+                                {dlDoc ? (
+                                  <>
+                                    <div className={`text-xs font-medium ${
+                                      dlDoc.status === 'APPROVED' ? 'text-green-600' :
+                                      dlDoc.status === 'REJECTED' ? 'text-red-600' :
+                                      'text-yellow-600'
+                                    }`}>
+                                      {statusLabel[dlDoc.status]}
+                                    </div>
+                                    {getExpiryDate(dlDoc) && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Exp: {getExpiryDate(dlDoc)}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Not submitted</span>
                                 )}
-                                {dlDoc.image_path && imageUrls[dlDoc.id] && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full text-xs h-7"
-                                    onClick={() => setZoomedImage(imageUrls[dlDoc.id])}
-                                  >
-                                    <ZoomIn className="h-3 w-3 mr-1" />
-                                    View
-                                  </Button>
-                                )}
-                                <div className="flex gap-1">
+                              </div>
+
+                              {/* View button */}
+                              {dlDoc && dlDoc.image_path && imageUrls[dlDoc.id] && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-xs h-7 mt-1"
+                                  onClick={() => setZoomedImage(imageUrls[dlDoc.id])}
+                                >
+                                  <ZoomIn className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              )}
+
+                              {/* Action buttons */}
+                              {dlDoc && (
+                                <div className="flex gap-1 w-full">
                                   {dlDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
@@ -417,40 +430,51 @@ export default function AdminKYC() {
                                     </Button>
                                   )}
                                 </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">Not submitted</span>
-                            )}
+                              )}
+                            </div>
                           </TableCell>
 
                           {/* OR */}
                           <TableCell className="align-top">
-                            {orDoc ? (
-                              <div className="space-y-2">
-                                <div className={`text-xs font-medium ${
-                                  orDoc.status === 'APPROVED' ? 'text-green-600' :
-                                  orDoc.status === 'REJECTED' ? 'text-red-600' :
-                                  'text-yellow-600'
-                                }`}>
-                                  {statusLabel[orDoc.status]}
-                                </div>
-                                {getExpiryDate(orDoc) && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Exp: {getExpiryDate(orDoc)}
-                                  </div>
+                            <div className="flex flex-col items-start gap-1">
+                              {/* Status text container with fixed height */}
+                              <div className="min-h-[36px]">
+                                {orDoc ? (
+                                  <>
+                                    <div className={`text-xs font-medium ${
+                                      orDoc.status === 'APPROVED' ? 'text-green-600' :
+                                      orDoc.status === 'REJECTED' ? 'text-red-600' :
+                                      'text-yellow-600'
+                                    }`}>
+                                      {statusLabel[orDoc.status]}
+                                    </div>
+                                    {getExpiryDate(orDoc) && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Exp: {getExpiryDate(orDoc)}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Not submitted</span>
                                 )}
-                                {orDoc.image_path && imageUrls[orDoc.id] && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full text-xs h-7"
-                                    onClick={() => setZoomedImage(imageUrls[orDoc.id])}
-                                  >
-                                    <ZoomIn className="h-3 w-3 mr-1" />
-                                    View
-                                  </Button>
-                                )}
-                                <div className="flex gap-1">
+                              </div>
+
+                              {/* View button */}
+                              {orDoc && orDoc.image_path && imageUrls[orDoc.id] && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-xs h-7 mt-1"
+                                  onClick={() => setZoomedImage(imageUrls[orDoc.id])}
+                                >
+                                  <ZoomIn className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              )}
+
+                              {/* Action buttons */}
+                              {orDoc && (
+                                <div className="flex gap-1 w-full">
                                   {orDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
@@ -474,40 +498,51 @@ export default function AdminKYC() {
                                     </Button>
                                   )}
                                 </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">Not submitted</span>
-                            )}
+                              )}
+                            </div>
                           </TableCell>
 
                           {/* CR */}
                           <TableCell className="align-top">
-                            {crDoc ? (
-                              <div className="space-y-2">
-                                <div className={`text-xs font-medium ${
-                                  crDoc.status === 'APPROVED' ? 'text-green-600' :
-                                  crDoc.status === 'REJECTED' ? 'text-red-600' :
-                                  'text-yellow-600'
-                                }`}>
-                                  {statusLabel[crDoc.status]}
-                                </div>
-                                {getExpiryDate(crDoc) && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Exp: {getExpiryDate(crDoc)}
-                                  </div>
+                            <div className="flex flex-col items-start gap-1">
+                              {/* Status text container with fixed height */}
+                              <div className="min-h-[36px]">
+                                {crDoc ? (
+                                  <>
+                                    <div className={`text-xs font-medium ${
+                                      crDoc.status === 'APPROVED' ? 'text-green-600' :
+                                      crDoc.status === 'REJECTED' ? 'text-red-600' :
+                                      'text-yellow-600'
+                                    }`}>
+                                      {statusLabel[crDoc.status]}
+                                    </div>
+                                    {getExpiryDate(crDoc) && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Exp: {getExpiryDate(crDoc)}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Not submitted</span>
                                 )}
-                                {crDoc.image_path && imageUrls[crDoc.id] && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full text-xs h-7"
-                                    onClick={() => setZoomedImage(imageUrls[crDoc.id])}
-                                  >
-                                    <ZoomIn className="h-3 w-3 mr-1" />
-                                    View
-                                  </Button>
-                                )}
-                                <div className="flex gap-1">
+                              </div>
+
+                              {/* View button */}
+                              {crDoc && crDoc.image_path && imageUrls[crDoc.id] && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-xs h-7 mt-1"
+                                  onClick={() => setZoomedImage(imageUrls[crDoc.id])}
+                                >
+                                  <ZoomIn className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              )}
+
+                              {/* Action buttons */}
+                              {crDoc && (
+                                <div className="flex gap-1 w-full">
                                   {crDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
@@ -531,10 +566,8 @@ export default function AdminKYC() {
                                     </Button>
                                   )}
                                 </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">Not submitted</span>
-                            )}
+                              )}
+                            </div>
                           </TableCell>
 
                           <TableCell className="text-right align-top">
