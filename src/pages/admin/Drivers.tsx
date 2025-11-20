@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp, TrendingUp, Award, CheckCircle2, XCircle, FileText, Calendar, Phone, MapPin, CreditCard } from 'lucide-react';
+import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp, TrendingUp, Award, CheckCircle2, XCircle, FileText, Calendar, Phone, MapPin, CreditCard, Download } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { kycService } from '@/services/kyc';
 import { KycDocument } from '@/types/kyc';
+import jsPDF from 'jspdf';
 
 interface DriverProfile {
   vehicle_type: string;
@@ -353,6 +354,215 @@ export default function AdminDrivers() {
     }
   };
 
+  const exportDriverPDF = async (user: UserProfile) => {
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we prepare the report...",
+      });
+
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Helper function to add text with line break management
+      const addText = (text: string, x: number, size: number = 10, bold: boolean = false) => {
+        if (yPosition > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.setFontSize(size);
+        pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+        pdf.text(text, x, yPosition);
+        yPosition += size / 2 + 2;
+      };
+
+      // Header
+      pdf.setFillColor(59, 130, 246);
+      pdf.rect(0, 0, pageWidth, 30, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('KanggaXpress Driver Report', pageWidth / 2, 18, { align: 'center' });
+      
+      pdf.setTextColor(0, 0, 0);
+      yPosition = 40;
+
+      // Personal Information
+      addText('PERSONAL INFORMATION', 14, 14, true);
+      yPosition += 5;
+      addText(`Name: ${user.full_name}`, 14);
+      addText(`Email: ${user.email}`, 14);
+      addText(`Phone: ${user.phone || 'N/A'}`, 14);
+      addText(`Account Number: ${user.account_number || 'N/A'}`, 14);
+      addText(`Role: ${user.role.toUpperCase()}`, 14);
+      addText(`Registered: ${new Date(user.created_at).toLocaleDateString()}`, 14);
+      
+      const birthdate = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+      if (birthdate) {
+        addText(`Birth Date: ${(birthdate.parsed as any)?.birthdate || 'N/A'}`, 14);
+      }
+      
+      const address = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+      if (address) {
+        addText(`Address: ${(address.parsed as any)?.address || 'N/A'}`, 14);
+      }
+
+      yPosition += 10;
+
+      // Vehicle Information
+      const profile = user.driver_profile || user.courier_profile;
+      if (profile) {
+        addText('VEHICLE INFORMATION', 14, 14, true);
+        yPosition += 5;
+        addText(`Type: ${profile.vehicle_type.toUpperCase()}`, 14);
+        addText(`Model: ${profile.vehicle_model || 'N/A'}`, 14);
+        addText(`Plate Number: ${profile.vehicle_plate}`, 14);
+        addText(`Color: ${profile.vehicle_color || 'N/A'}`, 14);
+        addText(`License Number: ${profile.license_number || 'N/A'}`, 14);
+        
+        const licensExpiry = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+        if (licensExpiry) {
+          addText(`License Expiry: ${(licensExpiry.parsed as any)?.expiry_date || 'N/A'}`, 14);
+        }
+        
+        const crExpiry = user.kyc_documents?.find(d => d.doc_type === 'CR');
+        if (crExpiry) {
+          addText(`CR Expiry: ${(crExpiry.parsed as any)?.expiry_date || 'N/A'}`, 14);
+        }
+
+        yPosition += 10;
+      }
+
+      // Performance Metrics
+      if (user.performance) {
+        addText('PERFORMANCE METRICS', 14, 14, true);
+        yPosition += 5;
+        addText(`Average Rating: ${user.performance.avg_rating.toFixed(1)} / 5.0`, 14);
+        addText(`Completion Rate: ${user.performance.completion_rate.toFixed(1)}%`, 14);
+        addText(`Completed Rides: ${user.performance.completed_rides}`, 14);
+        addText(`Cancelled Rides: ${user.performance.cancelled_rides}`, 14);
+        addText(`Cancellation Rate: ${user.performance.cancellation_rate.toFixed(1)}%`, 14);
+        addText(`Total Earnings: ₱${user.performance.total_earnings.toFixed(2)}`, 14);
+        
+        yPosition += 10;
+      }
+
+      // KYC Status
+      addText('KYC INFORMATION', 14, 14, true);
+      yPosition += 5;
+      addText(`Status: ${user.kyc_status || 'N/A'}`, 14);
+      if (user.kyc_submitted_at) {
+        addText(`Submitted: ${new Date(user.kyc_submitted_at).toLocaleString()}`, 14);
+      }
+      if (user.kyc_updated_at) {
+        addText(`Last Updated: ${new Date(user.kyc_updated_at).toLocaleString()}`, 14);
+      }
+
+      yPosition += 10;
+
+      // KYC Documents
+      if (user.kyc_documents && user.kyc_documents.length > 0) {
+        addText('KYC DOCUMENTS', 14, 14, true);
+        yPosition += 5;
+
+        for (const doc of user.kyc_documents) {
+          const docName = doc.doc_type === 'DRIVER_LICENSE' ? "Driver's License" :
+                         doc.doc_type === 'SELFIE' ? 'Selfie Photo' :
+                         doc.doc_type === 'OR' ? 'Official Receipt' :
+                         doc.doc_type === 'CR' ? 'Certificate of Registration' :
+                         doc.doc_type;
+          
+          addText(`${docName}: ${doc.status}`, 14);
+
+          // Add document image if available
+          if (user.document_images?.[doc.doc_type]) {
+            try {
+              if (yPosition > pageHeight - 80) {
+                pdf.addPage();
+                yPosition = 20;
+              }
+
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              
+              await new Promise((resolve, reject) => {
+                img.onload = () => {
+                  try {
+                    const canvas = document.createElement('canvas');
+                    const maxWidth = pageWidth - 28;
+                    const maxHeight = 60;
+                    
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                      height = (maxWidth / width) * height;
+                      width = maxWidth;
+                    }
+                    
+                    if (height > maxHeight) {
+                      width = (maxHeight / height) * width;
+                      height = maxHeight;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.7);
+                    pdf.addImage(imgData, 'JPEG', 14, yPosition, width, height);
+                    yPosition += height + 10;
+                    resolve(null);
+                  } catch (error) {
+                    console.error('Error processing image:', error);
+                    resolve(null);
+                  }
+                };
+                img.onerror = () => resolve(null);
+                img.src = user.document_images![doc.doc_type];
+              });
+            } catch (error) {
+              console.error('Error loading image:', error);
+            }
+          }
+        }
+      }
+
+      // Footer
+      const totalPages = (pdf as any).internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(128, 128, 128);
+        pdf.text(
+          `Page ${i} of ${totalPages} - Generated on ${new Date().toLocaleString()}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Save PDF
+      const fileName = `driver-report-${user.account_number || user.id}-${new Date().getTime()}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "Success",
+        description: "Driver report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF report",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleViewTransactions = async (userId: string) => {
     setSelectedUserId(userId);
     setIsLoadingTransactions(true);
@@ -583,22 +793,31 @@ export default function AdminDrivers() {
                       <TableCell className="text-right">
                         <div className="flex flex-col sm:flex-row gap-2 justify-end items-end">
                           {(user.role === 'driver' || user.role === 'courier') && (
-                            <SecondaryButton
-                              onClick={() => toggleRowExpansion(user.id)}
-                              className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
-                            >
-                              {expandedRows.has(user.id) ? (
-                                <>
-                                  <ChevronUp className="w-3 h-3 mr-1" />
-                                  Hide
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="w-3 h-3 mr-1" />
-                                  Details
-                                </>
-                              )}
-                            </SecondaryButton>
+                            <>
+                              <SecondaryButton
+                                onClick={() => toggleRowExpansion(user.id)}
+                                className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
+                              >
+                                {expandedRows.has(user.id) ? (
+                                  <>
+                                    <ChevronUp className="w-3 h-3 mr-1" />
+                                    Hide
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-3 h-3 mr-1" />
+                                    Details
+                                  </>
+                                )}
+                              </SecondaryButton>
+                              <SecondaryButton
+                                onClick={() => exportDriverPDF(user)}
+                                className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
+                              >
+                                <Download className="w-3 h-3 mr-1" />
+                                Export
+                              </SecondaryButton>
+                            </>
                           )}
                           {user.role !== 'passenger' && (
                             <SecondaryButton
