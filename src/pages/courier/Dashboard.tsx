@@ -240,7 +240,12 @@ export default function CourierDashboard() {
   if (!allKycApproved) {
     return (
       <PageLayout>
-        <KycBlockedAccess documents={kycDocuments} userName={profile.full_name} />
+        <KycBlockedAccess 
+          documents={kycDocuments} 
+          userName={profile.full_name}
+          userId={profile.id}
+          onDocumentUploaded={loadCourierData}
+        />
       </PageLayout>
     );
   }

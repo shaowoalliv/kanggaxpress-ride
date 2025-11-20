@@ -224,7 +224,12 @@ export default function DriverDashboard() {
   if (!allKycApproved) {
     return (
       <PageLayout>
-        <KycBlockedAccess documents={kycDocuments} userName={profile.full_name} />
+        <KycBlockedAccess 
+          documents={kycDocuments} 
+          userName={profile.full_name}
+          userId={profile.id}
+          onDocumentUploaded={loadDriverData}
+        />
       </PageLayout>
     );
   }
