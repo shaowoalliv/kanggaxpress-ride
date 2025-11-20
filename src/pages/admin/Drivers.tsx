@@ -36,11 +36,23 @@ export default function AdminDrivers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'courier' | 'passenger'>('all');
   const [kycFilter, setKycFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVIEW'>('all');
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [stats, setStats] = useState<{
+    total: number;
+    passenger: number;
+    driver: number;
+    courier: number;
+  }>({
+    total: 0,
+    passenger: 0,
+    driver: 0,
+    courier: 0,
+  });
 
   const handleSearch = async () => {
     const trimmed = searchTerm.trim();
@@ -55,22 +67,43 @@ export default function AdminDrivers() {
 
     setIsLoading(true);
     try {
+      // Calculate date range based on period filter
+      let dateFilter = null;
+      const now = new Date();
+      
+      if (periodFilter === "today") {
+        dateFilter = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      } else if (periodFilter === "week") {
+        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        dateFilter = weekAgo.toISOString();
+      } else if (periodFilter === "month") {
+        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        dateFilter = monthAgo.toISOString();
+      }
+
       // Build role filter
       const roles: ('driver' | 'courier' | 'passenger')[] = roleFilter === 'all' 
         ? ['driver', 'courier', 'passenger'] 
         : [roleFilter];
 
-      // Search profiles
-      const { data: profiles, error: profilesError } = await supabase
+      // Search profiles with date filter
+      let query = supabase
         .from('profiles')
         .select('id, full_name, email, role, account_number, phone, created_at')
         .or(`account_number.ilike.%${trimmed}%,full_name.ilike.%${trimmed}%,email.ilike.%${trimmed}%`)
         .in('role', roles);
 
+      if (dateFilter) {
+        query = query.gte('created_at', dateFilter);
+      }
+
+      const { data: profiles, error: profilesError } = await query;
+
       if (profilesError) throw profilesError;
 
       if (!profiles || profiles.length === 0) {
         setUsers([]);
+        setStats({ total: 0, passenger: 0, driver: 0, courier: 0 });
         toast({
           title: 'No Results',
           description: 'No users found matching your search',
@@ -116,6 +149,15 @@ export default function AdminDrivers() {
       }
 
       setUsers(usersWithBalance);
+
+      // Calculate statistics
+      const roleCounts = {
+        total: usersWithBalance.length,
+        passenger: usersWithBalance.filter(u => u.role === 'passenger').length,
+        driver: usersWithBalance.filter(u => u.role === 'driver').length,
+        courier: usersWithBalance.filter(u => u.role === 'courier').length,
+      };
+      setStats(roleCounts);
     } catch (error) {
       console.error('Error searching users:', error);
       toast({
@@ -163,6 +205,26 @@ export default function AdminDrivers() {
           </p>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <ThemedCard className="p-4">
+            <div className="text-sm text-muted-foreground mb-1">Total Users</div>
+            <div className="text-3xl font-bold">{stats.total}</div>
+          </ThemedCard>
+          <ThemedCard className="p-4">
+            <div className="text-sm text-muted-foreground mb-1">Passengers</div>
+            <div className="text-3xl font-bold">{stats.passenger}</div>
+          </ThemedCard>
+          <ThemedCard className="p-4">
+            <div className="text-sm text-muted-foreground mb-1">Drivers</div>
+            <div className="text-3xl font-bold">{stats.driver}</div>
+          </ThemedCard>
+          <ThemedCard className="p-4">
+            <div className="text-sm text-muted-foreground mb-1">Couriers</div>
+            <div className="text-3xl font-bold">{stats.courier}</div>
+          </ThemedCard>
+        </div>
+
         {/* Search */}
         <ThemedCard>
           <h2 className="text-xl font-semibold mb-4">Search Users</h2>
@@ -204,6 +266,17 @@ export default function AdminDrivers() {
                   <SelectItem value="REVIEW">Under Review</SelectItem>
                   <SelectItem value="APPROVED">Approved</SelectItem>
                   <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={periodFilter} onValueChange={(value: 'all' | 'today' | 'week' | 'month') => setPeriodFilter(value)}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                  <SelectValue placeholder="Time Period" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50">
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">Last 7 Days</SelectItem>
+                  <SelectItem value="month">Last 30 Days</SelectItem>
                 </SelectContent>
               </Select>
               <PrimaryButton
