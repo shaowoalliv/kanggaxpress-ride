@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp, TrendingUp, Award, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp, TrendingUp, Award, CheckCircle2, XCircle, FileText, Calendar, Phone, MapPin, CreditCard } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { walletService, WalletTransaction } from '@/services/wallet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { kycService } from '@/services/kyc';
+import { KycDocument } from '@/types/kyc';
 
 interface DriverProfile {
   vehicle_type: string;
@@ -68,6 +70,8 @@ interface UserProfile {
   driver_profile?: DriverProfile | null;
   courier_profile?: CourierProfile | null;
   performance?: PerformanceMetrics | null;
+  kyc_documents?: KycDocument[];
+  document_images?: { [key: string]: string };
 }
 
 export default function AdminDrivers() {
@@ -81,6 +85,7 @@ export default function AdminDrivers() {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [loadingDocs, setLoadingDocs] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState<{
     total: number;
     passenger: number;
@@ -302,16 +307,50 @@ export default function AdminDrivers() {
     }
   };
 
-  const toggleRowExpansion = (userId: string) => {
-    setExpandedRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
-      } else {
-        newSet.add(userId);
+  const toggleRowExpansion = async (userId: string) => {
+    const newSet = new Set(expandedRows);
+    
+    if (newSet.has(userId)) {
+      newSet.delete(userId);
+      setExpandedRows(newSet);
+    } else {
+      newSet.add(userId);
+      setExpandedRows(newSet);
+      
+      // Load KYC documents if not already loaded
+      const user = users.find(u => u.id === userId);
+      if (user && !user.kyc_documents) {
+        setLoadingDocs(prev => new Set(prev).add(userId));
+        
+        try {
+          const docs = await kycService.getUserKycDocuments(userId);
+          const imageUrls: { [key: string]: string } = {};
+          
+          for (const doc of docs) {
+            if (doc.image_path) {
+              const url = await kycService.getDocumentImageUrl(doc.image_path);
+              imageUrls[doc.doc_type] = url;
+            }
+          }
+          
+          setUsers(prevUsers => 
+            prevUsers.map(u => 
+              u.id === userId 
+                ? { ...u, kyc_documents: docs, document_images: imageUrls }
+                : u
+            )
+          );
+        } catch (error) {
+          console.error('Error loading KYC documents:', error);
+        } finally {
+          setLoadingDocs(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
+        }
       }
-      return newSet;
-    });
+    }
   };
 
   const handleViewTransactions = async (userId: string) => {
@@ -574,131 +613,211 @@ export default function AdminDrivers() {
                       </TableCell>
                     </TableRow>
 
-                    {/* Expanded Performance Metrics Row */}
-                    {expandedRows.has(user.id) && (user.driver_profile || user.courier_profile) && user.performance && (
+                    {/* Expanded Details Row */}
+                    {expandedRows.has(user.id) && (user.driver_profile || user.courier_profile) && (
                       <TableRow key={`${user.id}-details`} className="bg-muted/30">
                         <TableCell colSpan={11} className="p-6">
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Performance Overview */}
-                            <ThemedCard className="p-4">
-                              <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp className="w-5 h-5 text-primary" />
-                                <h3 className="font-semibold text-lg">Performance Metrics</h3>
-                              </div>
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                    <span className="text-sm text-muted-foreground">Completion Rate</span>
-                                  </div>
-                                  <span className="font-bold text-lg text-green-600">
-                                    {user.performance.completion_rate.toFixed(1)}%
-                                  </span>
+                          {loadingDocs.has(user.id) ? (
+                            <div className="text-center py-8 text-muted-foreground">Loading documents...</div>
+                          ) : (
+                            <div className="space-y-6">
+                              {/* Personal Information */}
+                              <ThemedCard className="p-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <User className="w-5 h-5 text-primary" />
+                                  <h4 className="font-semibold">Personal Information</h4>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-2">
-                                    <XCircle className="w-4 h-4 text-red-600" />
-                                    <span className="text-sm text-muted-foreground">Cancellation Rate</span>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <User className="w-3 h-3" /> Full Name
+                                    </p>
+                                    <p className="font-medium">{user.full_name}</p>
                                   </div>
-                                  <span className="font-bold text-lg text-red-600">
-                                    {user.performance.cancellation_rate.toFixed(1)}%
-                                  </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-2">
-                                    <Award className="w-4 h-4 text-yellow-600" />
-                                    <span className="text-sm text-muted-foreground">Average Rating</span>
+                                  <div>
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <Phone className="w-3 h-3" /> Contact Number
+                                    </p>
+                                    <p className="font-medium">{user.phone || 'N/A'}</p>
                                   </div>
-                                  <span className="font-bold text-lg">
-                                    ⭐ {user.performance.avg_rating.toFixed(2)}
-                                  </span>
+                                  <div>
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" /> Birth Date
+                                    </p>
+                                    <p className="font-medium">
+                                      {(() => {
+                                        const doc = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+                                        return (doc?.parsed as any)?.birthdate || 'N/A';
+                                      })()}
+                                    </p>
+                                  </div>
+                                  <div className="md:col-span-3">
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" /> Address
+                                    </p>
+                                    <p className="font-medium">
+                                      {(() => {
+                                        const doc = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+                                        return (doc?.parsed as any)?.address || 'N/A';
+                                      })()}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            </ThemedCard>
+                              </ThemedCard>
 
-                            {/* Activity Stats */}
-                            <ThemedCard className="p-4">
-                              <h3 className="font-semibold text-lg mb-4">Activity Statistics</h3>
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Completed {user.role === 'driver' ? 'Rides' : 'Deliveries'}</p>
-                                  <p className="text-2xl font-bold text-green-600">{user.performance.completed_rides}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Cancelled</p>
-                                  <p className="text-2xl font-bold text-red-600">{user.performance.cancelled_rides}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Total Earnings</p>
-                                  <p className="text-2xl font-bold text-primary">₱{user.performance.total_earnings.toFixed(2)}</p>
-                                </div>
-                              </div>
-                            </ThemedCard>
-
-                            {/* Vehicle/Service Info */}
-                            <ThemedCard className="p-4">
-                              <div className="flex items-center gap-2 mb-4">
-                                {user.role === 'driver' ? (
+                              {/* Vehicle Information */}
+                              <ThemedCard className="p-4">
+                                <div className="flex items-center gap-2 mb-4">
                                   <Car className="w-5 h-5 text-primary" />
-                                ) : (
-                                  <Package className="w-5 h-5 text-primary" />
-                                )}
-                                <h3 className="font-semibold text-lg">Service Details</h3>
-                              </div>
-                              {user.driver_profile && (
-                                <div className="space-y-2">
+                                  <h4 className="font-semibold">Vehicle Information</h4>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Vehicle</p>
-                                    <p className="font-medium capitalize">{user.driver_profile.vehicle_type} - {user.driver_profile.vehicle_model || 'N/A'}</p>
+                                    <p className="text-muted-foreground">Type</p>
+                                    <p className="font-medium capitalize">
+                                      {user.driver_profile?.vehicle_type || user.courier_profile?.vehicle_type}
+                                    </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Plate Number</p>
-                                    <p className="font-medium font-mono">{user.driver_profile.vehicle_plate}</p>
+                                    <p className="text-muted-foreground">Model</p>
+                                    <p className="font-medium">
+                                      {user.driver_profile?.vehicle_model || user.courier_profile?.vehicle_model || 'N/A'}
+                                    </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Color</p>
-                                    <p className="font-medium capitalize">{user.driver_profile.vehicle_color || 'N/A'}</p>
+                                    <p className="text-muted-foreground">Plate Number</p>
+                                    <p className="font-medium">
+                                      {user.driver_profile?.vehicle_plate || user.courier_profile?.vehicle_plate}
+                                    </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">License</p>
-                                    <p className="font-medium">{user.driver_profile.license_number || 'N/A'}</p>
+                                    <p className="text-muted-foreground">Color</p>
+                                    <p className="font-medium">
+                                      {user.driver_profile?.vehicle_color || user.courier_profile?.vehicle_color || 'N/A'}
+                                    </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Status</p>
-                                    <Badge variant={user.driver_profile.is_available ? "default" : "secondary"}>
-                                      {user.driver_profile.is_available ? 'Available' : 'Offline'}
-                                    </Badge>
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" /> License Expiry
+                                    </p>
+                                    <p className="font-medium">
+                                      {(() => {
+                                        const doc = user.kyc_documents?.find(d => d.doc_type === 'DRIVER_LICENSE');
+                                        return (doc?.parsed as any)?.expiry_date || 'N/A';
+                                      })()}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" /> CR Expiry
+                                    </p>
+                                    <p className="font-medium">
+                                      {(() => {
+                                        const doc = user.kyc_documents?.find(d => d.doc_type === 'CR');
+                                        return (doc?.parsed as any)?.expiry_date || 'N/A';
+                                      })()}
+                                    </p>
                                   </div>
                                 </div>
-                              )}
-                              {user.courier_profile && (
-                                <div className="space-y-2">
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Vehicle</p>
-                                    <p className="font-medium capitalize">{user.courier_profile.vehicle_type} - {user.courier_profile.vehicle_model || 'N/A'}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Plate Number</p>
-                                    <p className="font-medium font-mono">{user.courier_profile.vehicle_plate}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Color</p>
-                                    <p className="font-medium capitalize">{user.courier_profile.vehicle_color || 'N/A'}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">License</p>
-                                    <p className="font-medium">{user.courier_profile.license_number || 'N/A'}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Status</p>
-                                    <Badge variant={user.courier_profile.is_available ? "default" : "secondary"}>
-                                      {user.courier_profile.is_available ? 'Available' : 'Offline'}
-                                    </Badge>
-                                  </div>
+                              </ThemedCard>
+
+                              {/* Performance Metrics */}
+                              {user.performance && (
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                  <ThemedCard className="p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <TrendingUp className="w-4 h-4 text-primary" />
+                                      <h4 className="font-semibold text-sm">Rating</h4>
+                                    </div>
+                                    <p className="text-2xl font-bold">{user.performance.avg_rating.toFixed(1)}</p>
+                                    <p className="text-xs text-muted-foreground">Average Rating</p>
+                                  </ThemedCard>
+
+                                  <ThemedCard className="p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      <h4 className="font-semibold text-sm">Completion</h4>
+                                    </div>
+                                    <p className="text-2xl font-bold">{user.performance.completion_rate.toFixed(1)}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {user.performance.completed_rides} completed
+                                    </p>
+                                  </ThemedCard>
+
+                                  <ThemedCard className="p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <XCircle className="w-4 h-4 text-red-500" />
+                                      <h4 className="font-semibold text-sm">Cancellations</h4>
+                                    </div>
+                                    <p className="text-2xl font-bold">{user.performance.cancellation_rate.toFixed(1)}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {user.performance.cancelled_rides} cancelled
+                                    </p>
+                                  </ThemedCard>
+
+                                  <ThemedCard className="p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <CreditCard className="w-4 h-4 text-primary" />
+                                      <h4 className="font-semibold text-sm">Earnings</h4>
+                                    </div>
+                                    <p className="text-2xl font-bold">₱{user.performance.total_earnings.toFixed(2)}</p>
+                                    <p className="text-xs text-muted-foreground">Total</p>
+                                  </ThemedCard>
                                 </div>
                               )}
-                            </ThemedCard>
-                          </div>
+
+                              {/* KYC Documents */}
+                              {user.kyc_documents && user.kyc_documents.length > 0 && (
+                                <ThemedCard className="p-4">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <FileText className="w-5 h-5 text-primary" />
+                                    <h4 className="font-semibold">KYC Documents</h4>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {user.kyc_documents.map((doc) => (
+                                      <div key={doc.id} className="space-y-2">
+                                        <p className="text-sm font-medium text-muted-foreground">
+                                          {doc.doc_type === 'DRIVER_LICENSE' ? "Driver's License" :
+                                           doc.doc_type === 'SELFIE' ? 'Selfie Photo' :
+                                           doc.doc_type === 'OR' ? 'Official Receipt' :
+                                           doc.doc_type === 'CR' ? 'Certificate of Registration' :
+                                           doc.doc_type}
+                                        </p>
+                                        {user.document_images?.[doc.doc_type] ? (
+                                          <a 
+                                            href={user.document_images[doc.doc_type]} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="block"
+                                          >
+                                            <img 
+                                              src={user.document_images[doc.doc_type]} 
+                                              alt={doc.doc_type}
+                                              className="w-full h-32 object-cover rounded border border-border hover:opacity-80 transition-opacity cursor-pointer"
+                                            />
+                                          </a>
+                                        ) : (
+                                          <div className="w-full h-32 bg-muted rounded border border-border flex items-center justify-center">
+                                            <p className="text-xs text-muted-foreground">No image</p>
+                                          </div>
+                                        )}
+                                        <div className="text-xs">
+                                          <span className={`inline-block px-2 py-1 rounded ${
+                                            doc.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                            doc.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                            doc.status === 'REVIEW' ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-gray-100 text-gray-800'
+                                          }`}>
+                                            {doc.status}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ThemedCard>
+                              )}
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     )}
