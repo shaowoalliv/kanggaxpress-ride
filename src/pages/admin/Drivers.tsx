@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Search, History, User, X } from 'lucide-react';
+import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -14,9 +14,34 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { walletService, WalletTransaction } from '@/services/wallet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+
+interface DriverProfile {
+  vehicle_type: string;
+  vehicle_model: string | null;
+  vehicle_plate: string;
+  vehicle_color: string | null;
+  license_number: string | null;
+  is_available: boolean | null;
+  current_lat: number | null;
+  current_lng: number | null;
+  rating: number | null;
+  total_rides: number | null;
+}
+
+interface CourierProfile {
+  vehicle_type: string;
+  vehicle_model: string | null;
+  vehicle_plate: string;
+  vehicle_color: string | null;
+  license_number: string | null;
+  is_available: boolean | null;
+  rating: number | null;
+  total_deliveries: number | null;
+}
 
 interface UserProfile {
   id: string;
@@ -30,6 +55,8 @@ interface UserProfile {
   kyc_status: string | null;
   kyc_submitted_at: string | null;
   kyc_updated_at: string | null;
+  driver_profile?: DriverProfile | null;
+  courier_profile?: CourierProfile | null;
 }
 
 export default function AdminDrivers() {
@@ -42,6 +69,7 @@ export default function AdminDrivers() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState<{
     total: number;
     passenger: number;
@@ -129,17 +157,38 @@ export default function AdminDrivers() {
 
       if (kycError) throw kycError;
 
+      // Get driver profiles
+      const { data: driverProfiles, error: driverError } = await supabase
+        .from('driver_profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+      if (driverError) throw driverError;
+
+      // Get courier profiles
+      const { data: courierProfiles, error: courierError } = await supabase
+        .from('courier_profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+      if (courierError) throw courierError;
+
       // Combine profile, wallet, and KYC data
       let usersWithBalance = profiles.map(profile => {
         const wallet = wallets?.find(w => w.user_id === profile.id);
         // Get the most recent KYC document status for this user
         const kycDoc = kycDocs?.find(doc => doc.user_id === profile.id);
+        const driverProfile = driverProfiles?.find(dp => dp.user_id === profile.id);
+        const courierProfile = courierProfiles?.find(cp => cp.user_id === profile.id);
+        
         return {
           ...profile,
           balance: wallet?.balance || 0,
           kyc_status: kycDoc?.status || null,
           kyc_submitted_at: kycDoc?.created_at || null,
           kyc_updated_at: kycDoc?.updated_at || null,
+          driver_profile: driverProfile || null,
+          courier_profile: courierProfile || null,
         };
       });
 
@@ -168,6 +217,18 @@ export default function AdminDrivers() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleRowExpansion = (userId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
   };
 
   const handleViewTransactions = async (userId: string) => {
