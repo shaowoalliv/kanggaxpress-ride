@@ -5,35 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { kycService } from '@/services/kyc';
 import type { KycDocument, KycStatus, DocType } from '@/types/kyc';
 import { toast } from 'sonner';
-import { CheckCircle2, Eye, ImageIcon, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Search, ZoomIn } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const STATUS_OPTIONS: KycStatus[] = ['PENDING', 'REVIEW', 'APPROVED', 'REJECTED'];
-const DOC_TYPE_OPTIONS: DocType[] = ['GOVT_ID', 'PRIVATE_ID', 'DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
 
 const statusLabel: Record<KycStatus, string> = {
   PENDING: 'Pending',
@@ -49,6 +30,22 @@ const statusVariant: Record<KycStatus, 'default' | 'secondary' | 'destructive' |
   REJECTED: 'destructive',
 };
 
+interface DriverData {
+  userId: string;
+  accountNumber: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  role: string;
+  vehicleType: string | null;
+  documents: KycDocument[];
+  driverLicense?: KycDocument;
+  or?: KycDocument;
+  cr?: KycDocument;
+}
+
 function formatConfidence(value: number): string {
   if (!Number.isFinite(value)) return '—';
   const normalized = value > 1 ? value : value * 100;
@@ -61,32 +58,81 @@ function shortUserId(id: string): string {
 }
 
 export default function AdminKYC() {
-  const [documents, setDocuments] = useState<KycDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<KycStatus[]>([]);
-  const [docTypeFilter, setDocTypeFilter] = useState<DocType[]>([]);
+  const [driversData, setDriversData] = useState<DriverData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | KycStatus>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'courier'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-
-  const [selectedDoc, setSelectedDoc] = useState<KycDocument | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-  const [imagesLoading, setImagesLoading] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
-    loadDocuments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, docTypeFilter]);
+    loadDriversData();
+  }, []);
 
-  const loadDocuments = async () => {
+  const loadDriversData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await kycService.listAllKycDocuments({
-        status: statusFilter.length > 0 ? statusFilter : undefined,
-        docType: docTypeFilter.length > 0 ? docTypeFilter : undefined,
+      // Fetch all profiles with driver or courier role
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role, account_number, phone')
+        .in('role', ['driver', 'courier']);
+
+      if (profilesError) throw profilesError;
+
+      // Fetch all KYC documents
+      const allDocs = await kycService.listAllKycDocuments();
+
+      // Fetch driver profiles
+      const { data: driverProfiles } = await supabase
+        .from('driver_profiles')
+        .select('user_id, vehicle_type');
+
+      // Fetch courier profiles
+      const { data: courierProfiles } = await supabase
+        .from('courier_profiles')
+        .select('user_id, vehicle_type');
+
+      // Map profiles to driver data
+      const driversMap = new Map<string, DriverData>();
+      
+      profiles?.forEach((profile) => {
+        const docs = allDocs.filter((d) => d.user_id === profile.id);
+        
+        // Parse name
+        const nameParts = profile.full_name.trim().split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+        const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
+
+        // Get vehicle type
+        const driverProfile = driverProfiles?.find((dp) => dp.user_id === profile.id);
+        const courierProfile = courierProfiles?.find((cp) => cp.user_id === profile.id);
+        const vehicleType = driverProfile?.vehicle_type || courierProfile?.vehicle_type || null;
+
+        driversMap.set(profile.id, {
+          userId: profile.id,
+          accountNumber: profile.account_number || '',
+          firstName,
+          middleName,
+          lastName,
+          fullName: profile.full_name,
+          email: profile.email,
+          role: profile.role,
+          vehicleType,
+          documents: docs,
+          driverLicense: docs.find((d) => d.doc_type === 'DRIVER_LICENSE'),
+          or: docs.find((d) => d.doc_type === 'OR'),
+          cr: docs.find((d) => d.doc_type === 'CR'),
+        });
       });
-      setDocuments(data);
+
+      setDriversData(Array.from(driversMap.values()));
     } catch (error: any) {
-      toast.error(`Failed to load documents: ${error.message ?? 'Unknown error'}`);
+      toast.error(`Failed to load data: ${error.message ?? 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -96,98 +142,77 @@ export default function AdminKYC() {
     try {
       await kycService.updateKycDocumentStatus(docId, 'APPROVED');
       toast.success('Document approved');
-      await loadDocuments();
+      await loadDriversData();
     } catch (error: any) {
       toast.error(`Approval failed: ${error.message ?? 'Unknown error'}`);
     }
   };
 
-  const handleReject = async (docId: string) => {
-    const reason = window.prompt('Enter rejection reason (optional):');
+  const handleRejectClick = (docId: string) => {
+    setRejectingDocId(docId);
+    setRejectionReason('');
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectingDocId) return;
+    
     try {
-      await kycService.updateKycDocumentStatus(docId, 'REJECTED', reason || undefined);
+      await kycService.updateKycDocumentStatus(
+        rejectingDocId,
+        'REJECTED',
+        rejectionReason || undefined
+      );
       toast.success('Document rejected');
-      await loadDocuments();
+      setRejectingDocId(null);
+      setRejectionReason('');
+      await loadDriversData();
     } catch (error: any) {
       toast.error(`Rejection failed: ${error.message ?? 'Unknown error'}`);
     }
   };
 
-  const openDetails = (doc: KycDocument) => {
-    setSelectedDoc(doc);
-    setShowDetailsDialog(true);
+  const loadImageUrl = async (doc: KycDocument) => {
+    if (!doc.image_path || imageUrls[doc.id]) return;
+    
+    try {
+      const url = await kycService.getDocumentImageUrl(doc.image_path);
+      setImageUrls((prev) => ({ ...prev, [doc.id]: url }));
+    } catch (err) {
+      console.error('Failed to load image URL', err);
+    }
   };
 
-  // All documents for the currently selected user (driver/courier)
-  const selectedUserDocs = useMemo(
-    () =>
-      selectedDoc
-        ? documents
-            .filter((d) => d.user_id === selectedDoc.user_id)
-            .sort((a, b) => a.doc_type.localeCompare(b.doc_type))
-        : [],
-    [selectedDoc, documents]
-  );
+  const handleSearch = () => {
+    // Search is handled by filteredDrivers memo
+  };
 
-  // Load signed URLs for all documents of the selected user
-  useEffect(() => {
-    if (!selectedDoc || selectedUserDocs.length === 0) return;
+  const filteredDrivers = useMemo(() => {
+    return driversData.filter((driver) => {
+      // Role filter
+      if (roleFilter !== 'all' && driver.role !== roleFilter) return false;
 
-    const docsNeedingUrl = selectedUserDocs.filter(
-      (doc) => doc.image_path && !imageUrls[doc.id]
-    );
-    if (docsNeedingUrl.length === 0) return;
-
-    let cancelled = false;
-    setImagesLoading(true);
-
-    (async () => {
-      try {
-        const results = await Promise.all(
-          docsNeedingUrl.map(async (doc) => {
-            if (!doc.image_path) return null;
-            try {
-              const url = await kycService.getDocumentImageUrl(doc.image_path);
-              return { id: doc.id, url } as const;
-            } catch (err) {
-              console.error('Failed to load image URL', err);
-              return null;
-            }
-          })
-        );
-
-        if (cancelled) return;
-
-        setImageUrls((prev) => {
-          const next = { ...prev };
-          for (const item of results) {
-            if (item) next[item.id] = item.url;
-          }
-          return next;
-        });
-      } finally {
-        if (!cancelled) setImagesLoading(false);
+      // Status filter - check if any document matches the status
+      if (statusFilter !== 'all') {
+        const hasMatchingStatus = driver.documents.some((doc) => doc.status === statusFilter);
+        if (!hasMatchingStatus) return false;
       }
-    })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedDoc, selectedUserDocs, imageUrls]);
-
-  const filteredDocs = useMemo(
-    () =>
-      documents.filter((doc) => {
-        if (!searchTerm) return true;
+      // Search filter
+      if (searchTerm) {
         const search = searchTerm.toLowerCase();
         return (
-          doc.user_id.toLowerCase().includes(search) ||
-          doc.doc_type.toLowerCase().includes(search) ||
-          JSON.stringify(doc.parsed).toLowerCase().includes(search)
+          driver.accountNumber.toLowerCase().includes(search) ||
+          driver.firstName.toLowerCase().includes(search) ||
+          driver.middleName.toLowerCase().includes(search) ||
+          driver.lastName.toLowerCase().includes(search) ||
+          driver.fullName.toLowerCase().includes(search) ||
+          driver.email.toLowerCase().includes(search)
         );
-      }),
-    [documents, searchTerm]
-  );
+      }
+
+      return true;
+    });
+  }, [driversData, roleFilter, statusFilter, searchTerm]);
 
   return (
     <>
