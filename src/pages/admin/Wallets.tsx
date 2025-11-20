@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, History } from 'lucide-react';
+import { Search, Plus, History, X } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -276,66 +276,123 @@ export default function AdminWallets() {
               onClick={() => setSelectedUserId(null)}
               className="text-sm"
             >
+              <X className="w-4 h-4 mr-1" />
               Close
             </SecondaryButton>
           </div>
+
           {isLoadingTransactions ? (
             <p className="text-muted-foreground">Loading transactions...</p>
           ) : transactions.length === 0 ? (
             <p className="text-muted-foreground">No transactions found</p>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Related ID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((txn) => (
-                    <TableRow key={txn.id}>
-                      <TableCell className="text-sm">
-                        {new Date(txn.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                            txn.type === 'load'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : txn.type === 'deduct'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+            <>
+              {/* Stats Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">
+                    Total Loads
+                  </div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    ₱{transactions
+                      .filter(txn => txn.type === 'load')
+                      .reduce((sum, txn) => sum + txn.amount, 0)
+                      .toFixed(2)}
+                  </div>
+                  <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    {transactions.filter(txn => txn.type === 'load').length} transaction(s)
+                  </div>
+                </div>
+
+                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">
+                    Total Deductions
+                  </div>
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                    ₱{Math.abs(transactions
+                      .filter(txn => txn.type === 'deduct')
+                      .reduce((sum, txn) => sum + txn.amount, 0))
+                      .toFixed(2)}
+                  </div>
+                  <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    {transactions.filter(txn => txn.type === 'deduct').length} transaction(s)
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    Net Change
+                  </div>
+                  <div className={`text-2xl font-bold ${
+                    transactions.reduce((sum, txn) => sum + txn.amount, 0) >= 0 
+                      ? 'text-green-700 dark:text-green-300' 
+                      : 'text-red-700 dark:text-red-300'
+                  }`}>
+                    {transactions.reduce((sum, txn) => sum + txn.amount, 0) >= 0 ? '+' : ''}
+                    ₱{transactions
+                      .reduce((sum, txn) => sum + txn.amount, 0)
+                      .toFixed(2)}
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {transactions.length} total transaction(s)
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Related ID</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((txn) => (
+                      <TableRow key={txn.id}>
+                        <TableCell className="text-sm">
+                          {new Date(txn.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                              txn.type === 'load'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : txn.type === 'deduct'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            }`}
+                          >
+                            {txn.type.toUpperCase()}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-semibold ${
+                            txn.amount > 0 ? 'text-green-600' : 'text-red-600'
                           }`}
                         >
-                          {txn.type.toUpperCase()}
-                        </span>
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-semibold ${
-                          txn.amount > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {txn.amount > 0 ? '+' : ''}₱{txn.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {txn.reference || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {txn.related_ride_id
-                          ? `Ride: ${txn.related_ride_id.slice(0, 8)}...`
-                          : txn.related_delivery_id
-                          ? `Delivery: ${txn.related_delivery_id.slice(0, 8)}...`
-                          : 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                          {txn.amount > 0 ? '+' : ''}₱{txn.amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {txn.reference || 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {txn.related_ride_id
+                            ? `Ride: ${txn.related_ride_id.slice(0, 8)}...`
+                            : txn.related_delivery_id
+                            ? `Delivery: ${txn.related_delivery_id.slice(0, 8)}...`
+                            : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </ThemedCard>
       )}
