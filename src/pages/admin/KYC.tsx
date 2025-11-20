@@ -144,6 +144,7 @@ export default function AdminKYC() {
               email: driver.email,
               driverName: driver.fullName,
               documentType: doc.doc_type.replace('_', ' '),
+              userId: driver.userId,
             },
           });
           

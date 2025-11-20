@@ -47,6 +47,7 @@ import AdminRiders from "./pages/admin/Riders";
 import AdminTrips from "./pages/admin/Trips";
 import AdminDeliveries from "./pages/admin/Deliveries";
 import AdminKYC from "./pages/admin/KYC";
+import AdminNotifications from "./pages/admin/Notifications";
 import AdminFinance from "./pages/admin/Finance";
 import AdminFareMatrix from "./pages/admin/FareMatrix";
 import AdminFareTips from "./pages/admin/FareTips";
@@ -133,6 +134,7 @@ const App = () => {
               <Route path="deliveries" element={<AdminDeliveries />} />
               <Route path="pricing" element={<Pricing />} />
               <Route path="kyc" element={<AdminKYC />} />
+              <Route path="notifications" element={<AdminNotifications />} />
               <Route path="finance" element={<AdminFinance />} />
               <Route path="wallets" element={<AdminWallets />} />
               <Route path="fare-matrix" element={<AdminFareMatrix />} />
