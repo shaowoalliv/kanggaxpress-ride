@@ -434,7 +434,7 @@ export default function AdminKYC() {
                                   {statusLabel[orDoc.status]}
                                 </div>
                                 {getExpiryDate(orDoc) && (
-                                  <div className="text-xs text-muted-foreground mb-1">
+                                  <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(orDoc)}
                                   </div>
                                 )}
