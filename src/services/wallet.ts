@@ -95,12 +95,14 @@ export const walletService = {
   },
 
   // Search wallets (admin)
-  async searchWallets(query: string): Promise<any[]> {
+  async searchWallets(query: string, roleFilter?: 'all' | 'driver' | 'courier'): Promise<any[]> {
+    const roles: ('driver' | 'courier')[] = roleFilter && roleFilter !== 'all' ? [roleFilter] : ['driver', 'courier'];
+    
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, full_name, email, role, account_number')
       .or(`account_number.ilike.%${query}%,full_name.ilike.%${query}%,email.ilike.%${query}%`)
-      .in('role', ['driver', 'courier']);
+      .in('role', roles);
 
     if (profilesError) throw profilesError;
 

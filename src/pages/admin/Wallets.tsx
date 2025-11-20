@@ -5,6 +5,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ interface WalletUser {
 export default function AdminWallets() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'courier'>('all');
   const [wallets, setWallets] = useState<WalletUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<WalletUser | null>(null);
@@ -60,7 +62,7 @@ export default function AdminWallets() {
 
     setIsLoading(true);
     try {
-      const results = await walletService.searchWallets(trimmed);
+      const results = await walletService.searchWallets(trimmed, roleFilter);
       setWallets(results);
       
       if (results.length === 0) {
@@ -163,29 +165,41 @@ export default function AdminWallets() {
       <ThemedCard>
         <h2 className="text-xl font-semibold mb-4">Search</h2>
         <form
-          className="flex flex-col gap-3 sm:flex-row"
+          className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             handleSearch();
           }}
         >
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Search by Account Number, Name, or Email"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Search by Account Number, Name, or Email"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(value: 'all' | 'driver' | 'courier') => setRoleFilter(value)}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border z-50">
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="driver">Drivers Only</SelectItem>
+                <SelectItem value="courier">Couriers Only</SelectItem>
+              </SelectContent>
+            </Select>
+            <PrimaryButton
+              type="submit"
+              disabled={isLoading}
+              className="sm:w-auto"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Search
+            </PrimaryButton>
           </div>
-          <PrimaryButton
-            type="submit"
-            disabled={isLoading}
-            className="sm:w-auto"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Search
-          </PrimaryButton>
         </form>
       </ThemedCard>
 
