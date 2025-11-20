@@ -242,19 +242,19 @@ export default function AdminWallets() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-2 justify-end items-end">
                         <SecondaryButton
                           onClick={() => handleViewTransactions(wallet.id)}
-                          className="text-sm px-3 py-1 h-8"
+                          className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
                         >
-                          <History className="w-4 h-4 mr-1" />
+                          <History className="w-3 h-3 mr-1.5" />
                           History
                         </SecondaryButton>
                         <PrimaryButton
                           onClick={() => handleOpenLoadDialog(wallet)}
-                          className="text-sm px-3 py-1 h-8"
+                          className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
                         >
-                          <Plus className="w-4 h-4 mr-1" />
+                          <Plus className="w-3 h-3 mr-1.5" />
                           Load
                         </PrimaryButton>
                       </div>
