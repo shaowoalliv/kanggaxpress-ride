@@ -13,6 +13,9 @@ import { toast } from 'sonner';
 import { MapPin, User, Clock, Power, PowerOff, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { kycService } from '@/services/kyc';
+import { KycDocument } from '@/types/kyc';
+import { KycBlockedAccess } from '@/components/KycBlockedAccess';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -24,6 +27,8 @@ export default function DriverDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [accountNumber, setAccountNumber] = useState<string>('');
+  const [kycDocuments, setKycDocuments] = useState<KycDocument[]>([]);
+  const [kycCheckLoading, setKycCheckLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -76,6 +81,25 @@ export default function DriverDashboard() {
 
     try {
       setLoading(true);
+      setKycCheckLoading(true);
+      
+      // Check KYC status first
+      const docs = await kycService.getUserKycDocuments(profile.id);
+      setKycDocuments(docs);
+      setKycCheckLoading(false);
+
+      // Check if all required documents are approved
+      const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
+      const allApproved = requiredDocs.every(docType => 
+        docs.some(d => d.doc_type === docType && d.status === 'APPROVED')
+      );
+
+      if (!allApproved) {
+        // Block access - KYC not complete
+        setLoading(false);
+        return;
+      }
+
       const [driverData, available, my, userProfile, wallet] = await Promise.all([
         driversService.getDriverProfile(profile.id),
         ridesService.getAvailableRides(),
@@ -181,7 +205,31 @@ export default function DriverDashboard() {
     }
   };
 
-  if (!user || !profile || profile.role !== 'driver' || loading) {
+  if (!user || !profile || profile.role !== 'driver' || kycCheckLoading) {
+    return (
+      <PageLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Check if KYC is complete
+  const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
+  const allKycApproved = requiredDocs.every(docType => 
+    kycDocuments.some(d => d.doc_type === docType && d.status === 'APPROVED')
+  );
+
+  if (!allKycApproved) {
+    return (
+      <PageLayout>
+        <KycBlockedAccess documents={kycDocuments} userName={profile.full_name} />
+      </PageLayout>
+    );
+  }
+
+  if (loading) {
     return (
       <PageLayout>
         <div className="flex-1 flex items-center justify-center">
