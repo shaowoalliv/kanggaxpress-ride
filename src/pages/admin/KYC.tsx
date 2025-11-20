@@ -131,6 +131,32 @@ export default function AdminKYC() {
     try {
       await kycService.updateKycDocumentStatus(docId, 'APPROVED');
       toast.success('Document approved');
+      
+      // Find the document and driver info to send notification
+      const doc = driversData.flatMap(d => d.documents).find(d => d.id === docId);
+      const driver = driversData.find(d => d.documents.some(doc => doc.id === docId));
+      
+      if (doc && driver) {
+        // Send approval notification email
+        try {
+          const { data, error } = await supabase.functions.invoke('send-kyc-approval', {
+            body: {
+              email: driver.email,
+              driverName: driver.fullName,
+              documentType: doc.doc_type.replace('_', ' '),
+            },
+          });
+          
+          if (error) {
+            console.error('Failed to send approval email:', error);
+          } else {
+            toast.success('Approval notification sent to driver');
+          }
+        } catch (emailError) {
+          console.error('Error sending approval email:', emailError);
+        }
+      }
+      
       await loadDriversData();
     } catch (error: any) {
       toast.error(`Approval failed: ${error.message ?? 'Unknown error'}`);
@@ -237,7 +263,7 @@ export default function AdminKYC() {
                     placeholder="Name, email, or account number"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-12"
                   />
                 </div>
               </div>
@@ -342,9 +368,13 @@ export default function AdminKYC() {
                           <TableCell className="align-top">
                             {dlDoc ? (
                               <div className="space-y-2">
-                                <Badge variant={statusVariant[dlDoc.status]} className="text-xs">
+                                <div className={`text-xs font-medium ${
+                                  dlDoc.status === 'APPROVED' ? 'text-green-600' :
+                                  dlDoc.status === 'REJECTED' ? 'text-red-600' :
+                                  'text-yellow-600'
+                                }`}>
                                   {statusLabel[dlDoc.status]}
-                                </Badge>
+                                </div>
                                 {getExpiryDate(dlDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(dlDoc)}
@@ -395,9 +425,13 @@ export default function AdminKYC() {
                           <TableCell className="align-top">
                             {orDoc ? (
                               <div className="space-y-2">
-                                <Badge variant={statusVariant[orDoc.status]} className="text-xs">
+                                <div className={`text-xs font-medium ${
+                                  orDoc.status === 'APPROVED' ? 'text-green-600' :
+                                  orDoc.status === 'REJECTED' ? 'text-red-600' :
+                                  'text-yellow-600'
+                                }`}>
                                   {statusLabel[orDoc.status]}
-                                </Badge>
+                                </div>
                                 {getExpiryDate(orDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(orDoc)}
@@ -448,9 +482,13 @@ export default function AdminKYC() {
                           <TableCell className="align-top">
                             {crDoc ? (
                               <div className="space-y-2">
-                                <Badge variant={statusVariant[crDoc.status]} className="text-xs">
+                                <div className={`text-xs font-medium ${
+                                  crDoc.status === 'APPROVED' ? 'text-green-600' :
+                                  crDoc.status === 'REJECTED' ? 'text-red-600' :
+                                  'text-yellow-600'
+                                }`}>
                                   {statusLabel[crDoc.status]}
-                                </Badge>
+                                </div>
                                 {getExpiryDate(crDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(crDoc)}
