@@ -17,6 +17,7 @@ import {
   Settings,
   BadgeDollarSign,
   Menu,
+  Bell,
 } from 'lucide-react';
 
 const sections = [
@@ -27,6 +28,7 @@ const sections = [
   { name: 'Deliveries', path: '/admin/deliveries', icon: Package },
   { name: 'Pricing', path: '/admin/pricing', icon: DollarSign },
   { name: 'KYC', path: '/admin/kyc', icon: FileCheck },
+  { name: 'Notifications', path: '/admin/notifications', icon: Bell },
   { name: 'Finance', path: '/admin/finance', icon: Wallet },
   { name: 'Wallets', path: '/admin/wallets', icon: BadgeDollarSign },
   { name: 'Fare Matrix', path: '/admin/fare-matrix', icon: Grid3x3 },
