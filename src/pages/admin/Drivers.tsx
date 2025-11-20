@@ -231,6 +231,7 @@ export default function AdminDrivers() {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Registered</TableHead>
                     <TableHead>KYC Status</TableHead>
                     <TableHead>KYC Submitted</TableHead>
                     <TableHead>Last Updated</TableHead>
@@ -263,6 +264,18 @@ export default function AdminDrivers() {
                         }`}>
                           {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {user.created_at ? (
+                          <div>
+                            <div>{new Date(user.created_at).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(user.created_at).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {user.kyc_status ? (
