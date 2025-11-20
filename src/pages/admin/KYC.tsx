@@ -339,45 +339,49 @@ export default function AdminKYC() {
                           </TableCell>
 
                           {/* Driver License */}
-                          <TableCell>
+                          <TableCell className="align-top">
                             {dlDoc ? (
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant={statusVariant[dlDoc.status]}>
-                                    {statusLabel[dlDoc.status]}
-                                  </Badge>
-                                  {dlDoc.image_path && imageUrls[dlDoc.id] && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setZoomedImage(imageUrls[dlDoc.id])}
-                                    >
-                                      <ZoomIn className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
+                              <div className="space-y-2">
+                                <Badge variant={statusVariant[dlDoc.status]} className="text-xs">
+                                  {statusLabel[dlDoc.status]}
+                                </Badge>
                                 {getExpiryDate(dlDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(dlDoc)}
                                   </div>
                                 )}
-                                <div className="flex gap-1 mt-1">
+                                {dlDoc.image_path && imageUrls[dlDoc.id] && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs h-7"
+                                    onClick={() => setZoomedImage(imageUrls[dlDoc.id])}
+                                  >
+                                    <ZoomIn className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
+                                )}
+                                <div className="flex gap-1">
                                   {dlDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
                                       variant="secondary"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleApprove(dlDoc.id)}
                                     >
-                                      <CheckCircle2 className="h-3 w-3" />
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Approve
                                     </Button>
                                   )}
                                   {dlDoc.status !== 'REJECTED' && (
                                     <Button
                                       size="sm"
                                       variant="destructive"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleRejectClick(dlDoc.id)}
                                     >
-                                      <XCircle className="h-3 w-3" />
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
                                     </Button>
                                   )}
                                 </div>
@@ -388,45 +392,49 @@ export default function AdminKYC() {
                           </TableCell>
 
                           {/* OR */}
-                          <TableCell>
+                          <TableCell className="align-top">
                             {orDoc ? (
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant={statusVariant[orDoc.status]}>
-                                    {statusLabel[orDoc.status]}
-                                  </Badge>
-                                  {orDoc.image_path && imageUrls[orDoc.id] && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setZoomedImage(imageUrls[orDoc.id])}
-                                    >
-                                      <ZoomIn className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
+                              <div className="space-y-2">
+                                <Badge variant={statusVariant[orDoc.status]} className="text-xs">
+                                  {statusLabel[orDoc.status]}
+                                </Badge>
                                 {getExpiryDate(orDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(orDoc)}
                                   </div>
                                 )}
-                                <div className="flex gap-1 mt-1">
+                                {orDoc.image_path && imageUrls[orDoc.id] && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs h-7"
+                                    onClick={() => setZoomedImage(imageUrls[orDoc.id])}
+                                  >
+                                    <ZoomIn className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
+                                )}
+                                <div className="flex gap-1">
                                   {orDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
                                       variant="secondary"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleApprove(orDoc.id)}
                                     >
-                                      <CheckCircle2 className="h-3 w-3" />
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Approve
                                     </Button>
                                   )}
                                   {orDoc.status !== 'REJECTED' && (
                                     <Button
                                       size="sm"
                                       variant="destructive"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleRejectClick(orDoc.id)}
                                     >
-                                      <XCircle className="h-3 w-3" />
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
                                     </Button>
                                   )}
                                 </div>
@@ -437,45 +445,49 @@ export default function AdminKYC() {
                           </TableCell>
 
                           {/* CR */}
-                          <TableCell>
+                          <TableCell className="align-top">
                             {crDoc ? (
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant={statusVariant[crDoc.status]}>
-                                    {statusLabel[crDoc.status]}
-                                  </Badge>
-                                  {crDoc.image_path && imageUrls[crDoc.id] && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setZoomedImage(imageUrls[crDoc.id])}
-                                    >
-                                      <ZoomIn className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
+                              <div className="space-y-2">
+                                <Badge variant={statusVariant[crDoc.status]} className="text-xs">
+                                  {statusLabel[crDoc.status]}
+                                </Badge>
                                 {getExpiryDate(crDoc) && (
                                   <div className="text-xs text-muted-foreground">
                                     Exp: {getExpiryDate(crDoc)}
                                   </div>
                                 )}
-                                <div className="flex gap-1 mt-1">
+                                {crDoc.image_path && imageUrls[crDoc.id] && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs h-7"
+                                    onClick={() => setZoomedImage(imageUrls[crDoc.id])}
+                                  >
+                                    <ZoomIn className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
+                                )}
+                                <div className="flex gap-1">
                                   {crDoc.status !== 'APPROVED' && (
                                     <Button
                                       size="sm"
                                       variant="secondary"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleApprove(crDoc.id)}
                                     >
-                                      <CheckCircle2 className="h-3 w-3" />
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Approve
                                     </Button>
                                   )}
                                   {crDoc.status !== 'REJECTED' && (
                                     <Button
                                       size="sm"
                                       variant="destructive"
+                                      className="flex-1 h-7 text-xs"
                                       onClick={() => handleRejectClick(crDoc.id)}
                                     >
-                                      <XCircle className="h-3 w-3" />
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
                                     </Button>
                                   )}
                                 </div>
@@ -485,9 +497,9 @@ export default function AdminKYC() {
                             )}
                           </TableCell>
 
-                          <TableCell className="text-right">
-                            <div className="text-xs text-muted-foreground">
-                              {driver.documents.length} docs
+                          <TableCell className="text-right align-top">
+                            <div className="text-xs text-muted-foreground pt-1">
+                              {driver.documents.length} docs total
                             </div>
                           </TableCell>
                         </TableRow>
