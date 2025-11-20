@@ -27,11 +27,13 @@ interface UserProfile {
   phone: string | null;
   created_at: string;
   balance: number;
+  kyc_status: string | null;
 }
 
 export default function AdminDrivers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'courier' | 'passenger'>('all');
+  const [kycFilter, setKycFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVIEW'>('all');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -83,14 +85,31 @@ export default function AdminDrivers() {
 
       if (walletsError) throw walletsError;
 
-      // Combine profile and wallet data
-      const usersWithBalance = profiles.map(profile => {
+      // Get KYC status for all users
+      const { data: kycDocs, error: kycError } = await supabase
+        .from('kyc_documents')
+        .select('user_id, status')
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false });
+
+      if (kycError) throw kycError;
+
+      // Combine profile, wallet, and KYC data
+      let usersWithBalance = profiles.map(profile => {
         const wallet = wallets?.find(w => w.user_id === profile.id);
+        // Get the most recent KYC document status for this user
+        const kycDoc = kycDocs?.find(doc => doc.user_id === profile.id);
         return {
           ...profile,
           balance: wallet?.balance || 0,
+          kyc_status: kycDoc?.status || null,
         };
       });
+
+      // Filter by KYC status if specified
+      if (kycFilter !== 'all') {
+        usersWithBalance = usersWithBalance.filter(user => user.kyc_status === kycFilter);
+      }
 
       setUsers(usersWithBalance);
     } catch (error) {
@@ -171,6 +190,18 @@ export default function AdminDrivers() {
                   <SelectItem value="passenger">Passengers</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={kycFilter} onValueChange={(value: 'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVIEW') => setKycFilter(value)}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                  <SelectValue placeholder="KYC Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50">
+                  <SelectItem value="all">All KYC Status</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="REVIEW">Under Review</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
               <PrimaryButton
                 type="submit"
                 disabled={isLoading}
@@ -196,6 +227,7 @@ export default function AdminDrivers() {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>KYC Status</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -225,6 +257,23 @@ export default function AdminDrivers() {
                         }`}>
                           {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {user.kyc_status ? (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                            user.kyc_status === 'APPROVED'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : user.kyc_status === 'REJECTED'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              : user.kyc_status === 'REVIEW'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {user.kyc_status}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No KYC</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="font-bold text-lg">
