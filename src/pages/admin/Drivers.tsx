@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, History, User, X, Car, Package, ChevronDown, ChevronUp, TrendingUp, Award, CheckCircle2, XCircle } from 'lucide-react';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -43,6 +43,16 @@ interface CourierProfile {
   total_deliveries: number | null;
 }
 
+interface PerformanceMetrics {
+  completed_rides: number;
+  cancelled_rides: number;
+  completion_rate: number;
+  cancellation_rate: number;
+  total_earnings: number;
+  avg_rating: number;
+  recent_ratings: number[];
+}
+
 interface UserProfile {
   id: string;
   full_name: string;
@@ -57,6 +67,7 @@ interface UserProfile {
   kyc_updated_at: string | null;
   driver_profile?: DriverProfile | null;
   courier_profile?: CourierProfile | null;
+  performance?: PerformanceMetrics | null;
 }
 
 export default function AdminDrivers() {
@@ -173,13 +184,84 @@ export default function AdminDrivers() {
 
       if (courierError) throw courierError;
 
+      // Get performance metrics for drivers
+      const driverUserIds = profiles.filter(p => p.role === 'driver').map(p => p.id);
+      const { data: driverRides } = await supabase
+        .from('rides')
+        .select('passenger_id, status, fare_final, driver_id')
+        .in('passenger_id', driverUserIds);
+
+      // Get performance metrics for couriers
+      const courierUserIds = profiles.filter(p => p.role === 'courier').map(p => p.id);
+      const { data: courierDeliveries } = await supabase
+        .from('delivery_orders')
+        .select('sender_id, status, total_fare, courier_id')
+        .in('sender_id', courierUserIds);
+
+      // Calculate performance metrics
+      const calculatePerformance = (userId: string, role: string): PerformanceMetrics => {
+        if (role === 'driver') {
+          const userRides = driverRides?.filter(r => r.passenger_id === userId) || [];
+          const completed = userRides.filter(r => r.status === 'completed').length;
+          const cancelled = userRides.filter(r => r.status === 'cancelled').length;
+          const total = userRides.length;
+          const totalEarnings = userRides
+            .filter(r => r.status === 'completed')
+            .reduce((sum, r) => sum + (r.fare_final || 0), 0);
+
+          const driverProfile = driverProfiles?.find(dp => dp.user_id === userId);
+          
+          return {
+            completed_rides: completed,
+            cancelled_rides: cancelled,
+            completion_rate: total > 0 ? (completed / total) * 100 : 0,
+            cancellation_rate: total > 0 ? (cancelled / total) * 100 : 0,
+            total_earnings: totalEarnings,
+            avg_rating: driverProfile?.rating || 0,
+            recent_ratings: [], // Could be populated with actual rating history
+          };
+        } else if (role === 'courier') {
+          const userDeliveries = courierDeliveries?.filter(d => d.sender_id === userId) || [];
+          const completed = userDeliveries.filter(d => d.status === 'delivered').length;
+          const cancelled = userDeliveries.filter(d => d.status === 'cancelled').length;
+          const total = userDeliveries.length;
+          const totalEarnings = userDeliveries
+            .filter(d => d.status === 'delivered')
+            .reduce((sum, d) => sum + (d.total_fare || 0), 0);
+
+          const courierProfile = courierProfiles?.find(cp => cp.user_id === userId);
+          
+          return {
+            completed_rides: completed,
+            cancelled_rides: cancelled,
+            completion_rate: total > 0 ? (completed / total) * 100 : 0,
+            cancellation_rate: total > 0 ? (cancelled / total) * 100 : 0,
+            total_earnings: totalEarnings,
+            avg_rating: courierProfile?.rating || 0,
+            recent_ratings: [],
+          };
+        }
+        
+        return {
+          completed_rides: 0,
+          cancelled_rides: 0,
+          completion_rate: 0,
+          cancellation_rate: 0,
+          total_earnings: 0,
+          avg_rating: 0,
+          recent_ratings: [],
+        };
+      };
+
       // Combine profile, wallet, and KYC data
       let usersWithBalance = profiles.map(profile => {
         const wallet = wallets?.find(w => w.user_id === profile.id);
-        // Get the most recent KYC document status for this user
         const kycDoc = kycDocs?.find(doc => doc.user_id === profile.id);
         const driverProfile = driverProfiles?.find(dp => dp.user_id === profile.id);
         const courierProfile = courierProfiles?.find(cp => cp.user_id === profile.id);
+        const performance = (profile.role === 'driver' || profile.role === 'courier') 
+          ? calculatePerformance(profile.id, profile.role)
+          : null;
         
         return {
           ...profile,
@@ -189,6 +271,7 @@ export default function AdminDrivers() {
           kyc_updated_at: kycDoc?.updated_at || null,
           driver_profile: driverProfile || null,
           courier_profile: courierProfile || null,
+          performance,
         };
       });
 
@@ -375,7 +458,8 @@ export default function AdminDrivers() {
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
-                    <TableRow key={user.id}>
+                    <React.Fragment key={user.id}>
+                    <TableRow>
                       <TableCell className="font-mono text-sm">
                         {user.account_number || 'N/A'}
                       </TableCell>
@@ -459,6 +543,24 @@ export default function AdminDrivers() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col sm:flex-row gap-2 justify-end items-end">
+                          {(user.role === 'driver' || user.role === 'courier') && (
+                            <SecondaryButton
+                              onClick={() => toggleRowExpansion(user.id)}
+                              className="text-xs px-2 py-1.5 h-auto whitespace-nowrap"
+                            >
+                              {expandedRows.has(user.id) ? (
+                                <>
+                                  <ChevronUp className="w-3 h-3 mr-1" />
+                                  Hide
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3 h-3 mr-1" />
+                                  Details
+                                </>
+                              )}
+                            </SecondaryButton>
+                          )}
                           {user.role !== 'passenger' && (
                             <SecondaryButton
                               onClick={() => handleViewTransactions(user.id)}
@@ -471,6 +573,136 @@ export default function AdminDrivers() {
                         </div>
                       </TableCell>
                     </TableRow>
+
+                    {/* Expanded Performance Metrics Row */}
+                    {expandedRows.has(user.id) && (user.driver_profile || user.courier_profile) && user.performance && (
+                      <TableRow key={`${user.id}-details`} className="bg-muted/30">
+                        <TableCell colSpan={11} className="p-6">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Performance Overview */}
+                            <ThemedCard className="p-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                <TrendingUp className="w-5 h-5 text-primary" />
+                                <h3 className="font-semibold text-lg">Performance Metrics</h3>
+                              </div>
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                    <span className="text-sm text-muted-foreground">Completion Rate</span>
+                                  </div>
+                                  <span className="font-bold text-lg text-green-600">
+                                    {user.performance.completion_rate.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <XCircle className="w-4 h-4 text-red-600" />
+                                    <span className="text-sm text-muted-foreground">Cancellation Rate</span>
+                                  </div>
+                                  <span className="font-bold text-lg text-red-600">
+                                    {user.performance.cancellation_rate.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <Award className="w-4 h-4 text-yellow-600" />
+                                    <span className="text-sm text-muted-foreground">Average Rating</span>
+                                  </div>
+                                  <span className="font-bold text-lg">
+                                    ⭐ {user.performance.avg_rating.toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </ThemedCard>
+
+                            {/* Activity Stats */}
+                            <ThemedCard className="p-4">
+                              <h3 className="font-semibold text-lg mb-4">Activity Statistics</h3>
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Completed {user.role === 'driver' ? 'Rides' : 'Deliveries'}</p>
+                                  <p className="text-2xl font-bold text-green-600">{user.performance.completed_rides}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Cancelled</p>
+                                  <p className="text-2xl font-bold text-red-600">{user.performance.cancelled_rides}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Total Earnings</p>
+                                  <p className="text-2xl font-bold text-primary">₱{user.performance.total_earnings.toFixed(2)}</p>
+                                </div>
+                              </div>
+                            </ThemedCard>
+
+                            {/* Vehicle/Service Info */}
+                            <ThemedCard className="p-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                {user.role === 'driver' ? (
+                                  <Car className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <Package className="w-5 h-5 text-primary" />
+                                )}
+                                <h3 className="font-semibold text-lg">Service Details</h3>
+                              </div>
+                              {user.driver_profile && (
+                                <div className="space-y-2">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Vehicle</p>
+                                    <p className="font-medium capitalize">{user.driver_profile.vehicle_type} - {user.driver_profile.vehicle_model || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Plate Number</p>
+                                    <p className="font-medium font-mono">{user.driver_profile.vehicle_plate}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Color</p>
+                                    <p className="font-medium capitalize">{user.driver_profile.vehicle_color || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">License</p>
+                                    <p className="font-medium">{user.driver_profile.license_number || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Status</p>
+                                    <Badge variant={user.driver_profile.is_available ? "default" : "secondary"}>
+                                      {user.driver_profile.is_available ? 'Available' : 'Offline'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )}
+                              {user.courier_profile && (
+                                <div className="space-y-2">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Vehicle</p>
+                                    <p className="font-medium capitalize">{user.courier_profile.vehicle_type} - {user.courier_profile.vehicle_model || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Plate Number</p>
+                                    <p className="font-medium font-mono">{user.courier_profile.vehicle_plate}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Color</p>
+                                    <p className="font-medium capitalize">{user.courier_profile.vehicle_color || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">License</p>
+                                    <p className="font-medium">{user.courier_profile.license_number || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Status</p>
+                                    <Badge variant={user.courier_profile.is_available ? "default" : "secondary"}>
+                                      {user.courier_profile.is_available ? 'Available' : 'Offline'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )}
+                            </ThemedCard>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
