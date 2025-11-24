@@ -200,7 +200,23 @@ export default function CourierSetup() {
           balance: 0,
         });
 
-      toast.success('Courier profile created! Your wallet has been initialized.');
+      // Show welcome toast with account number and copy button
+      const copyAccountNumber = () => {
+        navigator.clipboard.writeText(accountNumber);
+        toast.success('Account number copied!');
+      };
+
+      toast.success(
+        `Welcome! Your account number is ${accountNumber}. Save this for wallet loading.`,
+        {
+          duration: 10000,
+          action: {
+            label: 'Copy',
+            onClick: copyAccountNumber,
+          },
+        }
+      );
+
       navigate('/courier/dashboard');
     } catch (error) {
       console.error('Error creating profile:', error);
