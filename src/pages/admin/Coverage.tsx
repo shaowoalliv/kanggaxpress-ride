@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Plus, Edit, MapPin, Globe } from 'lucide-react';
+import { Loader2, Plus, Edit, MapPin, Globe, Search } from 'lucide-react';
 
 interface Province {
   id: string;
@@ -37,6 +37,10 @@ export default function Coverage() {
   const [loading, setLoading] = useState(false);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  
+  // Search states
+  const [provinceSearch, setProvinceSearch] = useState('');
+  const [citySearch, setCitySearch] = useState('');
   
   // Dialog states
   const [provinceDialogOpen, setProvinceDialogOpen] = useState(false);
@@ -192,6 +196,21 @@ export default function Coverage() {
     return provinces.find((p) => p.id === provinceId)?.name || 'Unknown';
   };
 
+  // Filter provinces based on search
+  const filteredProvinces = provinces.filter((province) =>
+    province.name.toLowerCase().includes(provinceSearch.toLowerCase()) ||
+    province.code.toLowerCase().includes(provinceSearch.toLowerCase())
+  );
+
+  // Filter cities based on search
+  const filteredCities = cities.filter((city) => {
+    const provinceName = getProvinceName(city.province_id);
+    return (
+      city.name.toLowerCase().includes(citySearch.toLowerCase()) ||
+      provinceName.toLowerCase().includes(citySearch.toLowerCase())
+    );
+  });
+
   return (
     <>
       <Helmet>
@@ -225,17 +244,27 @@ export default function Coverage() {
             <TabsContent value="provinces" className="space-y-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle>Provinces</CardTitle>
                     <CardDescription>Manage provincial coverage areas</CardDescription>
                   </div>
-                  <Dialog open={provinceDialogOpen} onOpenChange={setProvinceDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => openProvinceDialog()}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Province
-                      </Button>
-                    </DialogTrigger>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search provinces..."
+                        value={provinceSearch}
+                        onChange={(e) => setProvinceSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <Dialog open={provinceDialogOpen} onOpenChange={setProvinceDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button onClick={() => openProvinceDialog()}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Province
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>{editingProvince ? 'Edit Province' : 'Add Province'}</DialogTitle>
@@ -276,6 +305,7 @@ export default function Coverage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -288,14 +318,14 @@ export default function Coverage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {provinces.length === 0 ? (
+                      {filteredProvinces.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            No provinces found. Add one to get started.
+                            {provinceSearch ? 'No provinces found matching your search.' : 'No provinces found. Add one to get started.'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        provinces.map((province) => (
+                        filteredProvinces.map((province) => (
                           <TableRow key={province.id}>
                             <TableCell className="font-medium">{province.name}</TableCell>
                             <TableCell>{province.code}</TableCell>
@@ -326,100 +356,111 @@ export default function Coverage() {
             <TabsContent value="cities" className="space-y-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle>Cities</CardTitle>
                     <CardDescription>Manage city-level geofence boundaries</CardDescription>
                   </div>
-                  <Dialog open={cityDialogOpen} onOpenChange={setCityDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => openCityDialog()}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add City
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>{editingCity ? 'Edit City' : 'Add City'}</DialogTitle>
-                        <DialogDescription>
-                          Configure city geofence center and radius
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>City Name</Label>
-                            <Input
-                              value={cityForm.name}
-                              onChange={(e) => setCityForm({ ...cityForm, name: e.target.value })}
-                              placeholder="e.g., Calapan City"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Province</Label>
-                            <Select
-                              value={cityForm.province_id}
-                              onValueChange={(value) => setCityForm({ ...cityForm, province_id: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select province" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {provinces.map((province) => (
-                                  <SelectItem key={province.id} value={province.id}>
-                                    {province.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Latitude</Label>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              value={cityForm.geofence_lat}
-                              onChange={(e) => setCityForm({ ...cityForm, geofence_lat: Number(e.target.value) })}
-                              placeholder="e.g., 13.4110"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Longitude</Label>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              value={cityForm.geofence_lng}
-                              onChange={(e) => setCityForm({ ...cityForm, geofence_lng: Number(e.target.value) })}
-                              placeholder="e.g., 121.1803"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Geofence Radius (km)</Label>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={cityForm.geofence_radius_km}
-                            onChange={(e) => setCityForm({ ...cityForm, geofence_radius_km: Number(e.target.value) })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Active</Label>
-                          <Switch
-                            checked={cityForm.is_active}
-                            onCheckedChange={(checked) => setCityForm({ ...cityForm, is_active: checked })}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setCityDialogOpen(false)}>
-                          Cancel
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search cities..."
+                        value={citySearch}
+                        onChange={(e) => setCitySearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <Dialog open={cityDialogOpen} onOpenChange={setCityDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button onClick={() => openCityDialog()}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add City
                         </Button>
-                        <Button onClick={handleSaveCity}>Save</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>{editingCity ? 'Edit City' : 'Add City'}</DialogTitle>
+                          <DialogDescription>
+                            Configure city geofence center and radius
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>City Name</Label>
+                              <Input
+                                value={cityForm.name}
+                                onChange={(e) => setCityForm({ ...cityForm, name: e.target.value })}
+                                placeholder="e.g., Calapan City"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Province</Label>
+                              <Select
+                                value={cityForm.province_id}
+                                onValueChange={(value) => setCityForm({ ...cityForm, province_id: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select province" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {provinces.map((province) => (
+                                    <SelectItem key={province.id} value={province.id}>
+                                      {province.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Latitude</Label>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                value={cityForm.geofence_lat}
+                                onChange={(e) => setCityForm({ ...cityForm, geofence_lat: Number(e.target.value) })}
+                                placeholder="e.g., 13.4110"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Longitude</Label>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                value={cityForm.geofence_lng}
+                                onChange={(e) => setCityForm({ ...cityForm, geofence_lng: Number(e.target.value) })}
+                                placeholder="e.g., 121.1803"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Geofence Radius (km)</Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              value={cityForm.geofence_radius_km}
+                              onChange={(e) => setCityForm({ ...cityForm, geofence_radius_km: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Label>Active</Label>
+                            <Switch
+                              checked={cityForm.is_active}
+                              onCheckedChange={(checked) => setCityForm({ ...cityForm, is_active: checked })}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setCityDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleSaveCity}>Save</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -434,14 +475,14 @@ export default function Coverage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {cities.length === 0 ? (
+                      {filteredCities.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground">
-                            No cities found. Add one to get started.
+                            {citySearch ? 'No cities found matching your search.' : 'No cities found. Add one to get started.'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        cities.map((city) => (
+                        filteredCities.map((city) => (
                           <TableRow key={city.id}>
                             <TableCell className="font-medium">{city.name}</TableCell>
                             <TableCell>{getProvinceName(city.province_id)}</TableCell>
