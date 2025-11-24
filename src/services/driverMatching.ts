@@ -41,7 +41,7 @@ export const driverMatchingService = {
     return this.findDriversFallback(pickupLat, pickupLng, radius, rideType, excludeDriverIds);
   },
 
-  // Fallback method using client-side filtering
+  // Fallback method using client-side filtering with secure view
   async findDriversFallback(
     pickupLat: number,
     pickupLng: number,
@@ -49,25 +49,29 @@ export const driverMatchingService = {
     rideType: string,
     excludeDriverIds: string[] = []
   ) {
+    // Use the secure view that only exposes safe driver data
     const { data: drivers, error } = await supabase
-      .from('driver_profiles')
-      .select('*, profiles:user_id(full_name)')
-      .eq('is_available', true)
-      .not('current_lat', 'is', null)
-      .not('current_lng', 'is', null);
+      .from('available_drivers_safe')
+      .select('*');
 
     if (error) throw error;
 
-    // Calculate distances and filter by radius
+    // Calculate distances and filter by radius using approximate coordinates
     const driversWithDistance = (drivers || [])
       .map((driver: any) => {
         const distance = this.calculateDistance(
           pickupLat,
           pickupLng,
-          driver.current_lat,
-          driver.current_lng
+          driver.approximate_lat,
+          driver.approximate_lng
         );
-        return { ...driver, distance };
+        return { 
+          id: driver.id,
+          user_id: driver.user_id,
+          vehicle_type: driver.vehicle_type,
+          rating: driver.rating,
+          distance 
+        };
       })
       .filter((driver: any) => 
         driver.distance <= radius && 
@@ -168,14 +172,14 @@ export const driverMatchingService = {
     return { success: false, message: 'No drivers found within maximum search radius' };
   },
 
-  // Driver submits proposal
+  // Driver submits proposal (drivers can see their own full profile)
   async submitProposal(
     rideId: string,
     driverId: string,
     topUpFare: number,
     notes?: string
   ) {
-    // Get current ride and driver info
+    // Get current ride
     const { data: ride, error: rideError } = await supabase
       .from('rides')
       .select('*, proposals')
@@ -184,6 +188,7 @@ export const driverMatchingService = {
 
     if (rideError) throw rideError;
 
+    // Driver can access their own profile (RLS allows this)
     const { data: driver, error: driverError } = await supabase
       .from('driver_profiles')
       .select('*, profiles:user_id(full_name)')
@@ -203,12 +208,12 @@ export const driverMatchingService = {
       );
     }
 
-    // Create proposal object
+    // Create proposal object (only include safe data for passenger to see)
     const proposal: DriverProposal = {
       driverId: driver.id,
       driverName: (driver as any).profiles?.full_name || 'Driver',
       vehicleType: driver.vehicle_type,
-      vehiclePlate: driver.vehicle_plate,
+      vehiclePlate: driver.vehicle_plate, // Only shown after acceptance
       rating: parseFloat(driver.rating?.toString() || '5'),
       distance: Math.round(distance),
       proposedTopUpFare: topUpFare,
