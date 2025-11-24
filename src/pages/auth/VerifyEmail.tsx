@@ -13,10 +13,21 @@ export default function VerifyEmail() {
   const [email, setEmail] = useState<string>('');
   const [isResending, setIsResending] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   useEffect(() => {
     checkEmailVerification();
   }, []);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds(cooldownSeconds - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
 
   const checkEmailVerification = async () => {
     try {
@@ -49,6 +60,11 @@ export default function VerifyEmail() {
       return;
     }
 
+    if (cooldownSeconds > 0) {
+      toast.error(`Please wait ${cooldownSeconds} seconds before resending`);
+      return;
+    }
+
     setIsResending(true);
     try {
       const { error } = await supabase.auth.resend({
@@ -62,6 +78,7 @@ export default function VerifyEmail() {
       if (error) throw error;
 
       toast.success('Verification email sent! Please check your inbox.');
+      setCooldownSeconds(60); // 60 second cooldown
     } catch (error: any) {
       console.error('Error resending verification:', error);
       toast.error(error.message || 'Failed to resend verification email');
@@ -128,13 +145,18 @@ export default function VerifyEmail() {
               <div className="space-y-3">
                 <PrimaryButton
                   onClick={handleResendVerification}
-                  disabled={isResending}
+                  disabled={isResending || cooldownSeconds > 0}
                   className="w-full"
                 >
                   {isResending ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                       Sending...
+                    </>
+                  ) : cooldownSeconds > 0 ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Wait {cooldownSeconds}s
                     </>
                   ) : (
                     <>
