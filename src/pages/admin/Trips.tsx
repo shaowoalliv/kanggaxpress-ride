@@ -27,6 +27,9 @@ interface Ride {
   created_at: string;
   passenger_id: string;
   driver_id: string | null;
+  negotiation_status: string | null;
+  proposed_top_up_fare: number | null;
+  negotiation_notes: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -88,6 +91,7 @@ export default function AdminTrips() {
                   <TableHead>Route</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Negotiation</TableHead>
                   <TableHead className="text-right">Base Fare</TableHead>
                   <TableHead className="text-right">Top-up</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -98,7 +102,7 @@ export default function AdminTrips() {
               <TableBody>
                 {rides.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
                       No trips found
                     </TableCell>
                   </TableRow>
@@ -119,6 +123,27 @@ export default function AdminTrips() {
                         <Badge className={statusColors[ride.status] || ''}>
                           {ride.status.replace('_', ' ')}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {ride.negotiation_status && ride.negotiation_status !== 'none' ? (
+                          <div className="text-sm">
+                            <Badge variant={ride.negotiation_status === 'accepted' ? 'default' : ride.negotiation_status === 'pending' ? 'secondary' : 'outline'}>
+                              {ride.negotiation_status}
+                            </Badge>
+                            {ride.proposed_top_up_fare && ride.proposed_top_up_fare > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                +₱{ride.proposed_top_up_fare.toFixed(2)}
+                              </div>
+                            )}
+                            {ride.negotiation_notes && (
+                              <div className="text-xs text-muted-foreground mt-1 truncate max-w-xs" title={ride.negotiation_notes}>
+                                {ride.negotiation_notes}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">₱{ride.base_fare?.toFixed(2) || '0.00'}</TableCell>
                       <TableCell className="text-right">₱{ride.top_up_fare?.toFixed(2) || '0.00'}</TableCell>
