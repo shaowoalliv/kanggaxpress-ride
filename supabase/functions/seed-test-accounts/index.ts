@@ -154,28 +154,10 @@ Deno.serve(async (req) => {
 
           if (vehicleError) throw new Error(`Vehicle profile error: ${vehicleError.message}`);
 
-          // 4. Create mock KYC documents (APPROVED status for testing)
-          const kycDocs = [
-            { doc_type: 'DRIVER_LICENSE', parsed: { license_no: account.license_number } },
-            { doc_type: 'OR', parsed: { plate_no: account.vehicle_plate } },
-            { doc_type: 'CR', parsed: { plate_no: account.vehicle_plate, vehicle_brand: account.vehicle_model?.split(' ')[0], color: account.vehicle_color } },
-            { doc_type: 'SELFIE', parsed: {} },
-          ];
+          // Skipping KYC document creation for test accounts to avoid
+          // dependency on KYC encryption setup. Real users must still
+          // complete full KYC via the normal flow.
 
-          for (const doc of kycDocs) {
-            const { error: kycError } = await supabaseAdmin
-              .from('kyc_documents')
-              .insert({
-                user_id: userId,
-                doc_type: doc.doc_type,
-                parsed: doc.parsed,
-                confidence: 1.0,
-                status: 'APPROVED',
-                image_path: `test-docs/${account.email}/${doc.doc_type.toLowerCase()}.jpg`,
-              });
-
-            if (kycError) throw new Error(`KYC error: ${kycError.message}`);
-          }
         }
 
         // 5. Generate account number (only for drivers/couriers)
