@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { reverseGeocode } from '@/lib/geocoding';
 import { PrimaryButton } from './ui/PrimaryButton';
 import { SecondaryButton } from './ui/SecondaryButton';
-import mapPinIcon from '@/assets/map-pin-icon.png';
+import mapPinRed from '@/assets/map-pin-red.png';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTVtdG5zYWwwMDhpMmpzYzBkdGM4ZXg3In0.VwrG0qJKs0R_0Gfqhzierw';
 
@@ -142,17 +142,11 @@ export function DestinationMapPicker({ mode = 'dropoff', initialCenter, onConfir
         {/* Fixed center pin */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="relative transform -translate-y-1/2">
-            <div className="relative w-12 h-16">
-              {/* Red pin shape */}
-              <div className="absolute inset-0 flex items-end justify-center">
-                <div className="w-12 h-12 bg-red-600 rounded-full border-4 border-white shadow-xl relative">
-                  {/* Inner circle */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-red-800 rounded-full"></div>
-                </div>
-              </div>
-              {/* Pin point */}
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[16px] border-t-red-600 drop-shadow-lg"></div>
-            </div>
+            <img 
+              src={mapPinRed} 
+              alt="Location pin" 
+              className="w-12 h-16 drop-shadow-xl"
+            />
           </div>
         </div>
       </div>
