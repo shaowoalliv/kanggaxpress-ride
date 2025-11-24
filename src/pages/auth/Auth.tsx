@@ -107,11 +107,16 @@ export default function Auth() {
   const { user, profile, loading } = useAuth();
   const { toast } = useToast();
   
-  const [role, setRole] = useState<UserRole>(() => {
+  // Check if role is locked from /choose-role
+  const lockedRole = (() => {
     const urlRole = searchParams.get('role');
     return (urlRole === 'passenger' || urlRole === 'driver' || urlRole === 'courier')
       ? urlRole as UserRole
-      : 'passenger';
+      : null;
+  })();
+  
+  const [role, setRole] = useState<UserRole>(() => {
+    return lockedRole || 'passenger';
   });
   
   const [activeTab, setActiveTab] = useState('login');
@@ -762,44 +767,65 @@ export default function Auth() {
                 Welcome to KanggaXpress
               </h1>
               
-              {/* Role Selector */}
-              <TooltipProvider>
-                <div className="flex flex-col items-center justify-center gap-3 sm:gap-2 p-5 sm:p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
-                  <span className="text-lg sm:text-base md:text-sm font-bold text-foreground">Signing in as:</span>
-                  <div className="flex gap-3 sm:gap-2">
-                    {(['passenger', 'driver', 'courier'] as const).map((r) => (
-                      <Tooltip key={r}>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={role === r ? 'default' : 'outline'}
-                            onClick={() => setRole(r)}
-                            onDoubleClick={() => handleDevBypass(r)}
-                            className={`flex flex-col gap-2.5 sm:gap-1.5 h-auto py-4 px-4 sm:py-2 sm:px-3 transition-all min-h-[72px] sm:min-h-[60px] ${
-                              role === r 
-                                ? 'shadow-lg scale-105 border-2 border-primary' 
-                                : 'hover:scale-105 hover:shadow-md border-2 border-border'
-                            }`}
-                          >
-                            <div className={`w-12 h-12 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg ${
-                              role === r 
-                                ? 'bg-primary/10' 
-                                : 'bg-muted'
-                            }`}>
-                              {getRoleIcon(r)}
-                            </div>
-                            <span className="text-base sm:text-sm md:text-xs font-semibold">{getRoleLabel(r)}</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">Sign in as {getRoleLabel(r)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
+              {/* Role Selector or Locked Role Display */}
+              {lockedRole ? (
+                // Locked role view - user came from /choose-role
+                <div className="flex flex-col items-center justify-center gap-2 p-4 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                  <span className="text-sm text-muted-foreground">Signing in as</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10">
+                      {getRoleIcon(lockedRole)}
+                    </div>
+                    <span className="text-xl font-bold text-foreground">{getRoleLabel(lockedRole)}</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/choose-role')}
+                    className="mt-2 text-xs text-primary hover:underline font-medium"
+                  >
+                    Change role
+                  </button>
                 </div>
-              </TooltipProvider>
+              ) : (
+                // Normal role selector - direct /auth visit
+                <TooltipProvider>
+                  <div className="flex flex-col items-center justify-center gap-3 sm:gap-2 p-5 sm:p-3 bg-gradient-to-br from-muted/50 to-muted rounded-xl">
+                    <span className="text-lg sm:text-base md:text-sm font-bold text-foreground">Signing in as:</span>
+                    <div className="flex gap-3 sm:gap-2">
+                      {(['passenger', 'driver', 'courier'] as const).map((r) => (
+                        <Tooltip key={r}>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={role === r ? 'default' : 'outline'}
+                              onClick={() => setRole(r)}
+                              onDoubleClick={() => handleDevBypass(r)}
+                              className={`flex flex-col gap-2.5 sm:gap-1.5 h-auto py-4 px-4 sm:py-2 sm:px-3 transition-all min-h-[72px] sm:min-h-[60px] ${
+                                role === r 
+                                  ? 'shadow-lg scale-105 border-2 border-primary' 
+                                  : 'hover:scale-105 hover:shadow-md border-2 border-border'
+                              }`}
+                            >
+                              <div className={`w-12 h-12 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg ${
+                                role === r 
+                                  ? 'bg-primary/10' 
+                                  : 'bg-muted'
+                              }`}>
+                                {getRoleIcon(r)}
+                              </div>
+                              <span className="text-base sm:text-sm md:text-xs font-semibold">{getRoleLabel(r)}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">Sign in as {getRoleLabel(r)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </div>
+                </TooltipProvider>
+              )}
             </div>
 
             {/* Auth Tabs */}
