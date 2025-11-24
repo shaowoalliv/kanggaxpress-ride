@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: Date;
+  status?: 'sending' | 'sent' | 'read';
 }
 
 export function ChatWidget() {
@@ -17,21 +19,39 @@ export function ChatWidget() {
     {
       role: 'assistant',
       content: 'Kumusta! 👋 I\'m here to help you with KanggaXpress. Ask me anything about rides, deliveries, or how to use the app!',
+      timestamp: new Date(),
+      status: 'read',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isTyping]);
+
+  // Mark user messages as read when assistant responds
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.role === 'user' && msg.status !== 'read'
+          ? { ...msg, status: 'read' as const }
+          : msg
+      )
+    );
+  }, [messages.filter((m) => m.role === 'assistant').length]);
 
   const streamChat = async (userMessage: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`;
+    
+    // Show typing indicator
+    setIsTyping(true);
     
     const response = await fetch(CHAT_URL, {
       method: 'POST',
@@ -45,6 +65,7 @@ export function ChatWidget() {
     });
 
     if (!response.ok || !response.body) {
+      setIsTyping(false);
       if (response.status === 429) {
         throw new Error('Too many requests. Please try again in a moment.');
       }
@@ -61,7 +82,11 @@ export function ChatWidget() {
     let streamDone = false;
 
     // Add empty assistant message to update
-    setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: '', timestamp: new Date(), status: 'read' },
+    ]);
+    setIsTyping(false);
 
     while (!streamDone) {
       const { done, value } = await reader.read();
@@ -94,6 +119,8 @@ export function ChatWidget() {
               newMessages[newMessages.length - 1] = {
                 role: 'assistant',
                 content: assistantContent,
+                timestamp: new Date(),
+                status: 'read',
               };
               return newMessages;
             });
@@ -111,13 +138,31 @@ export function ChatWidget() {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+    
+    // Add user message with 'sending' status
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: userMessage, timestamp: new Date(), status: 'sending' },
+    ]);
+    
+    // Update to 'sent' after a brief delay
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((msg, idx) =>
+          idx === prev.length - 1 && msg.status === 'sending'
+            ? { ...msg, status: 'sent' as const }
+            : msg
+        )
+      );
+    }, 300);
+    
     setIsLoading(true);
 
     try {
       await streamChat(userMessage);
     } catch (error) {
       console.error('Chat error:', error);
+      setIsTyping(false);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to send message',
@@ -180,7 +225,9 @@ export function ChatWidget() {
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex flex-col ${
+                    message.role === 'user' ? 'items-end' : 'items-start'
+                  }`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
@@ -191,15 +238,69 @@ export function ChatWidget() {
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
+                  {message.role === 'user' && message.status && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      {message.status === 'sending' && (
+                        <>
+                          <Check className="h-3 w-3" />
+                          <span>Sending...</span>
+                        </>
+                      )}
+                      {message.status === 'sent' && (
+                        <>
+                          <CheckCheck className="h-3 w-3" />
+                          <span>Sent</span>
+                        </>
+                      )}
+                      {message.status === 'read' && (
+                        <>
+                          <CheckCheck className="h-3 w-3 text-primary" />
+                          <span className="text-primary">Read</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
-              {isLoading && (
+              {isTyping && (
+                <div className="flex items-start">
+                  <div className="bg-accent text-accent-foreground rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div
+                          className="h-2 w-2 bg-current rounded-full animate-bounce"
+                          style={{ animationDelay: '0ms' }}
+                        />
+                        <div
+                          className="h-2 w-2 bg-current rounded-full animate-bounce"
+                          style={{ animationDelay: '150ms' }}
+                        />
+                        <div
+                          className="h-2 w-2 bg-current rounded-full animate-bounce"
+                          style={{ animationDelay: '300ms' }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">Typing...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isLoading && !isTyping && (
                 <div className="flex justify-start">
                   <div className="bg-accent text-accent-foreground rounded-lg p-3">
                     <div className="flex gap-1">
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="h-2 w-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div
+                        className="h-2 w-2 bg-current rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="h-2 w-2 bg-current rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <div
+                        className="h-2 w-2 bg-current rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                   </div>
                 </div>
