@@ -64,9 +64,12 @@ export type Database = {
       courier_profiles: {
         Row: {
           created_at: string | null
+          current_lat: number | null
+          current_lng: number | null
           id: string
           is_available: boolean | null
           license_number: string | null
+          location_updated_at: string | null
           rating: number | null
           total_deliveries: number | null
           updated_at: string | null
@@ -78,9 +81,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           is_available?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           rating?: number | null
           total_deliveries?: number | null
           updated_at?: string | null
@@ -92,9 +98,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           is_available?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           rating?: number | null
           total_deliveries?: number | null
           updated_at?: string | null
@@ -127,12 +136,15 @@ export type Database = {
           dropoff_lat: number | null
           dropoff_lng: number | null
           id: string
+          negotiation_notes: string | null
+          negotiation_status: string | null
           package_description: string
           package_size: Database["public"]["Enums"]["package_size"]
           picked_up_at: string | null
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
+          proposed_top_up_fare: number | null
           receiver_name: string
           receiver_phone: string
           sender_id: string
@@ -153,12 +165,15 @@ export type Database = {
           dropoff_lat?: number | null
           dropoff_lng?: number | null
           id?: string
+          negotiation_notes?: string | null
+          negotiation_status?: string | null
           package_description: string
           package_size: Database["public"]["Enums"]["package_size"]
           picked_up_at?: string | null
           pickup_address: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          proposed_top_up_fare?: number | null
           receiver_name: string
           receiver_phone: string
           sender_id: string
@@ -179,12 +194,15 @@ export type Database = {
           dropoff_lat?: number | null
           dropoff_lng?: number | null
           id?: string
+          negotiation_notes?: string | null
+          negotiation_status?: string | null
           package_description?: string
           package_size?: Database["public"]["Enums"]["package_size"]
           picked_up_at?: string | null
           pickup_address?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          proposed_top_up_fare?: number | null
           receiver_name?: string
           receiver_phone?: string
           sender_id?: string
