@@ -19,6 +19,7 @@ import carIcon from '@/assets/car-icon.png';
 import motorcycleIcon from '@/assets/motorcycle-icon.png';
 import tricycleIcon from '@/assets/tricycle-icon.png';
 import courierIcon from '@/assets/courier-icon.png';
+import mapPinIcon from '@/assets/map-pin-icon.png';
 
 /**
  * 🔒 LOCKED LAYOUT - /passenger/book-ride (Canonical Mobile-First Ride Home Screen)
@@ -397,7 +398,7 @@ export default function BookRide() {
                     onClick={handleChangePickupOnMap}
                     className="flex-shrink-0 rounded-full bg-amber-50 p-2 shadow-sm hover:bg-amber-100"
                   >
-                    <MapPin className="h-4 w-4 text-amber-700" />
+                    <img src={mapPinIcon} alt="Select location" className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -428,7 +429,7 @@ export default function BookRide() {
                     onClick={handleOpenDestinationMapPicker}
                     className="flex-shrink-0 rounded-full bg-amber-50 p-2 shadow-sm hover:bg-amber-100"
                   >
-                    <MapPin className="h-4 w-4 text-amber-700" />
+                    <img src={mapPinIcon} alt="Select location" className="h-4 w-4" />
                   </button>
                 </div>
               </div>
