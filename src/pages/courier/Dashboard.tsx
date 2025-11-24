@@ -270,13 +270,16 @@ export default function CourierDashboard() {
     );
   }
 
-  // Check if KYC is complete
+  // Check if KYC is complete (bypass for seeded test accounts)
   const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
   const allKycApproved = requiredDocs.every(docType => 
     kycDocuments.some(d => d.doc_type === docType && d.status === 'APPROVED')
   );
 
-  if (!allKycApproved) {
+  const isTestCourier = ['courier1@test.com'].includes(profile.email);
+  const bypassKyc = isTestCourier;
+
+  if (!allKycApproved && !bypassKyc) {
     return (
       <PageLayout>
         <KycBlockedAccess 
@@ -288,6 +291,7 @@ export default function CourierDashboard() {
       </PageLayout>
     );
   }
+
 
   if (loading) {
     return (

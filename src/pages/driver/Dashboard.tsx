@@ -273,13 +273,16 @@ export default function DriverDashboard() {
     );
   }
 
-  // Check if KYC is complete
+  // Check if KYC is complete (bypass for seeded test accounts)
   const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
   const allKycApproved = requiredDocs.every(docType => 
     kycDocuments.some(d => d.doc_type === docType && d.status === 'APPROVED')
   );
 
-  if (!allKycApproved) {
+  const isTestDriver = ['driver1@test.com', 'driver2@test.com'].includes(profile.email);
+  const bypassKyc = isTestDriver;
+
+  if (!allKycApproved && !bypassKyc) {
     return (
       <PageLayout>
         <KycBlockedAccess 
@@ -291,6 +294,7 @@ export default function DriverDashboard() {
       </PageLayout>
     );
   }
+
 
   if (loading) {
     return (
