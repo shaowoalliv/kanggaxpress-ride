@@ -1,12 +1,29 @@
 import { useEffect } from 'react';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
+
+// Dynamically import PushNotifications only in native environment
+const getPushNotifications = async () => {
+  if (Capacitor.isNativePlatform()) {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    return PushNotifications;
+  }
+  return null;
+};
 
 export const usePushNotifications = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Only initialize push notifications in native Capacitor apps
+    if (!Capacitor.isNativePlatform()) {
+      console.log('Push notifications only available in native app');
+      return;
+    }
+
     const initPushNotifications = async () => {
+      const PushNotifications = await getPushNotifications();
+      if (!PushNotifications) return;
       // Request permission to use push notifications
       const permStatus = await PushNotifications.checkPermissions();
 
@@ -67,7 +84,14 @@ export const usePushNotifications = () => {
     initPushNotifications();
 
     return () => {
-      PushNotifications.removeAllListeners();
+      // Only remove listeners in native environment
+      if (Capacitor.isNativePlatform()) {
+        getPushNotifications().then(PushNotifications => {
+          if (PushNotifications) {
+            PushNotifications.removeAllListeners();
+          }
+        });
+      }
     };
   }, [toast]);
 };
