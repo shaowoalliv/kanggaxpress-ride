@@ -307,6 +307,16 @@ export default function CourierDashboard() {
     return null;
   }
 
+  // Test account banner
+  const testAccountBanner = isTestCourier && (
+    <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+      <p className="text-sm text-blue-700">
+        <strong>🧪 Test Account:</strong> KYC verification is bypassed for this test courier account. Real accounts must complete full KYC verification.
+      </p>
+    </div>
+  );
+
+
   const activeDelivery = myDeliveries.find(d => 
     d.status === 'assigned' || d.status === 'picked_up' || d.status === 'in_transit'
   );
@@ -315,6 +325,9 @@ export default function CourierDashboard() {
 
   return (
     <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
+      {/* Test Account Banner */}
+      {testAccountBanner}
+      
       {/* Low Balance Warning Banner */}
       <LowBalanceWarning 
         transactionCapacity={transactionCapacity} 
