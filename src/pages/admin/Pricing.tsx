@@ -22,7 +22,10 @@ interface FareConfigForm {
 
 export default function Pricing() {
   const { toast } = useToast();
-  const [region, setRegion] = useState('CALAPAN');
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
   const [activeService, setActiveService] = useState<ServiceType>('TRICYCLE');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,16 +43,75 @@ export default function Pricing() {
   });
 
   useEffect(() => {
-    loadFareConfigs();
-  }, [region]);
+    loadProvinces();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProvince) {
+      loadCities(selectedProvince);
+    }
+  }, [selectedProvince]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      loadFareConfigs();
+    }
+  }, [selectedCity]);
+
+  const loadProvinces = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('provinces')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setProvinces(data || []);
+      if (data && data.length > 0) {
+        setSelectedProvince(data[0].id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load provinces',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadCities = async (provinceId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .eq('province_id', provinceId)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCities(data || []);
+      if (data && data.length > 0) {
+        setSelectedCity(data[0].id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load cities',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const loadFareConfigs = async () => {
+    if (!selectedCity) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('fare_configs')
         .select('*')
-        .eq('region_code', region);
+        .eq('city_id', selectedCity);
 
       if (error) throw error;
 
@@ -79,6 +141,15 @@ export default function Pricing() {
   };
 
   const handleSave = async () => {
+    if (!selectedCity) {
+      toast({
+        title: 'Error',
+        description: 'Please select a city',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const currentConfig = configs[activeService];
@@ -86,7 +157,7 @@ export default function Pricing() {
       const { error } = await supabase
         .from('fare_configs')
         .upsert({
-          region_code: region,
+          city_id: selectedCity,
           service_type: activeService,
           base_fare: currentConfig.base_fare,
           per_km: currentConfig.per_km,
@@ -95,7 +166,7 @@ export default function Pricing() {
           platform_fee_type: currentConfig.platform_fee_type,
           platform_fee_value: currentConfig.platform_fee_value,
         }, {
-          onConflict: 'region_code,service_type'
+          onConflict: 'city_id,service_type'
         });
 
       if (error) throw error;
@@ -140,20 +211,45 @@ export default function Pricing() {
           <p className="text-muted-foreground">Configure fare rates and platform fees</p>
         </div>
 
-        {/* Region Selector */}
+        {/* Area Selector */}
         <Card>
           <CardHeader>
-            <CardTitle>Region</CardTitle>
+            <CardTitle>Service Area</CardTitle>
+            <CardDescription>Select province and city to configure pricing</CardDescription>
           </CardHeader>
           <CardContent>
-            <Select value={region} onValueChange={setRegion}>
-              <SelectTrigger className="w-64">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CALAPAN">CALAPAN</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Province</Label>
+                <Select value={selectedProvince} onValueChange={setSelectedProvince}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provinces.map((province) => (
+                      <SelectItem key={province.id} value={province.id}>
+                        {province.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select city" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((city) => (
+                      <SelectItem key={city.id} value={city.id}>
+                        {city.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

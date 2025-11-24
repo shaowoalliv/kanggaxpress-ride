@@ -18,6 +18,7 @@ import {
   Settings,
   BadgeDollarSign,
   Bell,
+  MapPin,
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const sections = [
   { name: 'Riders', path: '/admin/riders', icon: Users },
   { name: 'Trips', path: '/admin/trips', icon: Route },
   { name: 'Deliveries', path: '/admin/deliveries', icon: Package },
+  { name: 'Coverage', path: '/admin/coverage', icon: MapPin },
   { name: 'Pricing', path: '/admin/pricing', icon: DollarSign },
   { name: 'KYC', path: '/admin/kyc', icon: FileCheck },
   { name: 'Notifications', path: '/admin/notifications', icon: Bell },
