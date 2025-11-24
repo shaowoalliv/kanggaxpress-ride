@@ -10,7 +10,7 @@ import { driversService } from '@/services/drivers';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { DriverProfile } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Clock, Power, PowerOff, Navigation } from 'lucide-react';
+import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { kycService } from '@/services/kyc';
@@ -345,7 +345,7 @@ export default function DriverDashboard() {
                 <p className="text-sm text-muted-foreground capitalize mb-2">
                   {driverProfile.vehicle_type} • {driverProfile.vehicle_plate}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm mb-3">
                   <span className="text-muted-foreground">
                     <strong>Account No:</strong> {accountNumber || 'Pending'}
                   </span>
@@ -353,6 +353,13 @@ export default function DriverDashboard() {
                     <strong>Balance:</strong> ₱{walletBalance.toFixed(2)}
                   </span>
                 </div>
+                <SecondaryButton
+                  onClick={() => navigate('/driver/wallet')}
+                  className="text-xs"
+                >
+                  <WalletIcon className="w-4 h-4 mr-2" />
+                  View Wallet
+                </SecondaryButton>
               </div>
               <button
                 onClick={toggleAvailability}
