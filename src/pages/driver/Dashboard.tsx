@@ -8,7 +8,7 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { ridesService } from '@/services/rides';
 import { driversService } from '@/services/drivers';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
-import { DriverProfile } from '@/types';
+import { DriverProfile, RideType } from '@/types';
 import { toast } from 'sonner';
 import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -149,7 +149,7 @@ export default function DriverDashboard() {
       if (isTestDriver) {
         // Seeded test drivers: build a local profile and skip rides loading (RLS-heavy queries)
         const now = new Date().toISOString();
-        const testVehicle: Pick<DriverProfile, 'vehicle_type' | 'vehicle_plate' | 'vehicle_model' | 'vehicle_color' | 'license_number'> =
+        const testVehicle =
           profile.email === 'driver1@test.com'
             ? {
                 vehicle_type: 'motor',
@@ -174,7 +174,7 @@ export default function DriverDashboard() {
         setDriverProfile({
           id: profile.id,
           user_id: profile.id,
-          vehicle_type: testVehicle.vehicle_type,
+          vehicle_type: testVehicle.vehicle_type as RideType,
           vehicle_plate: testVehicle.vehicle_plate,
           vehicle_model: testVehicle.vehicle_model,
           vehicle_color: testVehicle.vehicle_color,
@@ -369,7 +369,7 @@ export default function DriverDashboard() {
     // For seeded test drivers, construct a local profile instead of showing setup
     if (isTestDriver && profile) {
       const now = new Date().toISOString();
-      const testVehicle: Pick<DriverProfile, 'vehicle_type' | 'vehicle_plate' | 'vehicle_model' | 'vehicle_color' | 'license_number'> =
+      const testVehicle =
         profile.email === 'driver1@test.com'
           ? {
               vehicle_type: 'motor',
@@ -389,7 +389,7 @@ export default function DriverDashboard() {
       setDriverProfile({
         id: profile.id,
         user_id: profile.id,
-        vehicle_type: testVehicle.vehicle_type,
+        vehicle_type: testVehicle.vehicle_type as RideType,
         vehicle_plate: testVehicle.vehicle_plate,
         vehicle_model: testVehicle.vehicle_model,
         vehicle_color: testVehicle.vehicle_color,
@@ -425,7 +425,6 @@ export default function DriverDashboard() {
         </div>
       </PageLayout>
     );
-  }
   }
 
   // Test account banner
