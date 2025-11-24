@@ -83,8 +83,11 @@ export default function TestDataSeeder() {
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm">
-                  <strong>⚠️ Testing Only:</strong> Creates 3 drivers/couriers with approved KYC & ₱30 wallet + 2 passengers.
+                  <strong>⚠️ Testing Only:</strong> Creates 2 drivers + 1 courier with approved KYC & ₱30 wallet + 2 passengers.
                   All accounts use password: <code className="bg-muted px-2 py-1 rounded">test123</code>
+                </p>
+                <p className="text-xs text-amber-700 mt-2">
+                  Note: KYC verification is automatically bypassed for test driver/courier accounts so you can start testing immediately.
                 </p>
               </div>
 
@@ -132,6 +135,11 @@ export default function TestDataSeeder() {
                             {result.balance > 0 && (
                               <p className="text-sm text-muted-foreground">
                                 Wallet Balance: ₱{result.balance}
+                              </p>
+                            )}
+                            {result.role !== 'passenger' && (
+                              <p className="text-xs text-blue-600 mt-1">
+                                ✓ KYC bypassed for testing
                               </p>
                             )}
                           </>

@@ -306,6 +306,7 @@ export default function DriverDashboard() {
     );
   }
 
+
   if (!driverProfile) {
     return (
       <PageLayout>
@@ -324,12 +325,25 @@ export default function DriverDashboard() {
     );
   }
 
+  // Test account banner
+  const testAccountBanner = isTestDriver && (
+    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+      <p className="text-sm text-blue-700">
+        <strong>🧪 Test Account:</strong> KYC verification is bypassed for this test driver account. Real accounts must complete full KYC verification.
+      </p>
+    </div>
+  );
+
+
   const activeRide = myRides.find(r => r.status === 'accepted' || r.status === 'in_progress');
   const transactionCapacity = platformFee > 0 ? walletBalance / platformFee : 0;
   const firstName = profile?.full_name?.split(' ')[0] || 'Driver';
 
   return (
     <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
+      {/* Test Account Banner */}
+      {testAccountBanner}
+      
       {/* Low Balance Warning Banner */}
       <LowBalanceWarning 
         transactionCapacity={transactionCapacity} 
