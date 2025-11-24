@@ -409,8 +409,10 @@ export type Database = {
           confidence: number
           created_at: string
           doc_type: string
+          encryption_key_version: number
           id: string
           image_path: string | null
+          needs_reencryption: boolean
           parsed: Json
           parsed_encrypted: string | null
           status: string
@@ -421,8 +423,10 @@ export type Database = {
           confidence: number
           created_at?: string
           doc_type: string
+          encryption_key_version?: number
           id?: string
           image_path?: string | null
+          needs_reencryption?: boolean
           parsed: Json
           parsed_encrypted?: string | null
           status?: string
@@ -433,13 +437,48 @@ export type Database = {
           confidence?: number
           created_at?: string
           doc_type?: string
+          encryption_key_version?: number
           id?: string
           image_path?: string | null
+          needs_reencryption?: boolean
           parsed?: Json
           parsed_encrypted?: string | null
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      kyc_encryption_keys: {
+        Row: {
+          created_at: string
+          deprecated_at: string | null
+          is_active: boolean
+          key_identifier: string
+          notes: string | null
+          rotation_completed_at: string | null
+          rotation_started_at: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          deprecated_at?: string | null
+          is_active?: boolean
+          key_identifier: string
+          notes?: string | null
+          rotation_completed_at?: string | null
+          rotation_started_at?: string | null
+          version: number
+        }
+        Update: {
+          created_at?: string
+          deprecated_at?: string | null
+          is_active?: boolean
+          key_identifier?: string
+          notes?: string | null
+          rotation_completed_at?: string | null
+          rotation_started_at?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -1062,8 +1101,10 @@ export type Database = {
           confidence: number | null
           created_at: string | null
           doc_type: string | null
+          encryption_key_version: number | null
           id: string | null
           image_path: string | null
+          needs_reencryption: boolean | null
           parsed: Json | null
           status: string | null
           updated_at: string | null
@@ -1073,8 +1114,10 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           doc_type?: string | null
+          encryption_key_version?: number | null
           id?: string | null
           image_path?: string | null
+          needs_reencryption?: boolean | null
           parsed?: never
           status?: string | null
           updated_at?: string | null
@@ -1084,12 +1127,28 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           doc_type?: string | null
+          encryption_key_version?: number | null
           id?: string | null
           image_path?: string | null
+          needs_reencryption?: boolean | null
           parsed?: never
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      kyc_encryption_admin_status: {
+        Row: {
+          created_at: string | null
+          deprecated_at: string | null
+          is_active: boolean | null
+          key_identifier: string | null
+          pending_rotation: number | null
+          records_with_this_key: number | null
+          rotation_completed_at: string | null
+          rotation_started_at: string | null
+          version: number | null
         }
         Relationships: []
       }
@@ -1099,9 +1158,28 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
-      decrypt_kyc_data: { Args: { encrypted_data: string }; Returns: Json }
+      decrypt_kyc_data:
+        | { Args: { encrypted_data: string }; Returns: Json }
+        | {
+            Args: { encrypted_data: string; key_version: number }
+            Returns: Json
+          }
       encrypt_kyc_data: { Args: { data: Json }; Returns: string }
-      get_kyc_encryption_key: { Args: never; Returns: string }
+      get_key_rotation_status: {
+        Args: never
+        Returns: {
+          current_version: number
+          estimated_completion: string
+          pending_records: number
+          rotated_records: number
+          rotation_progress: number
+          rotation_started: string
+          total_records: number
+        }[]
+      }
+      get_kyc_encryption_key:
+        | { Args: { key_version?: number }; Returns: string }
+        | { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1109,9 +1187,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      initiate_key_rotation: {
+        Args: { new_key_identifier: string; rotation_notes?: string }
+        Returns: number
+      }
       is_within_service_area: {
         Args: { p_lat: number; p_lng: number }
         Returns: boolean
+      }
+      rotate_kyc_encryption_batch: {
+        Args: { batch_size?: number }
+        Returns: {
+          remaining_count: number
+          rotated_count: number
+          rotation_complete: boolean
+        }[]
       }
       wallet_apply_transaction: {
         Args: {
