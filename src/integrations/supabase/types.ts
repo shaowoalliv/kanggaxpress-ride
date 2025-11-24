@@ -676,6 +676,13 @@ export type Database = {
             foreignKeyName: "rides_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "available_drivers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "driver_profiles"
             referencedColumns: ["id"]
           },
@@ -786,7 +793,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      available_drivers_safe: {
+        Row: {
+          approximate_lat: number | null
+          approximate_lng: number | null
+          id: string | null
+          is_available: boolean | null
+          location_updated_at: string | null
+          rating: number | null
+          total_rides: number | null
+          user_id: string | null
+          vehicle_type: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Insert: {
+          approximate_lat?: never
+          approximate_lng?: never
+          id?: string | null
+          is_available?: boolean | null
+          location_updated_at?: string | null
+          rating?: number | null
+          total_rides?: number | null
+          user_id?: string | null
+          vehicle_type?: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Update: {
+          approximate_lat?: never
+          approximate_lng?: never
+          id?: string | null
+          is_available?: boolean | null
+          location_updated_at?: string | null
+          rating?: number | null
+          total_rides?: number | null
+          user_id?: string | null
+          vehicle_type?: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_distance: {
