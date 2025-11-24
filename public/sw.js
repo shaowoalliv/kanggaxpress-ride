@@ -18,6 +18,13 @@ self.addEventListener('install', (event) => {
 
 // Fetch from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  // Never cache Supabase API requests - they must always go to network
+  if (event.request.url.includes('supabase.co')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Cache static assets only
   event.respondWith(
     caches.match(event.request)
       .then((response) => response || fetch(event.request))
