@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, X, Send, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,19 +17,71 @@ interface Message {
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Kumusta! 👋 I\'m here to help you with KanggaXpress. Ask me anything about rides, deliveries, or how to use the app!',
-      timestamp: new Date(),
-      status: 'read',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Load chat history on mount
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const loadChatHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const { data, error } = await supabase
+          .from('chat_conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true })
+          .limit(50);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setMessages(
+            data.map((msg) => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content,
+              timestamp: new Date(msg.created_at),
+              status: 'read' as const,
+            }))
+          );
+        } else {
+          // No history, show welcome message
+          setMessages([
+            {
+              role: 'assistant',
+              content:
+                "Kumusta! 👋 I'm here to help you with KanggaXpress. Ask me anything about rides, deliveries, or how to use the app!",
+              timestamp: new Date(),
+              status: 'read',
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        // Show welcome message on error
+        setMessages([
+          {
+            role: 'assistant',
+            content:
+              "Kumusta! 👋 I'm here to help you with KanggaXpress. Ask me anything about rides, deliveries, or how to use the app!",
+            timestamp: new Date(),
+            status: 'read',
+          },
+        ]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadChatHistory();
+  }, [user, isOpen]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -47,12 +101,27 @@ export function ChatWidget() {
     );
   }, [messages.filter((m) => m.role === 'assistant').length]);
 
+  // Save message to database
+  const saveMessageToDb = async (role: 'user' | 'assistant', content: string) => {
+    if (!user) return;
+
+    try {
+      await supabase.from('chat_conversations').insert({
+        user_id: user.id,
+        role,
+        content,
+      });
+    } catch (error) {
+      console.error('Error saving message:', error);
+    }
+  };
+
   const streamChat = async (userMessage: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`;
-    
+
     // Show typing indicator
     setIsTyping(true);
-    
+
     const response = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
@@ -131,20 +200,28 @@ export function ChatWidget() {
         }
       }
     }
+
+    // Save assistant response to database
+    if (assistantContent) {
+      await saveMessageToDb('assistant', assistantContent);
+    }
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !user) return;
 
     const userMessage = input.trim();
     setInput('');
-    
+
     // Add user message with 'sending' status
     setMessages((prev) => [
       ...prev,
       { role: 'user', content: userMessage, timestamp: new Date(), status: 'sending' },
     ]);
-    
+
+    // Save user message to database
+    await saveMessageToDb('user', userMessage);
+
     // Update to 'sent' after a brief delay
     setTimeout(() => {
       setMessages((prev) =>
@@ -155,7 +232,7 @@ export function ChatWidget() {
         )
       );
     }, 300);
-    
+
     setIsLoading(true);
 
     try {
@@ -172,6 +249,41 @@ export function ChatWidget() {
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_conversations')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setMessages([
+        {
+          role: 'assistant',
+          content:
+            "Kumusta! 👋 I'm here to help you with KanggaXpress. Ask me anything about rides, deliveries, or how to use the app!",
+          timestamp: new Date(),
+          status: 'read',
+        },
+      ]);
+
+      toast({
+        title: 'Chat Cleared',
+        description: 'Your chat history has been deleted.',
+      });
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear chat history',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -209,19 +321,48 @@ export function ChatWidget() {
                 <p className="text-xs text-primary-foreground/80">Ask me anything!</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearHistory}
+                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
+                title="Clear chat history"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="flex gap-1">
+                  <div
+                    className="h-2 w-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: '0ms' }}
+                  />
+                  <div
+                    className="h-2 w-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: '150ms' }}
+                  />
+                  <div
+                    className="h-2 w-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: '300ms' }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -306,6 +447,7 @@ export function ChatWidget() {
                 </div>
               )}
             </div>
+            )}
           </ScrollArea>
 
           {/* Input */}
