@@ -5,7 +5,10 @@ import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { RideMap } from '@/components/RideMap';
+import { PassengerRideMap } from '@/components/PassengerRideMap';
+import { FareNegotiationAlert } from '@/components/negotiation/FareNegotiationAlert';
+import { useRideNegotiation } from '@/hooks/useRideNegotiation';
+import { useRideRealtimeUpdates } from '@/hooks/useRideRealtimeUpdates';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
@@ -15,9 +18,21 @@ export default function RideStatus() {
   const navigate = useNavigate();
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showFareConfirm, setShowFareConfirm] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showNegotiationAlert, setShowNegotiationAlert] = useState(false);
+
+  // Real-time updates
+  useRideRealtimeUpdates(rideId || '', (updatedRide) => {
+    setRide(updatedRide);
+    
+    // Show negotiation alert if pending
+    if ((updatedRide as any).negotiation_status === 'pending' && !showNegotiationAlert) {
+      setShowNegotiationAlert(true);
+    }
+  });
+
+  const { acceptNegotiation, rejectNegotiation } = useRideNegotiation(rideId || '');
 
   useEffect(() => {
     if (!rideId) {
@@ -41,9 +56,6 @@ export default function RideStatus() {
         },
         (payload) => {
           setRide(payload.new);
-          if (payload.new.status === 'accepted') {
-            setShowFareConfirm(true);
-          }
         }
       )
       .subscribe();
@@ -244,7 +256,6 @@ export default function RideStatus() {
 
       if (error) throw error;
 
-      setShowFareConfirm(false);
       toast.success('Ride confirmed! Your driver is on the way.');
     } catch (error) {
       console.error('Error accepting fare:', error);
@@ -269,7 +280,6 @@ export default function RideStatus() {
 
       if (error) throw error;
 
-      setShowFareConfirm(false);
       toast.info('Searching for another driver...');
     } catch (error) {
       console.error('Error rejecting fare:', error);
@@ -407,10 +417,29 @@ export default function RideStatus() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+          {/* Negotiation Alert */}
+          {showNegotiationAlert && ride?.negotiation_status === 'pending' && (
+            <FareNegotiationAlert
+              open={showNegotiationAlert}
+              baseFare={ride.base_fare || 0}
+              proposedFare={(ride.base_fare || 0) + (ride.proposed_top_up_fare || 0)}
+              topUpAmount={ride.proposed_top_up_fare || 0}
+              reason={ride.negotiation_notes || 'Driver counter-offer'}
+              onAccept={async () => {
+                await acceptNegotiation();
+                setShowNegotiationAlert(false);
+              }}
+              onReject={async () => {
+                await rejectNegotiation();
+                setShowNegotiationAlert(false);
+              }}
+            />
+          )}
+
           {/* Map */}
           {(ride?.status === 'accepted' || ride?.status === 'in_progress') && (
             <ThemedCard className="p-0 overflow-hidden">
-              <RideMap
+              <PassengerRideMap
                 pickupLat={ride.pickup_lat}
                 pickupLng={ride.pickup_lng}
                 dropoffLat={ride.dropoff_lat}
@@ -485,58 +514,6 @@ export default function RideStatus() {
           </ThemedCard>
         </div>
 
-        {/* Fare Confirmation Modal */}
-        <Dialog open={showFareConfirm} onOpenChange={setShowFareConfirm}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Driver Found!</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <p className="text-sm text-muted-foreground">
-                A driver has accepted your request with the following fare:
-              </p>
-
-              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Base Fare</span>
-                  <span className="font-semibold">₱{ride.base_fare}</span>
-                </div>
-                {ride.top_up_fare > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Top-up</span>
-                    <span className="font-semibold">₱{ride.top_up_fare}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center pt-2 border-t border-border">
-                  <span className="font-bold">Total Fare</span>
-                  <span className="text-xl font-bold text-primary">₱{ride.total_fare}</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Fare is payable directly to the driver upon completion.
-              </p>
-
-              <div className="flex gap-3 pt-2">
-                <SecondaryButton
-                  onClick={handleRejectFare}
-                  disabled={accepting}
-                  className="flex-1"
-                >
-                  Reject
-                </SecondaryButton>
-                <PrimaryButton
-                  onClick={handleAcceptFare}
-                  disabled={accepting}
-                  isLoading={accepting}
-                  className="flex-1"
-                >
-                  Accept Fare
-                </PrimaryButton>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </PageLayout>
   );

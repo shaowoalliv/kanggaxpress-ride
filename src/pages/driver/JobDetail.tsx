@@ -5,8 +5,9 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { ThemedCard } from '@/components/ui/ThemedCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { DriverRideMap } from '@/components/DriverRideMap';
+import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
+import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { supabase } from '@/integrations/supabase/client';
 import { ridesService } from '@/services/rides';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
@@ -20,11 +21,11 @@ export default function JobDetail() {
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [selectedTopUp, setSelectedTopUp] = useState<number>(0);
-  const [customTopUp, setCustomTopUp] = useState<string>('');
-  const [negotiationNotes, setNegotiationNotes] = useState<string>('');
-  const [tipOptions, setTipOptions] = useState<number[]>([20, 50, 100]);
   const [driverProfileId, setDriverProfileId] = useState<string | null>(null);
+  const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  const { proposeCounterOffer } = useRideNegotiation(rideId || '');
 
   useEffect(() => {
     if (!user) {
@@ -38,7 +39,6 @@ export default function JobDetail() {
     
     fetchDriverProfile();
     fetchRide();
-    fetchTipOptions();
   }, [user, profile, rideId, navigate]);
 
   // GPS location publishing for active ride
@@ -65,23 +65,6 @@ export default function JobDetail() {
     }
   };
 
-  const fetchTipOptions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('setting_key, setting_value')
-        .in('setting_key', ['tip_option_1', 'tip_option_2', 'tip_option_3']);
-      
-      if (!error && data && data.length > 0) {
-        const options = data
-          .sort((a, b) => a.setting_key.localeCompare(b.setting_key))
-          .map(item => item.setting_value);
-        setTipOptions(options);
-      }
-    } catch (error) {
-      console.error('Error fetching tip options:', error);
-    }
-  };
 
   const fetchRide = async () => {
     try {
@@ -103,47 +86,15 @@ export default function JobDetail() {
     }
   };
 
-  const handleTopUpSelect = (amount: number) => {
-    setSelectedTopUp(amount);
-    setCustomTopUp('');
-  };
-
-  const handleCustomTopUpChange = (value: string) => {
-    setCustomTopUp(value);
-    const num = parseFloat(value);
-    if (!isNaN(num) && num >= 0) {
-      setSelectedTopUp(num);
-    }
-  };
-
-  const handleSendOffer = async () => {
+  const handleCounterOfferSubmit = async (topUpAmount: number, reason: string, notes: string) => {
     if (!driverProfileId) {
       toast.error('Driver profile not found');
       return;
     }
 
-    if (!negotiationNotes.trim()) {
-      toast.error('Please provide a reason for the bonus fare');
-      return;
-    }
-
-    try {
-      setSending(true);
-      await ridesService.proposeFareNegotiation(
-        rideId!,
-        driverProfileId,
-        selectedTopUp,
-        negotiationNotes
-      );
-
-      toast.success('Bonus fare proposal sent! Waiting for passenger approval...');
-      navigate('/driver/dashboard');
-    } catch (error: any) {
-      console.error('Error sending offer:', error);
-      toast.error(error.message || 'Failed to send offer');
-    } finally {
-      setSending(false);
-    }
+    await proposeCounterOffer(driverProfileId, topUpAmount, `${reason}${notes ? ': ' + notes : ''}`);
+    setShowCounterOfferModal(false);
+    navigate('/driver/dashboard');
   };
 
   const handleAcceptWithoutBonus = async () => {
@@ -292,6 +243,30 @@ export default function JobDetail() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+          {/* Counter Offer Modal */}
+          <CounterOfferModal
+            open={showCounterOfferModal}
+            onClose={() => setShowCounterOfferModal(false)}
+            baseFare={ride?.base_fare || 0}
+            onSubmit={handleCounterOfferSubmit}
+          />
+
+          {/* Map for Active Ride */}
+          {(ride.status === 'accepted' || ride.status === 'in_progress') && (
+            <ThemedCard className="p-0 overflow-hidden">
+              <DriverRideMap
+                pickupLat={ride.pickup_lat}
+                pickupLng={ride.pickup_lng}
+                dropoffLat={ride.dropoff_lat}
+                dropoffLng={ride.dropoff_lng}
+                driverLat={driverLocation?.lat}
+                driverLng={driverLocation?.lng}
+                rideStatus={ride.status}
+                className="h-64 sm:h-80"
+              />
+            </ThemedCard>
+          )}
+
           {/* Ride Status Summary */}
           {ride.status === 'in_progress' && (
             <ThemedCard className="bg-secondary/5 border-secondary/20 text-center py-6">
@@ -372,84 +347,30 @@ export default function JobDetail() {
             </div>
           </ThemedCard>
 
-          {/* Top-Up Panel - Only show if ride not yet accepted */}
+          {/* Action Buttons - Accept or Counter-Offer */}
           {ride.status === 'requested' && !ride.driver_id && (
-            <>
-              <ThemedCard>
-                <h2 className="text-lg font-semibold mb-4">Add Top-Up (Optional)</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      onClick={() => handleTopUpSelect(0)}
-                      className={`py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
-                        selectedTopUp === 0 && !customTopUp
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      ₱0
-                    </button>
-                    <button
-                      onClick={() => handleTopUpSelect(10)}
-                      className={`py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
-                        selectedTopUp === 10 && !customTopUp
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      ₱10
-                    </button>
-                    <button
-                      onClick={() => handleTopUpSelect(20)}
-                      className={`py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
-                        selectedTopUp === 20 && !customTopUp
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      ₱20
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Custom Amount</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Enter custom amount"
-                      value={customTopUp}
-                      onChange={(e) => handleCustomTopUpChange(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="pt-3 border-t border-border">
-                    <div className="flex justify-between items-center text-lg font-semibold">
-                      <span>Total Fare</span>
-                      <span className="text-primary">₱{(ride.base_fare || 0) + selectedTopUp}</span>
-                    </div>
-                  </div>
-                </div>
-              </ThemedCard>
-
-              {/* Action Buttons - Send Offer */}
-              <div className="space-y-3 pt-4">
-                <PrimaryButton
-                  onClick={handleSendOffer}
-                  disabled={sending}
-                  isLoading={sending}
-                  className="w-full"
-                >
-                  Send Offer
-                </PrimaryButton>
-                <SecondaryButton
-                  onClick={() => navigate('/driver/jobs')}
-                  className="w-full"
-                >
-                  Back
-                </SecondaryButton>
-              </div>
-            </>
+            <div className="space-y-3 pt-4">
+              <PrimaryButton
+                onClick={handleAcceptWithoutBonus}
+                disabled={sending}
+                isLoading={sending}
+                className="w-full"
+              >
+                Accept Ride (₱{ride.base_fare})
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => setShowCounterOfferModal(true)}
+                className="w-full"
+              >
+                Propose Counter-Offer
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => navigate('/driver/jobs')}
+                className="w-full"
+              >
+                Back to Jobs
+              </SecondaryButton>
+            </div>
           )}
 
           {/* Action Buttons - Start/Complete Ride */}
