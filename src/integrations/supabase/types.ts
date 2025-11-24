@@ -524,6 +524,13 @@ export type Database = {
             foreignKeyName: "notifications_related_delivery_id_fkey"
             columns: ["related_delivery_id"]
             isOneToOne: false
+            referencedRelation: "available_deliveries_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_delivery_id_fkey"
+            columns: ["related_delivery_id"]
+            isOneToOne: false
             referencedRelation: "delivery_orders"
             referencedColumns: ["id"]
           },
@@ -864,6 +871,13 @@ export type Database = {
             foreignKeyName: "wallet_transactions_related_delivery_id_fkey"
             columns: ["related_delivery_id"]
             isOneToOne: false
+            referencedRelation: "available_deliveries_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_related_delivery_id_fkey"
+            columns: ["related_delivery_id"]
+            isOneToOne: false
             referencedRelation: "delivery_orders"
             referencedColumns: ["id"]
           },
@@ -917,6 +931,80 @@ export type Database = {
             foreignKeyName: "courier_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      available_deliveries_safe: {
+        Row: {
+          app_fee: number | null
+          base_fare: number | null
+          cod_amount: number | null
+          created_at: string | null
+          dropoff_address: string | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
+          id: string | null
+          package_description: string | null
+          package_size: Database["public"]["Enums"]["package_size"] | null
+          pickup_address: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          receiver_name_hidden: string | null
+          receiver_phone_hidden: string | null
+          sender_id: string | null
+          status: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare: number | null
+          total_fare: number | null
+        }
+        Insert: {
+          app_fee?: number | null
+          base_fare?: number | null
+          cod_amount?: number | null
+          created_at?: string | null
+          dropoff_address?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          id?: string | null
+          package_description?: string | null
+          package_size?: Database["public"]["Enums"]["package_size"] | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          receiver_name_hidden?: never
+          receiver_phone_hidden?: never
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
+        }
+        Update: {
+          app_fee?: number | null
+          base_fare?: number | null
+          cod_amount?: number | null
+          created_at?: string | null
+          dropoff_address?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          id?: string | null
+          package_description?: string | null
+          package_size?: Database["public"]["Enums"]["package_size"] | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          receiver_name_hidden?: never
+          receiver_phone_hidden?: never
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          top_up_fare?: number | null
+          total_fare?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_orders_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
