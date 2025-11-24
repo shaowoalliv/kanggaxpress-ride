@@ -144,13 +144,15 @@ export default function CourierDashboard() {
       setKycDocuments(docs);
       setKycCheckLoading(false);
 
-      // Check if all required documents are approved
+      // Check if all required documents are approved (bypass for seeded test accounts)
       const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
       const allApproved = requiredDocs.every(docType => 
         docs.some(d => d.doc_type === docType && d.status === 'APPROVED')
       );
+      const isTestCourier = ['courier1@test.com'].includes(profile.email);
+      const bypassKyc = isTestCourier;
 
-      if (!allApproved) {
+      if (!allApproved && !bypassKyc) {
         // Block access - KYC not complete
         setLoading(false);
         return;
