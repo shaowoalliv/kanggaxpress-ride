@@ -53,7 +53,7 @@ export default function TestDataSeeder() {
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="font-semibold">Driver 1</p>
                   <p className="text-muted-foreground">Email: driver1@test.com | Password: test123</p>
-                  <p className="text-muted-foreground">Juan Dela Cruz | Motor (ABC-1234) | ₱30 wallet</p>
+                  <p className="text-muted-foreground">Juan Dela Cruz | Motorbike (ABC-1234) | ₱30 wallet</p>
                 </div>
 
                 <div className="p-3 bg-muted/30 rounded-lg">
@@ -63,9 +63,15 @@ export default function TestDataSeeder() {
                 </div>
 
                 <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="font-semibold">Driver 3</p>
+                  <p className="text-muted-foreground">Email: driver3@test.com | Password: test123</p>
+                  <p className="text-muted-foreground">Roberto Garcia | Car (GHI-3456) | ₱30 wallet</p>
+                </div>
+
+                <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="font-semibold">Courier 1</p>
                   <p className="text-muted-foreground">Email: courier1@test.com | Password: test123</p>
-                  <p className="text-muted-foreground">Pedro Ramos | Motor (DEF-9012) | ₱30 wallet</p>
+                  <p className="text-muted-foreground">Pedro Ramos | Motorcycle (DEF-9012) | ₱30 wallet</p>
                 </div>
 
                 <div className="p-3 bg-muted/30 rounded-lg">
@@ -83,7 +89,7 @@ export default function TestDataSeeder() {
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm">
-                  <strong>⚠️ Testing Only:</strong> Creates 2 drivers + 1 courier with approved KYC & ₱30 wallet + 2 passengers.
+                  <strong>⚠️ Testing Only:</strong> Creates 3 drivers (motor/tricycle/car) + 1 courier (motor) with approved KYC & ₱30 wallet + 2 passengers.
                   All accounts use password: <code className="bg-muted px-2 py-1 rounded">test123</code>
                 </p>
                 <p className="text-xs text-amber-700 mt-2">
