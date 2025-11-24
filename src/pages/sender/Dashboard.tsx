@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -10,6 +10,15 @@ import { Package, History } from 'lucide-react';
 export default function SenderDashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [greeting, setGreeting] = useState('');
+
+  // Get greeting based on time of day
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -26,8 +35,10 @@ export default function SenderDashboard() {
     return null;
   }
 
+  const firstName = profile?.full_name?.split(' ')[0] || 'User';
+
   return (
-    <PageLayout>
+    <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
       <div className="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
         <div className="space-y-6">
           <div>
