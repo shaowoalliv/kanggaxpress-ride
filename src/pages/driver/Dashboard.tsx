@@ -146,7 +146,53 @@ export default function DriverDashboard() {
         return;
       }
 
-      // Load core driver data and wallet first (avoid blocking on rides queries)
+      if (isTestDriver) {
+        // Seeded test drivers: build a local profile and skip rides loading (RLS-heavy queries)
+        const now = new Date().toISOString();
+        const testVehicle: Pick<DriverProfile, 'vehicle_type' | 'vehicle_plate' | 'vehicle_model' | 'vehicle_color' | 'license_number'> =
+          profile.email === 'driver1@test.com'
+            ? {
+                vehicle_type: 'motor',
+                vehicle_plate: 'ABC-1234',
+                vehicle_model: 'Honda Wave 110',
+                vehicle_color: 'Red',
+                license_number: 'N01-12-345678',
+              }
+            : {
+                vehicle_type: 'tricycle',
+                vehicle_plate: 'XYZ-5678',
+                vehicle_model: 'Honda TMX 155',
+                vehicle_color: 'Blue',
+                license_number: 'N02-13-456789',
+              };
+
+        const [userProfile, wallet] = await Promise.all([
+          supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
+          import('@/services/wallet').then(({ walletService }) => walletService.getWalletAccount(profile.id)),
+        ]);
+
+        setDriverProfile({
+          id: profile.id,
+          user_id: profile.id,
+          vehicle_type: testVehicle.vehicle_type,
+          vehicle_plate: testVehicle.vehicle_plate,
+          vehicle_model: testVehicle.vehicle_model,
+          vehicle_color: testVehicle.vehicle_color,
+          license_number: testVehicle.license_number,
+          is_available: true,
+          rating: 5,
+          total_rides: 0,
+          created_at: now,
+          updated_at: now,
+        });
+        setAccountNumber(userProfile.data?.account_number || '');
+        setWalletBalance(wallet?.balance || 0);
+        setAvailableRides([]);
+        setMyRides([]);
+        return;
+      }
+
+      // Non-test drivers: load core driver data and wallet first (avoid blocking on rides queries)
       const [driverData, userProfile, wallet] = await Promise.all([
         driversService.getDriverProfile(profile.id),
         supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
