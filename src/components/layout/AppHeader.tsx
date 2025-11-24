@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HamburgerMenu } from './HamburgerMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 
 /**
  * AppHeader Component - LOCKED CONFIGURATION
@@ -36,9 +37,10 @@ export function AppHeader({ title }: AppHeaderProps) {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Right section: Greeting + User name */}
+        {/* Right section: Notification Bell + Greeting + User name */}
         {user && (
           <div className="flex items-center gap-3 flex-shrink-0">
+            <NotificationBell userId={profile?.id} />
             {title && (
               <h1 className="text-primary-foreground font-semibold text-sm sm:text-base truncate max-w-[200px]">
                 {title}
