@@ -89,12 +89,9 @@ export default function Signup() {
         return;
       }
 
-      toast.success('Account created successfully! Redirecting...');
-      
-      // Wait a moment for the profile to be created
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigation will be handled by AuthContext
+      toast.success('Account created! Please verify your email to continue.');
+      // Redirect to verify email page
+      navigate('/verify-email');
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
