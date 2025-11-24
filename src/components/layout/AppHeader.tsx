@@ -37,18 +37,15 @@ export function AppHeader({ title }: AppHeaderProps) {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Right section: Notification Bell + Greeting + User name */}
+        {/* Right section: Notification Bell + Greeting */}
         {user && (
           <div className="flex items-center gap-3 flex-shrink-0">
             <NotificationBell userId={profile?.id} />
             {title && (
-              <h1 className="text-primary-foreground font-semibold text-sm sm:text-base truncate max-w-[200px]">
+              <h1 className="text-primary-foreground font-semibold text-sm sm:text-base truncate max-w-[250px]">
                 {title}
               </h1>
             )}
-            <span className="text-primary-foreground text-sm font-medium hidden sm:inline truncate max-w-[120px]">
-              {profile?.full_name}
-            </span>
           </div>
         )}
       </div>
