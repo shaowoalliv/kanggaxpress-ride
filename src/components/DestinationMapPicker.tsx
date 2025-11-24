@@ -142,11 +142,17 @@ export function DestinationMapPicker({ mode = 'dropoff', initialCenter, onConfir
         {/* Fixed center pin */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="relative transform -translate-y-1/2">
-            <img 
-              src={mapPinIcon} 
-              alt="Location pin" 
-              className="w-12 h-12 drop-shadow-xl"
-            />
+            <div className="relative w-12 h-16">
+              {/* Red pin shape */}
+              <div className="absolute inset-0 flex items-end justify-center">
+                <div className="w-12 h-12 bg-red-600 rounded-full border-4 border-white shadow-xl relative">
+                  {/* Inner circle */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-red-800 rounded-full"></div>
+                </div>
+              </div>
+              {/* Pin point */}
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[16px] border-t-red-600 drop-shadow-lg"></div>
+            </div>
           </div>
         </div>
       </div>
