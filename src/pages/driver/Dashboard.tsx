@@ -146,10 +146,9 @@ export default function DriverDashboard() {
         return;
       }
 
-      const [driverData, available, my, userProfile, wallet] = await Promise.all([
+      // Load core driver data and wallet first (avoid blocking on rides queries)
+      const [driverData, userProfile, wallet] = await Promise.all([
         driversService.getDriverProfile(profile.id),
-        ridesService.getAvailableRides(),
-        profile.id ? ridesService.getDriverRides(profile.id) : Promise.resolve([]),
         supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
         import('@/services/wallet').then(({ walletService }) => walletService.getWalletAccount(profile.id)),
       ]);
@@ -165,8 +164,19 @@ export default function DriverDashboard() {
         return;
       }
 
-      setAvailableRides(available);
-      setMyRides(my);
+      // Load rides data separately so dashboard still works even if rides query fails
+      try {
+        const [available, my] = await Promise.all([
+          ridesService.getAvailableRides(),
+          profile.id ? ridesService.getDriverRides(profile.id) : Promise.resolve([]),
+        ]);
+        setAvailableRides(available);
+        setMyRides(my);
+      } catch (ridesError) {
+        console.error('Error loading rides data:', ridesError);
+        setAvailableRides([]);
+        setMyRides([]);
+      }
     } catch (error) {
       console.error('Error loading driver data:', error);
       toast.error('Failed to load dashboard');
