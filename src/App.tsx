@@ -22,11 +22,13 @@ import DriverDashboard from "./pages/driver/Dashboard";
 import DriverSetup from "./pages/driver/Setup";
 import DriverJobs from "./pages/driver/Jobs";
 import JobDetail from "./pages/driver/JobDetail";
+import DriverWallet from "./pages/driver/Wallet";
 import SenderDashboard from "./pages/sender/Dashboard";
 import CreateDelivery from "./pages/sender/CreateDelivery";
 import MyDeliveries from "./pages/sender/MyDeliveries";
 import CourierDashboard from "./pages/courier/Dashboard";
 import CourierSetup from "./pages/courier/Setup";
+import CourierWallet from "./pages/courier/Wallet";
 import KycStatus from "./pages/account/KycStatus";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -89,6 +91,7 @@ const App = () => (
             <Route path="/driver/setup" element={<DriverSetup />} />
             <Route path="/driver/jobs" element={<DriverJobs />} />
             <Route path="/driver/jobs/:rideId" element={<JobDetail />} />
+            <Route path="/driver/wallet" element={<DriverWallet />} />
             
             {/* Sender Routes */}
             <Route path="/sender/dashboard" element={<SenderDashboard />} />
@@ -98,6 +101,7 @@ const App = () => (
             {/* Courier Routes */}
             <Route path="/courier/dashboard" element={<CourierDashboard />} />
             <Route path="/courier/setup" element={<CourierSetup />} />
+            <Route path="/courier/wallet" element={<CourierWallet />} />
             
             {/* Account Routes */}
             <Route path="/account/kyc" element={<KycStatus />} />

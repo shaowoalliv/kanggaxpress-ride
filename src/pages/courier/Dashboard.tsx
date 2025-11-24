@@ -9,7 +9,7 @@ import { deliveriesService } from '@/services/deliveries';
 import { couriersService } from '@/services/couriers';
 import { CourierProfile } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, Package, User, Phone, Clock, Power, PowerOff, DollarSign } from 'lucide-react';
+import { MapPin, Package, User, Phone, Clock, Power, PowerOff, DollarSign, Wallet as WalletIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { kycService } from '@/services/kyc';
@@ -330,7 +330,7 @@ export default function CourierDashboard() {
                 <p className="text-sm text-muted-foreground capitalize mb-2">
                   {courierProfile.vehicle_type} • {courierProfile.vehicle_plate}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm mb-3">
                   <span className="text-muted-foreground">
                     <strong>Account No:</strong> {accountNumber || 'Pending'}
                   </span>
@@ -338,6 +338,13 @@ export default function CourierDashboard() {
                     <strong>Balance:</strong> ₱{walletBalance.toFixed(2)}
                   </span>
                 </div>
+                <SecondaryButton
+                  onClick={() => navigate('/courier/wallet')}
+                  className="text-xs"
+                >
+                  <WalletIcon className="w-4 h-4 mr-2" />
+                  View Wallet
+                </SecondaryButton>
               </div>
               <button
                 onClick={toggleAvailability}
