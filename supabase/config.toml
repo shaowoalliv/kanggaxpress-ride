@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.verify-reset-token]
 verify_jwt = false
+
+[functions.send-verification-email]
+verify_jwt = false
