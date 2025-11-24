@@ -7,7 +7,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { deliveriesService } from '@/services/deliveries';
 import { couriersService } from '@/services/couriers';
-import { CourierProfile } from '@/types';
+import { CourierProfile, RideType } from '@/types';
 import { toast } from 'sonner';
 import { MapPin, Package, User, Phone, Clock, Power, PowerOff, DollarSign, Wallet as WalletIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -135,6 +135,59 @@ export default function CourierDashboard() {
   const loadCourierData = async () => {
     if (!profile) return;
 
+    // Seeded test couriers: always construct a local profile and skip setup/complex queries
+    const isTestCourier = ['courier1@test.com'].includes(profile.email);
+    if (isTestCourier) {
+      setLoading(true);
+      setKycCheckLoading(false);
+
+      let accountNumberVal = '';
+      let walletVal = 0;
+
+      try {
+        const [userProfile, wallet] = await Promise.all([
+          supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
+          import('@/services/wallet').then(({ walletService }) => walletService.getWalletAccount(profile.id)),
+        ]);
+
+        accountNumberVal = userProfile.data?.account_number || '';
+        walletVal = wallet?.balance || 0;
+      } catch (error) {
+        console.error('Error loading test courier account data:', error);
+        toast.error('Loaded test courier with fallback data');
+      }
+
+      const now = new Date().toISOString();
+      const testVehicle = {
+        vehicle_type: 'motor',
+        vehicle_plate: 'DEF-9012',
+        vehicle_model: 'Yamaha Mio',
+        vehicle_color: 'Black',
+        license_number: 'N03-14-567890',
+      };
+
+      setCourierProfile({
+        id: profile.id,
+        user_id: profile.id,
+        vehicle_type: testVehicle.vehicle_type as RideType,
+        vehicle_plate: testVehicle.vehicle_plate,
+        vehicle_model: testVehicle.vehicle_model,
+        vehicle_color: testVehicle.vehicle_color,
+        license_number: testVehicle.license_number,
+        is_available: true,
+        rating: 5,
+        total_deliveries: 0,
+        created_at: now,
+        updated_at: now,
+      });
+      setAccountNumber(accountNumberVal);
+      setWalletBalance(walletVal);
+      setAvailableDeliveries([]);
+      setMyDeliveries([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setKycCheckLoading(true);
@@ -144,15 +197,13 @@ export default function CourierDashboard() {
       setKycDocuments(docs);
       setKycCheckLoading(false);
 
-      // Check if all required documents are approved (bypass for seeded test accounts)
+      // Check if all required documents are approved
       const requiredDocs = ['DRIVER_LICENSE', 'OR', 'CR', 'SELFIE'];
       const allApproved = requiredDocs.every(docType => 
         docs.some(d => d.doc_type === docType && d.status === 'APPROVED')
       );
-      const isTestCourier = ['courier1@test.com'].includes(profile.email);
-      const bypassKyc = isTestCourier;
 
-      if (!allApproved && !bypassKyc) {
+      if (!allApproved) {
         // Block access - KYC not complete
         setLoading(false);
         return;
@@ -306,6 +357,41 @@ export default function CourierDashboard() {
   }
 
   if (!courierProfile) {
+    // For seeded test couriers, construct a local profile instead of showing setup
+    if (isTestCourier && profile) {
+      const now = new Date().toISOString();
+      const testVehicle = {
+        vehicle_type: 'motor',
+        vehicle_plate: 'DEF-9012',
+        vehicle_model: 'Yamaha Mio',
+        vehicle_color: 'Black',
+        license_number: 'N03-14-567890',
+      };
+
+      setCourierProfile({
+        id: profile.id,
+        user_id: profile.id,
+        vehicle_type: testVehicle.vehicle_type as RideType,
+        vehicle_plate: testVehicle.vehicle_plate,
+        vehicle_model: testVehicle.vehicle_model,
+        vehicle_color: testVehicle.vehicle_color,
+        license_number: testVehicle.license_number,
+        is_available: true,
+        rating: 5,
+        total_deliveries: 0,
+        created_at: now,
+        updated_at: now,
+      });
+
+      return (
+        <PageLayout>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+          </div>
+        </PageLayout>
+      );
+    }
+
     return null;
   }
 
