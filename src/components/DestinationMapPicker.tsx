@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MapPin, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { reverseGeocode } from '@/lib/geocoding';
 import { PrimaryButton } from './ui/PrimaryButton';
 import { SecondaryButton } from './ui/SecondaryButton';
+import mapPinIcon from '@/assets/map-pin-icon.png';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTVtdG5zYWwwMDhpMmpzYzBkdGM4ZXg3In0.VwrG0qJKs0R_0Gfqhzierw';
 
@@ -140,10 +141,12 @@ export function DestinationMapPicker({ mode = 'dropoff', initialCenter, onConfir
         
         {/* Fixed center pin */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative">
-            <MapPin className="w-12 h-12 text-rose-500 drop-shadow-lg" fill="currentColor" />
-            {/* Pin point */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-rose-700 rounded-full" />
+          <div className="relative transform -translate-y-1/2">
+            <img 
+              src={mapPinIcon} 
+              alt="Location pin" 
+              className="w-12 h-12 drop-shadow-xl"
+            />
           </div>
         </div>
       </div>

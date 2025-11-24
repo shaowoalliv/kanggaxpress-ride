@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import mapPinIcon from '@/assets/map-pin-icon.png';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 
@@ -64,8 +65,11 @@ export function RideMap({
       pickupMarker.current.setLngLat([pickupLng, pickupLat]);
     } else {
       const el = document.createElement('div');
-      el.className = 'w-8 h-8 bg-primary rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold';
-      el.innerHTML = 'P';
+      el.style.width = '40px';
+      el.style.height = '40px';
+      el.style.backgroundImage = `url(${mapPinIcon})`;
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundRepeat = 'no-repeat';
 
       pickupMarker.current = new mapboxgl.Marker({ element: el })
         .setLngLat([pickupLng, pickupLat])
@@ -81,8 +85,11 @@ export function RideMap({
       dropoffMarker.current.setLngLat([dropoffLng, dropoffLat]);
     } else {
       const el = document.createElement('div');
-      el.className = 'w-8 h-8 bg-success rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold';
-      el.innerHTML = 'D';
+      el.style.width = '40px';
+      el.style.height = '40px';
+      el.style.backgroundImage = `url(${mapPinIcon})`;
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundRepeat = 'no-repeat';
 
       dropoffMarker.current = new mapboxgl.Marker({ element: el })
         .setLngLat([dropoffLng, dropoffLat])
