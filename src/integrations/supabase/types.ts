@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      cities: {
+        Row: {
+          activation_date: string | null
+          created_at: string | null
+          geofence_lat: number
+          geofence_lng: number
+          geofence_radius_km: number
+          id: string
+          is_active: boolean
+          name: string
+          province_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          activation_date?: string | null
+          created_at?: string | null
+          geofence_lat: number
+          geofence_lng: number
+          geofence_radius_km?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          province_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          activation_date?: string | null
+          created_at?: string | null
+          geofence_lat?: number
+          geofence_lng?: number
+          geofence_radius_km?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          province_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courier_profiles: {
         Row: {
           created_at: string | null
@@ -228,6 +275,7 @@ export type Database = {
       fare_configs: {
         Row: {
           base_fare: number
+          city_id: string | null
           id: string
           min_fare: number
           per_km: number
@@ -241,6 +289,7 @@ export type Database = {
         }
         Insert: {
           base_fare?: number
+          city_id?: string | null
           id?: string
           min_fare?: number
           per_km?: number
@@ -254,6 +303,7 @@ export type Database = {
         }
         Update: {
           base_fare?: number
+          city_id?: string | null
           id?: string
           min_fare?: number
           per_km?: number
@@ -265,7 +315,15 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fare_configs_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fare_settings: {
         Row: {
@@ -464,6 +522,33 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      provinces: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -695,6 +780,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_within_service_area: {
+        Args: { p_lat: number; p_lng: number }
         Returns: boolean
       }
       wallet_apply_transaction: {
