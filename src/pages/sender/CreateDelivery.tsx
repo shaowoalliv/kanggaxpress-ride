@@ -22,6 +22,10 @@ const packageSizes: { size: PackageSize; name: string; description: string; pric
 export default function CreateDelivery() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if this is a test sender account
+  const isTestSender = profile?.email ? ['sender1@test.com'].includes(profile.email) : false;
+  
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropoffAddress, setDropoffAddress] = useState('');
   const [packageDescription, setPackageDescription] = useState('');
@@ -92,6 +96,11 @@ export default function CreateDelivery() {
 
   return (
     <PageLayout>
+      {isTestSender && (
+        <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
+          🧪 TEST MODE: sender1@test.com
+        </div>
+      )}
       <div className="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
         <div className="space-y-6">
           <div>

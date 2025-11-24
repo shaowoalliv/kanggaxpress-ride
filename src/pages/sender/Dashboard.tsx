@@ -12,6 +12,9 @@ export default function SenderDashboard() {
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
 
+  // Check if this is a test sender account
+  const isTestSender = profile?.email ? ['sender1@test.com'].includes(profile.email) : false;
+
   // Get greeting based on time of day
   useEffect(() => {
     const hour = new Date().getHours();
@@ -39,6 +42,11 @@ export default function SenderDashboard() {
 
   return (
     <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
+      {isTestSender && (
+        <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
+          🧪 TEST MODE: sender1@test.com
+        </div>
+      )}
       <div className="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
         <div className="space-y-6">
           <div>
