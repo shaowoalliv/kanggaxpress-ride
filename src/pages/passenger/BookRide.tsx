@@ -71,6 +71,9 @@ export default function BookRide() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   
+  // Check if this is a test passenger account
+  const isTestPassenger = profile?.email ? ['passenger1@test.com', 'passenger2@test.com'].includes(profile.email) : false;
+  
   // State
   const [destinationQuery, setDestinationQuery] = useState('');
   const [dropoffAddress, setDropoffAddress] = useState<string | null>(null);
@@ -367,6 +370,11 @@ export default function BookRide() {
 
   return (
     <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
+      {isTestPassenger && (
+        <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
+          🧪 TEST MODE: passenger1@test.com or passenger2@test.com
+        </div>
+      )}
       <main className="flex-1 w-full bg-background pb-32">
 
         <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto">
