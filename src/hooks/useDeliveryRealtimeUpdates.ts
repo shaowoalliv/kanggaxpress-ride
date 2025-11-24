@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { notificationService } from '@/services/pushNotifications';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Delivery {
   id: string;
@@ -10,6 +12,7 @@ interface Delivery {
 
 export const useDeliveryRealtimeUpdates = (deliveryId: string, onUpdate?: (delivery: Delivery) => void) => {
   const [courierLocation, setCourierLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Subscribe to delivery updates
@@ -25,8 +28,20 @@ export const useDeliveryRealtimeUpdates = (deliveryId: string, onUpdate?: (deliv
         },
         (payload) => {
           console.log('[Realtime] Delivery updated:', payload.new);
+          const newDelivery = payload.new as Delivery;
+          const oldDelivery = payload.old as Delivery;
+          
+          // Send push notification if status changed
+          if (newDelivery.status !== oldDelivery?.status && user?.id) {
+            notificationService.sendDeliveryNotification(
+              user.id,
+              deliveryId,
+              newDelivery.status || ''
+            );
+          }
+          
           if (onUpdate) {
-            onUpdate(payload.new as Delivery);
+            onUpdate(newDelivery);
           }
         }
       )
@@ -35,7 +50,7 @@ export const useDeliveryRealtimeUpdates = (deliveryId: string, onUpdate?: (deliv
     return () => {
       supabase.removeChannel(deliveryChannel);
     };
-  }, [deliveryId, onUpdate]);
+  }, [deliveryId, onUpdate, user]);
 
   useEffect(() => {
     // Subscribe to courier location updates

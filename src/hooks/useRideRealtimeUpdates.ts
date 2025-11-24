@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Ride } from '@/types';
+import { notificationService } from '@/services/pushNotifications';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useRideRealtimeUpdates = (rideId: string, onUpdate?: (ride: Ride) => void) => {
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Subscribe to ride updates
@@ -19,8 +22,20 @@ export const useRideRealtimeUpdates = (rideId: string, onUpdate?: (ride: Ride) =
         },
         (payload) => {
           console.log('[Realtime] Ride updated:', payload.new);
+          const newRide = payload.new as Ride;
+          const oldRide = payload.old as Ride;
+          
+          // Send push notification if status changed
+          if (newRide.status !== oldRide?.status && user?.id) {
+            notificationService.sendRideNotification(
+              user.id,
+              rideId,
+              newRide.status || ''
+            );
+          }
+          
           if (onUpdate) {
-            onUpdate(payload.new as Ride);
+            onUpdate(newRide);
           }
         }
       )
@@ -29,7 +44,7 @@ export const useRideRealtimeUpdates = (rideId: string, onUpdate?: (ride: Ride) =
     return () => {
       supabase.removeChannel(rideChannel);
     };
-  }, [rideId, onUpdate]);
+  }, [rideId, onUpdate, user]);
 
   useEffect(() => {
     // Subscribe to driver location updates

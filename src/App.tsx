@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
 import { useSessionValidator } from "@/hooks/useSessionValidator";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
@@ -62,9 +63,10 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Wrapper component for session validation
+// Wrapper component for session validation and push notifications
 function SessionValidatorWrapper() {
   useSessionValidator();
+  usePushNotifications();
   return null;
 }
 
