@@ -401,7 +401,7 @@ export default function BookRide() {
                     <img 
                       src={mapPinRed} 
                       alt="Select location" 
-                      className="h-10 w-10"
+                      className="h-7 w-auto object-contain"
                       style={{ filter: 'hue-rotate(-15deg) saturate(0.8) brightness(0.5)' }}
                     />
                   </button>
@@ -437,7 +437,7 @@ export default function BookRide() {
                     <img 
                       src={mapPinRed} 
                       alt="Select location" 
-                      className="h-10 w-10"
+                      className="h-7 w-auto object-contain"
                       style={{ filter: 'hue-rotate(-15deg) saturate(0.8) brightness(0.5)' }}
                     />
                   </button>
