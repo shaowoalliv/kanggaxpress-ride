@@ -17,6 +17,8 @@ import { KycDocument } from '@/types/kyc';
 import { KycBlockedAccess } from '@/components/KycBlockedAccess';
 import { LowBalanceWarning } from '@/components/LowBalanceWarning';
 import { ZeroBalanceModal } from '@/components/ZeroBalanceModal';
+import { useDeliveryNegotiation } from '@/hooks/useDeliveryNegotiation';
+import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
 
 const statusColors = {
   requested: 'text-primary',
@@ -50,6 +52,7 @@ export default function CourierDashboard() {
   const [kycCheckLoading, setKycCheckLoading] = useState(true);
   const [platformFee, setPlatformFee] = useState<number>(5);
   const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
+  const [counterOfferModal, setCounterOfferModal] = useState<{ delivery: any } | null>(null);
 
   // Check if zero balance modal was dismissed this session
   const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
@@ -548,6 +551,24 @@ export default function CourierDashboard() {
           )}
         </div>
       </div>
+
+      {/* Counter Offer Modal */}
+      {counterOfferModal && (
+        <CounterOfferModal
+          open={true}
+          onClose={() => setCounterOfferModal(null)}
+          baseFare={counterOfferModal.delivery.base_fare || 0}
+          onSubmit={async (topUpFare, reason, notes) => {
+            if (!courierProfile) return;
+            
+            const { proposeCounterOffer } = useDeliveryNegotiation(counterOfferModal.delivery.id);
+            await proposeCounterOffer(courierProfile.id, topUpFare, `${reason}: ${notes}`);
+            setCounterOfferModal(null);
+            toast.success('Counter-offer sent to sender');
+            loadCourierData();
+          }}
+        />
+      )}
     </PageLayout>
   );
 }
