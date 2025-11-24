@@ -412,6 +412,7 @@ export type Database = {
           id: string
           image_path: string | null
           parsed: Json
+          parsed_encrypted: string | null
           status: string
           updated_at: string
           user_id: string
@@ -423,6 +424,7 @@ export type Database = {
           id?: string
           image_path?: string | null
           parsed: Json
+          parsed_encrypted?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -434,6 +436,7 @@ export type Database = {
           id?: string
           image_path?: string | null
           parsed?: Json
+          parsed_encrypted?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1054,12 +1057,51 @@ export type Database = {
           },
         ]
       }
+      kyc_documents_decrypted: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          doc_type: string | null
+          id: string | null
+          image_path: string | null
+          parsed: Json | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          doc_type?: string | null
+          id?: string | null
+          image_path?: string | null
+          parsed?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          doc_type?: string | null
+          id?: string | null
+          image_path?: string | null
+          parsed?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_distance: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      decrypt_kyc_data: { Args: { encrypted_data: string }; Returns: Json }
+      encrypt_kyc_data: { Args: { data: Json }; Returns: string }
+      get_kyc_encryption_key: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
