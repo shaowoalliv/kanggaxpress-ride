@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { kycService } from '@/services/kyc';
 import { KycDocument } from '@/types/kyc';
 import { KycBlockedAccess } from '@/components/KycBlockedAccess';
+import { LowBalanceWarning } from '@/components/LowBalanceWarning';
+import { ZeroBalanceModal } from '@/components/ZeroBalanceModal';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -29,6 +31,28 @@ export default function DriverDashboard() {
   const [accountNumber, setAccountNumber] = useState<string>('');
   const [kycDocuments, setKycDocuments] = useState<KycDocument[]>([]);
   const [kycCheckLoading, setKycCheckLoading] = useState(true);
+  const [platformFee, setPlatformFee] = useState<number>(5);
+  const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
+
+  // Check if zero balance modal was dismissed this session
+  const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
+
+  useEffect(() => {
+    // Fetch platform fee from fare_configs
+    const fetchPlatformFee = async () => {
+      const { data } = await supabase
+        .from('fare_configs')
+        .select('platform_fee_value')
+        .eq('region_code', 'CALAPAN')
+        .limit(1)
+        .single();
+      
+      if (data?.platform_fee_value) {
+        setPlatformFee(data.platform_fee_value);
+      }
+    };
+    fetchPlatformFee();
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -54,8 +78,12 @@ export default function DriverDashboard() {
             const newBalance = payload.new.balance as number;
             setWalletBalance(newBalance);
             
-            // Notify if balance was reloaded from < 5 to >= 5
-            if (previousBalance < 5 && newBalance >= 5) {
+            // Notify if balance was reloaded and reset zero balance modal
+            if (previousBalance === 0 && newBalance > 0) {
+              setZeroBalanceDismissed(false);
+              setShowZeroBalanceModal(false);
+              toast.success(`Balance reloaded to ₱${newBalance.toFixed(2)}. You can now accept jobs!`);
+            } else if (previousBalance < 5 && newBalance >= 5) {
               toast.success(`Balance reloaded to ₱${newBalance.toFixed(2)}. You can now accept jobs!`);
             }
           }
@@ -67,6 +95,13 @@ export default function DriverDashboard() {
       };
     }
   }, [user, profile, navigate]);
+
+  // Show zero balance modal on page load if balance is 0 and not dismissed
+  useEffect(() => {
+    if (walletBalance === 0 && !zeroBalanceDismissed) {
+      setShowZeroBalanceModal(true);
+    }
+  }, [walletBalance, zeroBalanceDismissed]);
 
   // GPS location publishing - calculate active ride status
   const hasActiveRide = myRides.some(r => r.status === 'in_progress' || r.status === 'accepted');
@@ -263,9 +298,27 @@ export default function DriverDashboard() {
   }
 
   const activeRide = myRides.find(r => r.status === 'accepted' || r.status === 'in_progress');
+  const transactionCapacity = platformFee > 0 ? walletBalance / platformFee : 0;
 
   return (
     <PageLayout>
+      {/* Low Balance Warning Banner */}
+      <LowBalanceWarning 
+        transactionCapacity={transactionCapacity} 
+        platformFee={platformFee}
+      />
+
+      {/* Zero Balance Modal */}
+      {showZeroBalanceModal && walletBalance === 0 && (
+        <ZeroBalanceModal
+          platformFee={platformFee}
+          onDismiss={() => {
+            setShowZeroBalanceModal(false);
+            setZeroBalanceDismissed(true);
+          }}
+        />
+      )}
+
       <div className="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
         <div className="space-y-6">
           {/* Driver Status */}

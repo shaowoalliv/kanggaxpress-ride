@@ -25,6 +25,7 @@ import {
 import { walletService, WalletTransaction } from '@/services/wallet';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WalletUser {
   id: string;
@@ -33,6 +34,8 @@ interface WalletUser {
   role: string;
   account_number: string;
   balance: number;
+  transaction_capacity: number;
+  total_fees_paid: number;
 }
 
 export default function AdminWallets() {
@@ -48,6 +51,24 @@ export default function AdminWallets() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [platformFee, setPlatformFee] = useState<number>(5);
+
+  useEffect(() => {
+    // Fetch platform fee from fare_configs
+    const fetchPlatformFee = async () => {
+      const { data } = await supabase
+        .from('fare_configs')
+        .select('platform_fee_value')
+        .eq('region_code', 'CALAPAN')
+        .limit(1)
+        .single();
+      
+      if (data?.platform_fee_value) {
+        setPlatformFee(data.platform_fee_value);
+      }
+    };
+    fetchPlatformFee();
+  }, []);
 
   const handleSearch = async () => {
     const trimmed = searchTerm.trim();
@@ -63,7 +84,27 @@ export default function AdminWallets() {
     setIsLoading(true);
     try {
       const results = await walletService.searchWallets(trimmed, roleFilter);
-      setWallets(results);
+      
+      // Calculate transaction capacity and total fees paid for each user
+      const enrichedResults = await Promise.all(
+        results.map(async (wallet) => {
+          const transactions = await walletService.getTransactions(wallet.id, 1000);
+          const totalFeesPaid = Math.abs(
+            transactions
+              .filter(txn => txn.type === 'deduct')
+              .reduce((sum, txn) => sum + txn.amount, 0)
+          );
+          const transactionCapacity = platformFee > 0 ? wallet.balance / platformFee : 0;
+          
+          return {
+            ...wallet,
+            transaction_capacity: transactionCapacity,
+            total_fees_paid: totalFeesPaid,
+          };
+        })
+      );
+      
+      setWallets(enrichedResults);
       
       if (results.length === 0) {
         toast({
@@ -216,6 +257,8 @@ export default function AdminWallets() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Transaction Capacity</TableHead>
+                  <TableHead className="text-right">Total Fees Paid</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -239,6 +282,19 @@ export default function AdminWallets() {
                     <TableCell className="text-right">
                       <div className="font-bold text-lg">
                         ₱{wallet.balance.toFixed(2)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className={`font-bold ${wallet.transaction_capacity < 5 ? 'text-destructive' : 'text-foreground'}`}>
+                        {Math.floor(wallet.transaction_capacity)} job(s)
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        @ ₱{platformFee.toFixed(2)}/job
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="font-semibold">
+                        ₱{wallet.total_fees_paid.toFixed(2)}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
