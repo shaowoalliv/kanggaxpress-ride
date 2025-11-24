@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,16 +28,6 @@ import MyDeliveries from "./pages/sender/MyDeliveries";
 import CourierDashboard from "./pages/courier/Dashboard";
 import CourierSetup from "./pages/courier/Setup";
 import KycStatus from "./pages/account/KycStatus";
-import HeroAnim from "./pages/qa/HeroAnim";
-import QAState from "./pages/qa/QAState";
-import QASOT from "./pages/qa/QASOT";
-import RoutingPhase1 from "./pages/qa/RoutingPhase1";
-import AdminSmoke from "./pages/qa/AdminSmoke";
-import QAOOCR from "./pages/qa/OCR";
-import QAKYCAdmin from "./pages/qa/KYCAdmin";
-import QAMapsKeys from "./pages/qa/MapsKeys";
-import DevPreview from "./pages/qa/DevPreview";
-import PreviewTest from "./pages/qa/PreviewTest";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
@@ -70,30 +59,16 @@ function SessionValidatorWrapper() {
   return null;
 }
 
-const App = () => {
-  // Keyboard shortcut: Ctrl/Cmd + Alt + D to open dev preview
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'd') {
-        e.preventDefault();
-        window.location.href = '/qa/dev-preview';
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <SessionValidatorWrapper />
-            <Toaster />
-            <Sonner />
-            <InstallPromptBanner />
-            <Routes>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <SessionValidatorWrapper />
+          <Toaster />
+          <Sonner />
+          <InstallPromptBanner />
+          <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/choose-role" element={<ChooseRole />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
@@ -150,25 +125,12 @@ const App = () => {
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             
-            {/* QA Routes */}
-            <Route path="/qa/hero-anim" element={<HeroAnim />} />
-            <Route path="/qa/state" element={<QAState />} />
-            <Route path="/qa/sot" element={<QASOT />} />
-            <Route path="/qa/routing-phase1" element={<RoutingPhase1 />} />
-            <Route path="/qa/admin-smoke" element={<AdminSmoke />} />
-            <Route path="/qa/ocr" element={<QAOOCR />} />
-            <Route path="/qa/kyc-admin" element={<QAKYCAdmin />} />
-            <Route path="/qa/maps-keys" element={<QAMapsKeys />} />
-            <Route path="/qa/dev-preview" element={<DevPreview />} />
-            <Route path="/qa/preview" element={<PreviewTest />} />
-            
             <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-};
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

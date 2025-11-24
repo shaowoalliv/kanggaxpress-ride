@@ -1,7 +1,6 @@
 // State collector utility for project state reporting
 // DO NOT expose secrets - only boolean presence checks
 
-import { devPreview } from './devPreview';
 interface ProjectState {
   meta: {
     app_name: string;
@@ -72,11 +71,6 @@ interface ProjectState {
   kyc: {
     storage_bucket_present: boolean;
   };
-  dev_preview: {
-    enabled: boolean;
-    host_allowlist_ok: boolean;
-    roles: string[];
-  };
   env_presence: {
     supabase_url: boolean;
     supabase_anon_key: boolean;
@@ -102,9 +96,6 @@ export function collectProjectState(): ProjectState {
     { path: '/sender/my-deliveries', component: 'MyDeliveries', exists: true },
     { path: '/courier/dashboard', component: 'CourierDashboard', exists: true },
     { path: '/courier/setup', component: 'CourierSetup', exists: true },
-    { path: '/qa/hero-anim', component: 'HeroAnim', exists: true },
-    { path: '/qa/state', component: 'QAState', exists: true },
-    { path: '/qa/sot', component: 'QASOT', exists: true },
   ];
 
   // Check environment variables (presence only, no values)
@@ -195,11 +186,6 @@ export function collectProjectState(): ProjectState {
     },
     kyc: {
       storage_bucket_present: true, // kyc bucket configured
-    },
-    dev_preview: {
-      enabled: devPreview.enabled,
-      host_allowlist_ok: devPreview.hostAllowed,
-      roles: devPreview.allowRoles,
     },
     env_presence: {
       supabase_url: hasSupabaseUrl,
