@@ -44,6 +44,7 @@ interface DriverData {
   driverLicense?: KycDocument;
   or?: KycDocument;
   cr?: KycDocument;
+  selfie?: KycDocument;
 }
 
 export default function AdminKYC() {
@@ -117,6 +118,7 @@ export default function AdminKYC() {
           driverLicense: docs.find((d) => d.doc_type === 'DRIVER_LICENSE'),
           or: docs.find((d) => d.doc_type === 'OR'),
           cr: docs.find((d) => d.doc_type === 'CR'),
+          selfie: docs.find((d) => d.doc_type === 'SELFIE'),
         });
       });
 
@@ -331,6 +333,7 @@ export default function AdminKYC() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Account #</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>First Name</TableHead>
                       <TableHead>Middle Name</TableHead>
                       <TableHead>Last Name</TableHead>
@@ -338,6 +341,7 @@ export default function AdminKYC() {
                       <TableHead>Driver License</TableHead>
                       <TableHead>OR</TableHead>
                       <TableHead>CR</TableHead>
+                      <TableHead>Selfie</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -346,16 +350,21 @@ export default function AdminKYC() {
                       const dlDoc = driver.driverLicense;
                       const orDoc = driver.or;
                       const crDoc = driver.cr;
+                      const selfieDoc = driver.selfie;
 
                       // Load images when row is rendered
                       if (dlDoc) loadImageUrl(dlDoc);
                       if (orDoc) loadImageUrl(orDoc);
                       if (crDoc) loadImageUrl(crDoc);
+                      if (selfieDoc) loadImageUrl(selfieDoc);
 
                       return (
                         <TableRow key={driver.userId}>
                           <TableCell className="font-mono text-sm">
                             {driver.accountNumber}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {driver.email}
                           </TableCell>
                           <TableCell>{driver.firstName}</TableCell>
                           <TableCell>{driver.middleName || '—'}</TableCell>
@@ -560,6 +569,69 @@ export default function AdminKYC() {
                                       variant="destructive"
                                       className="flex-1 h-7 text-xs"
                                       onClick={() => handleRejectClick(crDoc.id)}
+                                    >
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          {/* Selfie */}
+                          <TableCell className="align-top">
+                            <div className="flex flex-col items-start gap-1">
+                              {/* Status text container with fixed height */}
+                              <div className="min-h-[36px]">
+                                {selfieDoc ? (
+                                  <>
+                                    <div className={`text-xs font-medium ${
+                                      selfieDoc.status === 'APPROVED' ? 'text-green-600' :
+                                      selfieDoc.status === 'REJECTED' ? 'text-red-600' :
+                                      'text-yellow-600'
+                                    }`}>
+                                      {statusLabel[selfieDoc.status]}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Not submitted</span>
+                                )}
+                              </div>
+
+                              {/* View button */}
+                              {selfieDoc && selfieDoc.image_path && imageUrls[selfieDoc.id] && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-xs h-7 mt-1"
+                                  onClick={() => setZoomedImage(imageUrls[selfieDoc.id])}
+                                >
+                                  <ZoomIn className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              )}
+
+                              {/* Action buttons */}
+                              {selfieDoc && (
+                                <div className="flex gap-1 w-full">
+                                  {selfieDoc.status !== 'APPROVED' && (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      className="flex-1 h-7 text-xs"
+                                      onClick={() => handleApprove(selfieDoc.id)}
+                                    >
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Approve
+                                    </Button>
+                                  )}
+                                  {selfieDoc.status !== 'REJECTED' && (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="flex-1 h-7 text-xs"
+                                      onClick={() => handleRejectClick(selfieDoc.id)}
                                     >
                                       <XCircle className="h-3 w-3 mr-1" />
                                       Reject
