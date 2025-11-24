@@ -240,6 +240,13 @@ export type Database = {
             foreignKeyName: "delivery_orders_courier_id_fkey"
             columns: ["courier_id"]
             isOneToOne: false
+            referencedRelation: "available_couriers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
             referencedRelation: "courier_profiles"
             referencedColumns: ["id"]
           },
@@ -871,6 +878,50 @@ export type Database = {
       }
     }
     Views: {
+      available_couriers_safe: {
+        Row: {
+          approximate_lat: number | null
+          approximate_lng: number | null
+          id: string | null
+          is_available: boolean | null
+          location_updated_at: string | null
+          rating: number | null
+          total_deliveries: number | null
+          user_id: string | null
+          vehicle_type: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Insert: {
+          approximate_lat?: never
+          approximate_lng?: never
+          id?: string | null
+          is_available?: boolean | null
+          location_updated_at?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          user_id?: string | null
+          vehicle_type?: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Update: {
+          approximate_lat?: never
+          approximate_lng?: never
+          id?: string | null
+          is_available?: boolean | null
+          location_updated_at?: string | null
+          rating?: number | null
+          total_deliveries?: number | null
+          user_id?: string | null
+          vehicle_type?: Database["public"]["Enums"]["ride_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       available_drivers_safe: {
         Row: {
           approximate_lat: number | null
