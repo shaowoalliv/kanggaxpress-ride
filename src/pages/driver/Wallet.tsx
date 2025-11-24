@@ -7,7 +7,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { walletService, WalletTransaction } from '@/services/wallet';
 import { toast } from 'sonner';
-import { Wallet as WalletIcon, TrendingUp, TrendingDown, Clock, ArrowLeft, DollarSign } from 'lucide-react';
+import { Wallet as WalletIcon, TrendingUp, TrendingDown, Clock, ArrowLeft, DollarSign, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -82,6 +82,13 @@ export default function DriverWallet() {
       toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyAccountNumber = () => {
+    if (accountNumber) {
+      navigator.clipboard.writeText(accountNumber);
+      toast.success('Account number copied to clipboard!');
     }
   };
 
@@ -176,9 +183,28 @@ export default function DriverWallet() {
             </div>
             <p className="text-sm text-muted-foreground mb-2">Available Balance</p>
             <p className="text-4xl font-bold text-primary mb-4">₱{balance.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">
-              Account No: {accountNumber || 'Not assigned yet'}
-            </p>
+            
+            {/* Account Number with Copy */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Your Account Number</p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg font-bold font-mono text-foreground">
+                  {accountNumber || 'Not assigned yet'}
+                </p>
+                {accountNumber && (
+                  <button
+                    onClick={handleCopyAccountNumber}
+                    className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                    aria-label="Copy account number"
+                  >
+                    <Copy className="w-4 h-4 text-primary" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Share this with admin to load your wallet
+              </p>
+            </div>
           </ThemedCard>
 
           {/* Withdrawal Request */}

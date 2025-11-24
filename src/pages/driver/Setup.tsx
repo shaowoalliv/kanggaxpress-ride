@@ -200,7 +200,23 @@ export default function DriverSetup() {
           balance: 0,
         });
 
-      toast.success('Driver profile created! Your wallet has been initialized.');
+      // Show welcome toast with account number and copy button
+      const copyAccountNumber = () => {
+        navigator.clipboard.writeText(accountNumber);
+        toast.success('Account number copied!');
+      };
+
+      toast.success(
+        `Welcome! Your account number is ${accountNumber}. Save this for wallet loading.`,
+        {
+          duration: 10000,
+          action: {
+            label: 'Copy',
+            onClick: copyAccountNumber,
+          },
+        }
+      );
+
       navigate('/driver/dashboard');
     } catch (error) {
       console.error('Error creating profile:', error);
