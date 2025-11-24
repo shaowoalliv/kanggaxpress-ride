@@ -17,7 +17,7 @@ export default function ChooseRole() {
             {/* Header */}
             <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
               <div className="inline-flex items-center justify-center">
-                <KanggaLogo width={480} height={480} className="w-48 h-48 sm:w-80 sm:h-80 md:w-[28rem] md:h-[28rem] lg:w-[36rem] lg:h-[36rem]" />
+                <KanggaLogo width={384} height={384} className="w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96" />
               </div>
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-heading font-bold text-foreground px-2 sm:px-4">
                 Welcome to KanggaXpress
