@@ -53,25 +53,37 @@ export default function TestDataSeeder() {
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="font-semibold">Driver 1</p>
                   <p className="text-muted-foreground">Email: driver1@test.com | Password: test123</p>
-                  <p className="text-muted-foreground">Juan Dela Cruz | Motor (ABC-1234)</p>
+                  <p className="text-muted-foreground">Juan Dela Cruz | Motor (ABC-1234) | ₱30 wallet</p>
                 </div>
 
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="font-semibold">Driver 2</p>
                   <p className="text-muted-foreground">Email: driver2@test.com | Password: test123</p>
-                  <p className="text-muted-foreground">Maria Santos | Tricycle (XYZ-5678)</p>
+                  <p className="text-muted-foreground">Maria Santos | Tricycle (XYZ-5678) | ₱30 wallet</p>
                 </div>
 
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="font-semibold">Courier 1</p>
                   <p className="text-muted-foreground">Email: courier1@test.com | Password: test123</p>
-                  <p className="text-muted-foreground">Pedro Ramos | Motor (DEF-9012)</p>
+                  <p className="text-muted-foreground">Pedro Ramos | Motor (DEF-9012) | ₱30 wallet</p>
+                </div>
+
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="font-semibold">Passenger 1</p>
+                  <p className="text-muted-foreground">Email: passenger1@test.com | Password: test123</p>
+                  <p className="text-muted-foreground">Anna Reyes | No wallet needed</p>
+                </div>
+
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="font-semibold">Passenger 2</p>
+                  <p className="text-muted-foreground">Email: passenger2@test.com | Password: test123</p>
+                  <p className="text-muted-foreground">Carlos Mendoza | No wallet needed</p>
                 </div>
               </div>
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm">
-                  <strong>⚠️ Testing Only:</strong> This will create accounts with approved KYC and ₱30 wallet balance.
+                  <strong>⚠️ Testing Only:</strong> Creates 3 drivers/couriers with approved KYC & ₱30 wallet + 2 passengers.
                   All accounts use password: <code className="bg-muted px-2 py-1 rounded">test123</code>
                 </p>
               </div>
@@ -109,12 +121,19 @@ export default function TestDataSeeder() {
                         <p className="font-semibold">{result.email}</p>
                         {result.success ? (
                           <>
-                            <p className="text-sm text-muted-foreground">
-                              Account Number: {result.account_number}
+                            <p className="text-sm text-muted-foreground capitalize">
+                              Role: {result.role}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              Wallet Balance: ₱{result.balance}
-                            </p>
+                            {result.account_number && (
+                              <p className="text-sm text-muted-foreground">
+                                Account Number: {result.account_number}
+                              </p>
+                            )}
+                            {result.balance > 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                Wallet Balance: ₱{result.balance}
+                              </p>
+                            )}
                           </>
                         ) : (
                           <p className="text-sm text-red-500">{result.error}</p>

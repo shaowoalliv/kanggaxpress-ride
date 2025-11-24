@@ -8,14 +8,14 @@ const corsHeaders = {
 interface TestAccount {
   email: string;
   password: string;
-  role: 'driver' | 'courier';
+  role: 'driver' | 'courier' | 'passenger';
   full_name: string;
   phone: string;
-  vehicle_type: 'motor' | 'tricycle' | 'car';
-  vehicle_plate: string;
-  vehicle_model: string;
-  vehicle_color: string;
-  license_number: string;
+  vehicle_type?: 'motor' | 'tricycle' | 'car';
+  vehicle_plate?: string;
+  vehicle_model?: string;
+  vehicle_color?: string;
+  license_number?: string;
 }
 
 const TEST_ACCOUNTS: TestAccount[] = [
@@ -54,6 +54,20 @@ const TEST_ACCOUNTS: TestAccount[] = [
     vehicle_model: 'Yamaha Mio',
     vehicle_color: 'Black',
     license_number: 'N03-14-567890',
+  },
+  {
+    email: 'passenger1@test.com',
+    password: 'test123',
+    role: 'passenger',
+    full_name: 'Anna Reyes',
+    phone: '09201234567',
+  },
+  {
+    email: 'passenger2@test.com',
+    password: 'test123',
+    role: 'passenger',
+    full_name: 'Carlos Mendoza',
+    phone: '09212345678',
   },
 ];
 
@@ -101,91 +115,97 @@ Deno.serve(async (req) => {
 
         if (profileError) throw new Error(`Profile error: ${profileError.message}`);
 
-        // 3. Create driver/courier profile
-        const profileTable = account.role === 'driver' ? 'driver_profiles' : 'courier_profiles';
-        const { error: vehicleError } = await supabaseAdmin
-          .from(profileTable)
-          .insert({
-            user_id: userId,
-            vehicle_type: account.vehicle_type,
-            vehicle_plate: account.vehicle_plate,
-            vehicle_model: account.vehicle_model,
-            vehicle_color: account.vehicle_color,
-            license_number: account.license_number,
-            is_available: true,
-          });
-
-        if (vehicleError) throw new Error(`Vehicle profile error: ${vehicleError.message}`);
-
-        // 4. Create mock KYC documents (APPROVED status for testing)
-        const kycDocs = [
-          { doc_type: 'DRIVER_LICENSE', parsed: { license_no: account.license_number } },
-          { doc_type: 'OR', parsed: { plate_no: account.vehicle_plate } },
-          { doc_type: 'CR', parsed: { plate_no: account.vehicle_plate, vehicle_brand: account.vehicle_model.split(' ')[0], color: account.vehicle_color } },
-          { doc_type: 'SELFIE', parsed: {} },
-        ];
-
-        for (const doc of kycDocs) {
-          const { error: kycError } = await supabaseAdmin
-            .from('kyc_documents')
+        // 3. Create driver/courier profile (skip for passengers)
+        if (account.role === 'driver' || account.role === 'courier') {
+          const profileTable = account.role === 'driver' ? 'driver_profiles' : 'courier_profiles';
+          const { error: vehicleError } = await supabaseAdmin
+            .from(profileTable)
             .insert({
               user_id: userId,
-              doc_type: doc.doc_type,
-              parsed: doc.parsed,
-              confidence: 1.0,
-              status: 'APPROVED',
-              image_path: `test-docs/${account.email}/${doc.doc_type.toLowerCase()}.jpg`,
+              vehicle_type: account.vehicle_type,
+              vehicle_plate: account.vehicle_plate,
+              vehicle_model: account.vehicle_model,
+              vehicle_color: account.vehicle_color,
+              license_number: account.license_number,
+              is_available: true,
             });
 
-          if (kycError) throw new Error(`KYC error: ${kycError.message}`);
+          if (vehicleError) throw new Error(`Vehicle profile error: ${vehicleError.message}`);
+
+          // 4. Create mock KYC documents (APPROVED status for testing)
+          const kycDocs = [
+            { doc_type: 'DRIVER_LICENSE', parsed: { license_no: account.license_number } },
+            { doc_type: 'OR', parsed: { plate_no: account.vehicle_plate } },
+            { doc_type: 'CR', parsed: { plate_no: account.vehicle_plate, vehicle_brand: account.vehicle_model?.split(' ')[0], color: account.vehicle_color } },
+            { doc_type: 'SELFIE', parsed: {} },
+          ];
+
+          for (const doc of kycDocs) {
+            const { error: kycError } = await supabaseAdmin
+              .from('kyc_documents')
+              .insert({
+                user_id: userId,
+                doc_type: doc.doc_type,
+                parsed: doc.parsed,
+                confidence: 1.0,
+                status: 'APPROVED',
+                image_path: `test-docs/${account.email}/${doc.doc_type.toLowerCase()}.jpg`,
+              });
+
+            if (kycError) throw new Error(`KYC error: ${kycError.message}`);
+          }
         }
 
-        // 5. Generate account number
-        const prefix = account.role === 'driver' ? 'KXD' : 'KXC';
+        // 5. Generate account number (only for drivers/couriers)
+        let accountNumber = null;
+        if (account.role === 'driver' || account.role === 'courier') {
+          const prefix = account.role === 'driver' ? 'KXD' : 'KXC';
         let hash = 0;
         for (let i = 0; i < userId.length; i++) {
           hash = ((hash << 5) - hash) + userId.charCodeAt(i);
           hash = hash & hash;
         }
-        const num = Math.abs(hash) % 100000000;
-        const accountNumber = `${prefix}-${num.toString().padStart(8, '0')}`;
+          const num = Math.abs(hash) % 100000000;
+          accountNumber = `${prefix}-${num.toString().padStart(8, '0')}`;
 
-        // 6. Update profile with account number
-        const { error: accountError } = await supabaseAdmin
-          .from('profiles')
-          .update({ account_number: accountNumber })
-          .eq('id', userId);
+          // 6. Update profile with account number
+          const { error: accountError } = await supabaseAdmin
+            .from('profiles')
+            .update({ account_number: accountNumber })
+            .eq('id', userId);
 
-        if (accountError) throw new Error(`Account number error: ${accountError.message}`);
+          if (accountError) throw new Error(`Account number error: ${accountError.message}`);
 
-        // 7. Create wallet account with ₱30 initial balance
-        const { error: walletError } = await supabaseAdmin
-          .from('wallet_accounts')
-          .insert({
-            user_id: userId,
-            role: account.role,
-            balance: 30,
-          });
+          // 7. Create wallet account with ₱30 initial balance
+          const { error: walletError } = await supabaseAdmin
+            .from('wallet_accounts')
+            .insert({
+              user_id: userId,
+              role: account.role,
+              balance: 30,
+            });
 
-        if (walletError) throw new Error(`Wallet error: ${walletError.message}`);
+          if (walletError) throw new Error(`Wallet error: ${walletError.message}`);
 
-        // 8. Create initial load transaction
-        const { error: transactionError } = await supabaseAdmin
-          .from('wallet_transactions')
-          .insert({
-            user_id: userId,
-            amount: 30,
-            type: 'load',
-            reference: 'Initial test account load',
-          });
+          // 8. Create initial load transaction
+          const { error: transactionError } = await supabaseAdmin
+            .from('wallet_transactions')
+            .insert({
+              user_id: userId,
+              amount: 30,
+              type: 'load',
+              reference: 'Initial test account load',
+            });
 
-        if (transactionError) throw new Error(`Transaction error: ${transactionError.message}`);
+          if (transactionError) throw new Error(`Transaction error: ${transactionError.message}`);
+        }
 
         results.push({
           email: account.email,
           success: true,
+          role: account.role,
           account_number: accountNumber,
-          balance: 30,
+          balance: account.role === 'passenger' ? 0 : 30,
         });
       } catch (error: any) {
         results.push({
