@@ -208,7 +208,16 @@ export function ChatWidget() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !user) return;
+    if (!input.trim() || isLoading || !user) {
+      if (!user) {
+        toast({
+          title: 'Not Logged In',
+          description: 'Please log in to use the chatbot',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -463,15 +472,16 @@ export function ChatWidget() {
               />
               <Button
                 onClick={handleSend}
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || !user}
                 size="icon"
                 className="flex-shrink-0"
+                title={!user ? 'Please log in to chat' : 'Send message'}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Available in English and Tagalog
+              {!user ? 'Please log in to use the chatbot' : 'Available in English and Tagalog'}
             </p>
           </div>
         </Card>
