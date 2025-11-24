@@ -41,6 +41,7 @@ import PreviewTest from "./pages/qa/PreviewTest";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
+import Coverage from "./pages/admin/Coverage";
 import Pricing from "./pages/admin/Pricing";
 import AdminDrivers from "./pages/admin/Drivers";
 import AdminRiders from "./pages/admin/Riders";
@@ -132,6 +133,7 @@ const App = () => {
               <Route path="riders" element={<AdminRiders />} />
               <Route path="trips" element={<AdminTrips />} />
               <Route path="deliveries" element={<AdminDeliveries />} />
+              <Route path="coverage" element={<Coverage />} />
               <Route path="pricing" element={<Pricing />} />
               <Route path="kyc" element={<AdminKYC />} />
               <Route path="notifications" element={<AdminNotifications />} />
