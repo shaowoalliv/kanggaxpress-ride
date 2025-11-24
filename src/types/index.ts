@@ -84,6 +84,13 @@ export interface DeliveryOrder {
   receiver_name: string;
   receiver_phone: string;
   status: DeliveryStatus;
+  base_fare: number | null;
+  top_up_fare: number | null;
+  total_fare: number | null;
+  app_fee: number | null;
+  negotiation_status: string | null;
+  negotiation_notes: string | null;
+  proposed_top_up_fare: number | null;
   created_at: string;
   updated_at: string;
   assigned_at: string | null;
