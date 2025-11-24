@@ -366,6 +366,50 @@ export default function DriverDashboard() {
 
 
   if (!driverProfile) {
+    // For seeded test drivers, construct a local profile instead of showing setup
+    if (isTestDriver && profile) {
+      const now = new Date().toISOString();
+      const testVehicle: Pick<DriverProfile, 'vehicle_type' | 'vehicle_plate' | 'vehicle_model' | 'vehicle_color' | 'license_number'> =
+        profile.email === 'driver1@test.com'
+          ? {
+              vehicle_type: 'motor',
+              vehicle_plate: 'ABC-1234',
+              vehicle_model: 'Honda Wave 110',
+              vehicle_color: 'Red',
+              license_number: 'N01-12-345678',
+            }
+          : {
+              vehicle_type: 'tricycle',
+              vehicle_plate: 'XYZ-5678',
+              vehicle_model: 'Honda TMX 155',
+              vehicle_color: 'Blue',
+              license_number: 'N02-13-456789',
+            };
+
+      setDriverProfile({
+        id: profile.id,
+        user_id: profile.id,
+        vehicle_type: testVehicle.vehicle_type,
+        vehicle_plate: testVehicle.vehicle_plate,
+        vehicle_model: testVehicle.vehicle_model,
+        vehicle_color: testVehicle.vehicle_color,
+        license_number: testVehicle.license_number,
+        is_available: true,
+        rating: 5,
+        total_rides: 0,
+        created_at: now,
+        updated_at: now,
+      });
+
+      return (
+        <PageLayout>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+          </div>
+        </PageLayout>
+      );
+    }
+
     return (
       <PageLayout>
         <div className="flex-1 flex items-center justify-center px-4">
@@ -381,6 +425,7 @@ export default function DriverDashboard() {
         </div>
       </PageLayout>
     );
+  }
   }
 
   // Test account banner
