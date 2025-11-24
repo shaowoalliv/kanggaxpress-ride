@@ -208,19 +208,33 @@ export default function DriverDashboard() {
     if (!profile || !driverProfile) return;
 
     // Check balance before accepting ride
-    if (walletBalance < 5) {
-      toast.error('Insufficient balance. You need at least ₱5.00 to accept jobs. Please reload to continue.');
+    if (walletBalance < platformFee) {
+      toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
     }
 
     try {
       setActionLoading(true);
+      
+      // Accept the ride
       await ridesService.acceptRide(rideId, driverProfile.id);
-      toast.success('Ride accepted!');
+      
+      // Deduct platform fee upfront
+      const { walletService } = await import('@/services/wallet');
+      const newBalance = await walletService.applyTransaction({
+        userId: user!.id,
+        amount: -platformFee,
+        type: 'deduct',
+        reference: 'Platform fee - ride acceptance',
+        rideId: rideId,
+      });
+      
+      setWalletBalance(newBalance);
+      toast.success(`Ride accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
       await loadDriverData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accepting ride:', error);
-      toast.error('Failed to accept ride');
+      toast.error(error.message || 'Failed to accept ride');
     } finally {
       setActionLoading(false);
     }
@@ -230,11 +244,11 @@ export default function DriverDashboard() {
     try {
       setActionLoading(true);
       await ridesService.updateRideStatus(rideId, newStatus);
-      toast.success('Ride status updated');
+      toast.success(`Ride status updated to ${newStatus}`);
       await loadDriverData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast.error(error.message || 'Failed to update status');
     } finally {
       setActionLoading(false);
     }

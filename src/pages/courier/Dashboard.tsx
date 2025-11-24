@@ -202,19 +202,33 @@ export default function CourierDashboard() {
     if (!profile || !courierProfile) return;
 
     // Check balance before accepting delivery
-    if (walletBalance < 5) {
-      toast.error('Insufficient balance. You need at least ₱5.00 to accept jobs. Please reload to continue.');
+    if (walletBalance < platformFee) {
+      toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
     }
 
     try {
       setActionLoading(true);
+      
+      // Accept the delivery
       await deliveriesService.acceptDelivery(deliveryId, courierProfile.id);
-      toast.success('Delivery accepted!');
+      
+      // Deduct platform fee upfront
+      const { walletService } = await import('@/services/wallet');
+      const newBalance = await walletService.applyTransaction({
+        userId: user!.id,
+        amount: -platformFee,
+        type: 'deduct',
+        reference: 'Platform fee - delivery acceptance',
+        deliveryId: deliveryId,
+      });
+      
+      setWalletBalance(newBalance);
+      toast.success(`Delivery accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
       await loadCourierData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accepting delivery:', error);
-      toast.error('Failed to accept delivery');
+      toast.error(error.message || 'Failed to accept delivery');
     } finally {
       setActionLoading(false);
     }
@@ -224,33 +238,11 @@ export default function CourierDashboard() {
     try {
       setActionLoading(true);
       await deliveriesService.updateDeliveryStatus(deliveryId, newStatus);
-      toast.success('Delivery status updated');
-      
-      // Deduct ₱5 when delivery is completed
-      if (newStatus === 'delivered') {
-        try {
-          const { walletService } = await import('@/services/wallet');
-          const newBalance = await walletService.applyTransaction({
-            userId: user!.id,
-            amount: -5,
-            type: 'deduct',
-            reference: 'Delivery fee',
-            deliveryId: deliveryId,
-          });
-          setWalletBalance(newBalance);
-          toast.success('₱5 service fee deducted from your wallet');
-        } catch (walletError: any) {
-          console.error('Wallet deduction error:', walletError);
-          if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
-            toast.error('Delivery completed but wallet deduction failed due to insufficient funds');
-          }
-        }
-      }
-      
+      toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
       await loadCourierData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast.error(error.message || 'Failed to update status');
     } finally {
       setActionLoading(false);
     }
