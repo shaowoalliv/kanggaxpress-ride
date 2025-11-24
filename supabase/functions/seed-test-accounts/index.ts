@@ -89,6 +89,28 @@ Deno.serve(async (req) => {
 
     const results = [];
 
+    // First, delete existing test accounts
+    console.log('Deleting existing test accounts...');
+    for (const account of TEST_ACCOUNTS) {
+      try {
+        // Get user by email
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (!listError && users) {
+          const existingUser = users.find(u => u.email === account.email);
+          
+          if (existingUser) {
+            // Delete the auth user (cascades to profiles, etc.)
+            await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+            console.log(`Deleted existing user: ${account.email}`);
+          }
+        }
+      } catch (error) {
+        console.log(`No existing user to delete: ${account.email}`);
+      }
+    }
+
+    // Now create fresh accounts
     for (const account of TEST_ACCOUNTS) {
       try {
         // 1. Create auth user
