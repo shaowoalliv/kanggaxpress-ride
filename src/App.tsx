@@ -53,6 +53,7 @@ import AdminDisputes from "./pages/admin/Disputes";
 import AdminAudit from "./pages/admin/Audit";
 import AdminSettings from "./pages/admin/Settings";
 import AdminWallets from "./pages/admin/Wallets";
+import TestDataSeeder from "./pages/admin/TestDataSeeder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -133,6 +134,7 @@ const App = () => (
               <Route path="disputes" element={<AdminDisputes />} />
               <Route path="audit" element={<AdminAudit />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="test-data-seeder" element={<TestDataSeeder />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
