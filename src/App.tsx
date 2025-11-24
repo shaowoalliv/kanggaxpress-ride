@@ -32,6 +32,7 @@ import CourierDashboard from "./pages/courier/Dashboard";
 import CourierSetup from "./pages/courier/Setup";
 import CourierWallet from "./pages/courier/Wallet";
 import KycStatus from "./pages/account/KycStatus";
+import ProfileSettings from "./pages/account/ProfileSettings";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminDashboard from "./pages/admin/Dashboard";
 import DashboardHome from "./pages/admin/DashboardHome";
@@ -109,6 +110,7 @@ const App = () => (
             
             {/* Account Routes */}
             <Route path="/account/kyc" element={<KycStatus />} />
+            <Route path="/account/profile-settings" element={<ProfileSettings />} />
             
             {/* Admin Routes */}
             <Route path="/admin-sign-in" element={<AdminSignIn />} />
