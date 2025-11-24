@@ -12,6 +12,7 @@ import { OcrCaptureCard } from '@/components/ocr/OcrCaptureCard';
 import { OcrReviewModal } from '@/components/ocr/OcrReviewModal';
 import { couriersService } from '@/services/couriers';
 import { kycService } from '@/services/kyc';
+import { supabase } from '@/integrations/supabase/client';
 import { RideType } from '@/types';
 import { DocType, ParsedData } from '@/types/kyc';
 import { toast } from 'sonner';
@@ -183,7 +184,23 @@ export default function CourierSetup() {
         license_number: licenseNumber.trim() || undefined,
       });
 
-      toast.success('Courier profile submitted for review!');
+      // Initialize wallet and account number
+      const { walletService } = await import('@/services/wallet');
+      const accountNumber = walletService.generateAccountNumber('courier', user!.id);
+      
+      // Update profile with account number
+      await walletService.updateAccountNumber(user!.id, accountNumber);
+      
+      // Create wallet account with 0 initial balance
+      await supabase
+        .from('wallet_accounts')
+        .insert({
+          user_id: user!.id,
+          role: 'courier',
+          balance: 0,
+        });
+
+      toast.success('Courier profile created! Your wallet has been initialized.');
       navigate('/courier/dashboard');
     } catch (error) {
       console.error('Error creating profile:', error);
