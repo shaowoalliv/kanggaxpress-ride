@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Home, Smartphone, User as UserIcon, LogOut, LogIn, HelpCircle } from 'lucide-react';
+import { Menu, Home, Smartphone, User as UserIcon, LogOut, LogIn, HelpCircle, Settings } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -127,6 +127,14 @@ export function HamburgerMenu() {
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 Signed in as <span className="font-medium text-foreground">{profile?.full_name}</span>
               </div>
+              <Button
+                variant="ghost"
+                className="justify-start gap-3 h-12 text-base"
+                onClick={() => handleNavigation('/account/profile-settings')}
+              >
+                <Settings className="h-5 w-5" />
+                <span>Profile Settings</span>
+              </Button>
               <Button
                 variant="ghost"
                 className="justify-start gap-3 h-12 text-base"
