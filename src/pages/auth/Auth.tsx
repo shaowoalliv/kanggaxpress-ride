@@ -189,6 +189,20 @@ export default function Auth() {
   useEffect(() => {
     const redirect = async () => {
       if (!loading && user && profile) {
+        const isTestDriver = ['driver1@test.com', 'driver2@test.com'].includes(profile.email);
+        const isTestCourier = ['courier1@test.com'].includes(profile.email);
+
+        // Seeded test accounts: always go straight to dashboards
+        if (isTestDriver) {
+          navigate('/driver/dashboard');
+          return;
+        }
+
+        if (isTestCourier) {
+          navigate('/courier/dashboard');
+          return;
+        }
+
         // For driver/courier, check if profile exists
         if (profile.role === 'driver') {
           const { data: driverProfile } = await supabase
