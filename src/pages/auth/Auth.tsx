@@ -241,6 +241,19 @@ export default function Auth() {
       if (error) throw error;
       if (!data.user) throw new Error('No user returned');
 
+      // Check if email is verified
+      if (!data.user.email_confirmed_at) {
+        toast({
+          title: 'Email Not Verified',
+          description: 'Please verify your email before logging in.',
+          variant: 'destructive',
+        });
+        // Sign out and redirect to verification page
+        await supabase.auth.signOut();
+        navigate('/verify-email');
+        return;
+      }
+
       // Generate and store session token
       const sessionToken = generateSessionToken();
       setLocalSessionToken(sessionToken);
