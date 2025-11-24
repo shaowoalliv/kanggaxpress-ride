@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Car,
@@ -16,9 +17,10 @@ import {
   FileText,
   Settings,
   BadgeDollarSign,
-  Menu,
   Bell,
+  LogOut,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const sections = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -42,23 +44,17 @@ const sections = [
 
 export function AdminSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
-    <aside className="w-64 bg-card border-r border-border flex-shrink-0">
-      {/* Header with hamburger icon */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Menu className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-lg font-bold text-foreground">
-              KanggaXpress Admin
-            </h1>
-            <p className="text-xs text-muted-foreground">Management Console</p>
-          </div>
-        </div>
-      </div>
-      
-      <nav className="p-4 space-y-1">
+    <aside className="w-64 bg-card border-r border-border flex-shrink-0 flex flex-col">
+      <nav className="p-4 space-y-1 flex-1">
         {sections.map((section) => {
           const Icon = section.icon;
           const isActive = location.pathname === section.path;
@@ -80,6 +76,18 @@ export function AdminSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout button at bottom */}
+      <div className="p-4 border-t border-border">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-3"
+          onClick={handleLogout}
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
+      </div>
     </aside>
   );
 }

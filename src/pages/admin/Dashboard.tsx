@@ -13,12 +13,9 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="bg-card border-b border-border px-6 py-4">
-          <div className="flex items-center gap-3">
-            <KanggaLogo width={40} height={40} className="w-10 h-10" />
-            <div>
-              <h1 className="text-xl font-heading font-bold">KanggaXpress Admin</h1>
-              <p className="text-xs text-muted-foreground">Management Console</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-heading font-bold">KanggaXpress Admin</h1>
+            <p className="text-xs text-muted-foreground">Management Console</p>
           </div>
         </header>
 
