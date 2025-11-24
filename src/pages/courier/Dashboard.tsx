@@ -53,9 +53,18 @@ export default function CourierDashboard() {
   const [platformFee, setPlatformFee] = useState<number>(5);
   const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
   const [counterOfferModal, setCounterOfferModal] = useState<{ delivery: any } | null>(null);
+  const [greeting, setGreeting] = useState('');
 
   // Check if zero balance modal was dismissed this session
   const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
+
+  // Get greeting based on time of day
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  }, []);
 
   useEffect(() => {
     // Fetch platform fee from fare_configs
@@ -298,9 +307,10 @@ export default function CourierDashboard() {
     d.status === 'assigned' || d.status === 'picked_up' || d.status === 'in_transit'
   );
   const transactionCapacity = platformFee > 0 ? walletBalance / platformFee : 0;
+  const firstName = profile?.full_name?.split(' ')[0] || 'Courier';
 
   return (
-    <PageLayout>
+    <PageLayout headerTitle={`${greeting}, ${firstName}!`}>
       {/* Low Balance Warning Banner */}
       <LowBalanceWarning 
         transactionCapacity={transactionCapacity} 
