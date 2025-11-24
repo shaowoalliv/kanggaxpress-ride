@@ -398,7 +398,7 @@ export default function BookRide() {
                     onClick={handleChangePickupOnMap}
                     className="flex-shrink-0 p-0 bg-transparent shadow-none hover:bg-transparent active:opacity-80"
                   >
-                    <img src={mapPinIcon} alt="Select location" className="h-7 w-7" />
+                    <img src={mapPinIcon} alt="Select location" className="h-11 w-11" />
                   </button>
                 </div>
               </div>
@@ -429,7 +429,7 @@ export default function BookRide() {
                     onClick={handleOpenDestinationMapPicker}
                     className="flex-shrink-0 p-0 bg-transparent shadow-none hover:bg-transparent active:opacity-80"
                   >
-                    <img src={mapPinIcon} alt="Select location" className="h-7 w-7" />
+                    <img src={mapPinIcon} alt="Select location" className="h-11 w-11" />
                   </button>
                 </div>
               </div>
