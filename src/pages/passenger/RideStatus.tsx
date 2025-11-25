@@ -11,7 +11,8 @@ import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { useRideRealtimeUpdates } from '@/hooks/useRideRealtimeUpdates';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
+import { MapPin, Car, Loader2, ArrowLeft, Clock } from 'lucide-react';
+import { calculateETAFromTo } from '@/lib/etaCalculator';
 
 export default function RideStatus() {
   const { rideId } = useParams<{ rideId: string }>();
@@ -21,6 +22,7 @@ export default function RideStatus() {
   const [accepting, setAccepting] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showNegotiationAlert, setShowNegotiationAlert] = useState(false);
+  const [eta, setEta] = useState<{ distanceKm: number; durationMinutes: number; etaText: string } | null>(null);
 
   // Real-time updates - consolidated to avoid duplicate subscriptions
   useRideRealtimeUpdates(rideId || '', (updatedRide) => {
@@ -81,6 +83,25 @@ export default function RideStatus() {
       supabase.removeChannel(driverChannel);
     };
   }, [ride?.driver_id]);
+
+  // Calculate ETA when driver location updates
+  useEffect(() => {
+    if (!driverLocation || !ride) return;
+
+    // Calculate ETA to pickup if ride is accepted, or to dropoff if in progress
+    const targetLat = ride.status === 'accepted' ? ride.pickup_lat : ride.dropoff_lat;
+    const targetLng = ride.status === 'accepted' ? ride.pickup_lng : ride.dropoff_lng;
+
+    if (targetLat && targetLng) {
+      const etaResult = calculateETAFromTo(
+        driverLocation.lat,
+        driverLocation.lng,
+        targetLat,
+        targetLng
+      );
+      setEta(etaResult);
+    }
+  }, [driverLocation, ride]);
 
   const fetchRide = async () => {
     try {
@@ -414,6 +435,23 @@ export default function RideStatus() {
                 setShowNegotiationAlert(false);
               }}
             />
+          )}
+
+          {/* ETA Display */}
+          {eta && driverLocation && (ride?.status === 'accepted' || ride?.status === 'in_progress') && (
+            <ThemedCard className="bg-primary/5 border-primary/20">
+              <div className="flex items-center gap-3 py-3">
+                <Clock className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Driver arriving in {eta.etaText}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {eta.distanceKm} km away
+                  </p>
+                </div>
+              </div>
+            </ThemedCard>
           )}
 
           {/* Map */}
