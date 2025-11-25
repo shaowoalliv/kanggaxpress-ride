@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
         autoRefreshToken: false,
         persistSession: false,
       },
+      db: {
+        schema: 'public',
+      },
     });
 
     const results = [];
@@ -228,7 +231,12 @@ Deno.serve(async (req) => {
             .from('kyc_documents')
             .insert(kycDocs);
 
-          if (kycError) throw new Error(`KYC error: ${kycError.message}`);
+          if (kycError) {
+            console.error(`KYC error for ${account.email}:`, kycError);
+            throw new Error(`KYC error: ${kycError.message}`);
+          }
+          
+          console.log(`Created ${kycDocs.length} KYC documents for ${account.email}`);
         }
 
         // 5. Generate account number (only for drivers/couriers)
