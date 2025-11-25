@@ -65,7 +65,7 @@ export const deliveriesService = {
     return data;
   },
 
-  // Accept a delivery (courier)
+  // Accept a delivery (courier) - SOT: charge ₱5 fee ONCE at assignment
   async acceptDelivery(deliveryId: string, courierId: string) {
     const { data, error } = await supabase
       .from('delivery_orders')
@@ -81,10 +81,21 @@ export const deliveriesService = {
       .single();
 
     if (error) throw error;
+
+    // SOT RULE: Charge ₱5 platform fee ONCE at assignment (not completion)
+    try {
+      const { platformFeeService } = await import('./platformFee');
+      const feeResult = await platformFeeService.chargePlatformFeeForDelivery(deliveryId, courierId);
+      console.log('[Platform Fee]', feeResult.reason);
+    } catch (feeError) {
+      console.error('[Platform Fee] Failed to charge fee at assignment:', feeError);
+      // Delivery assigned successfully, but fee failed - log for admin review
+    }
+
     return data as DeliveryOrder;
   },
 
-  // Update delivery status (now with centralized fee logic)
+  // Update delivery status - SOT: NO fee charged here (fee charged at assignment)
   async updateDeliveryStatus(
     deliveryId: string, 
     status: DeliveryStatus,
@@ -112,16 +123,8 @@ export const deliveriesService = {
 
     if (error) throw error;
 
-    // Charge platform fee if applicable (centralized logic)
-    if (status === 'delivered' || status === 'cancelled') {
-      const { platformFeeService } = await import('./platformFee');
-      try {
-        await platformFeeService.chargePlatformFeeForDelivery(deliveryId, actorUserId || null);
-      } catch (feeError) {
-        console.error('Platform fee error (non-blocking):', feeError);
-        // Don't block status update if fee charge fails
-      }
-    }
+    // SOT RULE: Platform fee charged at ASSIGNMENT (acceptDelivery), NOT at completion
+    // No fee logic here
 
     return data as DeliveryOrder;
   },

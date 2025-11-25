@@ -266,7 +266,7 @@ export default function CourierDashboard() {
   const handleAcceptDelivery = async (deliveryId: string) => {
     if (!profile || !courierProfile) return;
 
-    // Check balance before accepting delivery (must have ≥ ₱5 but don't deduct yet)
+    // SOT RULE: Check balance before accepting delivery (₱5 will be deducted at assignment)
     if (walletBalance < platformFee) {
       toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
@@ -275,14 +275,18 @@ export default function CourierDashboard() {
     try {
       setActionLoading(true);
       
-      // Accept the delivery (no wallet deduction yet)
+      // Accept the delivery - SOT: ₱5 fee deducted at assignment (in deliveriesService.acceptDelivery)
       await deliveriesService.acceptDelivery(deliveryId, courierProfile.id);
       
-      toast.success(`Delivery accepted! Fee will be deducted upon completion.`);
+      toast.success(`Delivery accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
       await loadCourierData();
     } catch (error: any) {
       console.error('Error accepting delivery:', error);
-      toast.error(error.message || 'Failed to accept delivery');
+      if (error.message?.includes('INSUFFICIENT_FUNDS')) {
+        toast.error('Insufficient funds. Please reload your wallet.');
+      } else {
+        toast.error(error.message || 'Failed to accept delivery');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -292,23 +296,14 @@ export default function CourierDashboard() {
     try {
       setActionLoading(true);
       
-      // Update status via centralized service (handles fee deduction automatically)
+      // SOT RULE: No fee deduction at completion (fee was deducted at assignment)
       await deliveriesService.updateDeliveryStatus(deliveryId, newStatus, null, user!.id);
       
-      if (newStatus === 'delivered') {
-        toast.success(`Delivery completed! ₱${platformFee.toFixed(2)} service fee deducted from your wallet`);
-      } else {
-        toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
-      }
-      
+      toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
       await loadCourierData();
     } catch (error: any) {
       console.error('Error updating status:', error);
-      if (error.message?.includes('INSUFFICIENT_FUNDS')) {
-        toast.error('Insufficient funds to complete delivery. Please reload your wallet.');
-      } else {
-        toast.error(error.message || 'Failed to update status');
-      }
+      toast.error(error.message || 'Failed to update status');
     } finally {
       setActionLoading(false);
     }

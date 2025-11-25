@@ -69,7 +69,7 @@ export const ridesService = {
     return data;
   },
 
-  // Accept a ride (driver)
+  // Accept a ride (driver) - SOT: charge ₱5 fee ONCE at assignment
   async acceptRide(rideId: string, driverId: string) {
     const { data, error } = await supabase
       .from('rides')
@@ -85,10 +85,21 @@ export const ridesService = {
       .single();
 
     if (error) throw error;
+
+    // SOT RULE: Charge ₱5 platform fee ONCE at assignment (not completion)
+    try {
+      const { platformFeeService } = await import('./platformFee');
+      const feeResult = await platformFeeService.chargePlatformFeeForRide(rideId, driverId);
+      console.log('[Platform Fee]', feeResult.reason);
+    } catch (feeError) {
+      console.error('[Platform Fee] Failed to charge fee at assignment:', feeError);
+      // Ride accepted successfully, but fee failed - log for admin review
+    }
+
     return data as Ride;
   },
 
-  // Update ride status (now with centralized fee logic)
+  // Update ride status - SOT: NO fee charged here (fee charged at assignment)
   async updateRideStatus(
     rideId: string, 
     status: RideStatus, 
@@ -116,16 +127,8 @@ export const ridesService = {
 
     if (error) throw error;
 
-    // Charge platform fee if applicable (centralized logic)
-    if (status === 'completed' || status === 'cancelled') {
-      const { platformFeeService } = await import('./platformFee');
-      try {
-        await platformFeeService.chargePlatformFeeForRide(rideId, actorUserId || null);
-      } catch (feeError) {
-        console.error('Platform fee error (non-blocking):', feeError);
-        // Don't block status update if fee charge fails
-      }
-    }
+    // SOT RULE: Platform fee charged at ASSIGNMENT (acceptRide), NOT at completion
+    // No fee logic here
 
     return data as Ride;
   },
