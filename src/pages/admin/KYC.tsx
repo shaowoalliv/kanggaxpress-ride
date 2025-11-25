@@ -87,6 +87,9 @@ export default function AdminKYC() {
         .from('courier_profiles')
         .select('user_id, vehicle_type');
 
+      console.log('Driver Profiles from DB:', driverProfiles);
+      console.log('Courier Profiles from DB:', courierProfiles);
+
       // Map profiles to driver data
       const driversMap = new Map<string, DriverData>();
       
@@ -103,6 +106,13 @@ export default function AdminKYC() {
         const driverProfile = driverProfiles?.find((dp) => dp.user_id === profile.id);
         const courierProfile = courierProfiles?.find((cp) => cp.user_id === profile.id);
         const vehicleType = driverProfile?.vehicle_type || courierProfile?.vehicle_type || null;
+
+        console.log(`Profile ${profile.email}:`, {
+          driverProfile,
+          courierProfile,
+          vehicleType,
+          role: profile.role
+        });
 
         driversMap.set(profile.id, {
           userId: profile.id,
