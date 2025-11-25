@@ -18,16 +18,22 @@ export const ridesService = {
     dropoff_lat?: number;
     dropoff_lng?: number;
   }) {
+    const payload = {
+      passenger_id: passengerId,
+      ...data,
+      status: 'requested' as RideStatus,
+    };
+    
+    console.log('[createRide] Payload:', payload);
+    
     const { data: ride, error } = await supabase
       .from('rides')
-      .insert({
-        passenger_id: passengerId,
-        ...data,
-        status: 'requested' as RideStatus,
-      })
+      .insert(payload)
       .select()
       .single();
 
+    console.log('[createRide] Result:', { ride, error });
+    
     if (error) throw error;
     return ride as Ride;
   },
