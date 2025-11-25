@@ -90,11 +90,17 @@ export default function AdminKYC() {
         .from('courier_profiles')
         .select('user_id, vehicle_type');
 
-      console.log('Current admin user:', (await supabase.auth.getUser()).data.user?.email);
-      console.log('Driver Profiles:', driverProfiles);
-      console.log('Driver Error:', driverError);
-      console.log('Courier Profiles:', courierProfiles);
-      console.log('Courier Error:', courierError);
+      if (driverError) {
+        console.error('Driver profiles error:', driverError);
+        toast.error(`Failed to load driver profiles: ${driverError.message}`);
+      }
+      if (courierError) {
+        console.error('Courier profiles error:', courierError);
+        toast.error(`Failed to load courier profiles: ${courierError.message}`);
+      }
+
+      console.log('Driver Profiles loaded:', driverProfiles);
+      console.log('Courier Profiles loaded:', courierProfiles);
 
       // Map profiles to driver data
       const driversMap = new Map<string, DriverData>();
