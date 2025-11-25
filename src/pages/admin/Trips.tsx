@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { ridesService } from '@/services/rides';
 import {
   Table,
   TableBody,
@@ -12,6 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface Ride {
   id: string;
@@ -30,6 +33,8 @@ interface Ride {
   negotiation_status: string | null;
   proposed_top_up_fare: number | null;
   negotiation_notes: string | null;
+  cancellation_reason: string | null;
+  platform_fee_charged: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -66,6 +71,26 @@ export default function AdminTrips() {
     }
   };
 
+  const handleMarkDriverNoShow = async (rideId: string) => {
+    if (!confirm('Mark this ride as Driver No-Show? This will charge ₱5 platform fee to the driver.')) {
+      return;
+    }
+
+    try {
+      await ridesService.updateRideStatus(
+        rideId, 
+        'cancelled', 
+        'timed_out_driver_no_show',
+        null
+      );
+      toast.success('Ride marked as Driver No-Show. Platform fee charged.');
+      await fetchRides();
+    } catch (error: any) {
+      console.error('Error marking no-show:', error);
+      toast.error(error.message || 'Failed to mark as no-show');
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -91,18 +116,20 @@ export default function AdminTrips() {
                   <TableHead>Route</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Cancellation</TableHead>
                   <TableHead>Negotiation</TableHead>
                   <TableHead className="text-right">Base Fare</TableHead>
                   <TableHead className="text-right">Top-up</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">App Fee</TableHead>
                   <TableHead className="text-right">Final</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rides.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center text-muted-foreground">
                       No trips found
                     </TableCell>
                   </TableRow>
@@ -123,6 +150,22 @@ export default function AdminTrips() {
                         <Badge className={statusColors[ride.status] || ''}>
                           {ride.status.replace('_', ' ')}
                         </Badge>
+                        {ride.platform_fee_charged && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Fee Charged
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {ride.cancellation_reason ? (
+                          <div className="text-xs">
+                            <Badge variant="secondary" className="text-xs">
+                              {ride.cancellation_reason.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {ride.negotiation_status && ride.negotiation_status !== 'none' ? (
@@ -153,6 +196,19 @@ export default function AdminTrips() {
                       <TableCell className="text-right">₱{ride.app_fee?.toFixed(2) || '—'}</TableCell>
                       <TableCell className="text-right font-semibold">
                         ₱{ride.fare_final?.toFixed(2) || '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {ride.driver_id && (ride.status === 'accepted' || ride.status === 'in_progress') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMarkDriverNoShow(ride.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <AlertTriangle className="w-4 h-4 mr-1" />
+                            No-Show
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

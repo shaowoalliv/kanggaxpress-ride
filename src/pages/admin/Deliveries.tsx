@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { deliveriesService } from '@/services/deliveries';
 import {
   Table,
   TableBody,
@@ -12,6 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface Delivery {
   id: string;
@@ -30,6 +33,8 @@ interface Delivery {
   negotiation_status: string | null;
   proposed_top_up_fare: number | null;
   negotiation_notes: string | null;
+  cancellation_reason: string | null;
+  platform_fee_charged: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -67,6 +72,26 @@ export default function AdminDeliveries() {
     }
   };
 
+  const handleMarkCourierNoShow = async (deliveryId: string) => {
+    if (!confirm('Mark this delivery as Courier No-Show? This will charge ₱5 platform fee to the courier.')) {
+      return;
+    }
+
+    try {
+      await deliveriesService.updateDeliveryStatus(
+        deliveryId,
+        'cancelled',
+        'timed_out_courier_no_show',
+        null
+      );
+      toast.success('Delivery marked as Courier No-Show. Platform fee charged.');
+      await fetchDeliveries();
+    } catch (error: any) {
+      console.error('Error marking no-show:', error);
+      toast.error(error.message || 'Failed to mark as no-show');
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -92,17 +117,19 @@ export default function AdminDeliveries() {
                   <TableHead>Route</TableHead>
                   <TableHead>Package</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Cancellation</TableHead>
                   <TableHead>Negotiation</TableHead>
                   <TableHead className="text-right">Base Fare</TableHead>
                   <TableHead className="text-right">Top-up</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">App Fee</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {deliveries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground">
                       No deliveries found
                     </TableCell>
                   </TableRow>
@@ -130,6 +157,22 @@ export default function AdminDeliveries() {
                         <Badge className={statusColors[delivery.status] || ''}>
                           {delivery.status.replace('_', ' ')}
                         </Badge>
+                        {delivery.platform_fee_charged && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Fee Charged
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {delivery.cancellation_reason ? (
+                          <div className="text-xs">
+                            <Badge variant="secondary" className="text-xs">
+                              {delivery.cancellation_reason.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {delivery.negotiation_status && delivery.negotiation_status !== 'none' ? (
@@ -158,6 +201,19 @@ export default function AdminDeliveries() {
                         ₱{delivery.total_fare?.toFixed(2) || '0.00'}
                       </TableCell>
                       <TableCell className="text-right">₱{delivery.app_fee?.toFixed(2) || '—'}</TableCell>
+                      <TableCell className="text-right">
+                        {delivery.courier_id && (delivery.status === 'assigned' || delivery.status === 'picked_up' || delivery.status === 'in_transit') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMarkCourierNoShow(delivery.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <AlertTriangle className="w-4 h-4 mr-1" />
+                            No-Show
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

@@ -88,14 +88,23 @@ export const ridesService = {
     return data as Ride;
   },
 
-  // Update ride status
-  async updateRideStatus(rideId: string, status: RideStatus) {
+  // Update ride status (now with centralized fee logic)
+  async updateRideStatus(
+    rideId: string, 
+    status: RideStatus, 
+    cancellationReason?: string | null,
+    actorUserId?: string | null
+  ) {
     const updates: any = { status };
     
     if (status === 'in_progress') {
       updates.started_at = new Date().toISOString();
     } else if (status === 'completed') {
       updates.completed_at = new Date().toISOString();
+    }
+
+    if (cancellationReason !== undefined) {
+      updates.cancellation_reason = cancellationReason;
     }
 
     const { data, error } = await supabase
@@ -106,12 +115,24 @@ export const ridesService = {
       .single();
 
     if (error) throw error;
+
+    // Charge platform fee if applicable (centralized logic)
+    if (status === 'completed' || status === 'cancelled') {
+      const { platformFeeService } = await import('./platformFee');
+      try {
+        await platformFeeService.chargePlatformFeeForRide(rideId, actorUserId || null);
+      } catch (feeError) {
+        console.error('Platform fee error (non-blocking):', feeError);
+        // Don't block status update if fee charge fails
+      }
+    }
+
     return data as Ride;
   },
 
-  // Cancel a ride
-  async cancelRide(rideId: string) {
-    return this.updateRideStatus(rideId, 'cancelled');
+  // Cancel a ride with reason tracking
+  async cancelRide(rideId: string, reason?: string, actorUserId?: string) {
+    return this.updateRideStatus(rideId, 'cancelled', reason || null, actorUserId || null);
   },
 
   // Driver proposes bonus fare

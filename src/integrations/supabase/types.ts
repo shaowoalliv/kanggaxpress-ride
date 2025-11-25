@@ -152,6 +152,7 @@ export type Database = {
           app_fee: number | null
           assigned_at: string | null
           base_fare: number | null
+          cancellation_reason: string | null
           cod_amount: number | null
           courier_id: string | null
           created_at: string | null
@@ -168,6 +169,7 @@ export type Database = {
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
+          platform_fee_charged: boolean
           proposed_top_up_fare: number | null
           receiver_name: string
           receiver_phone: string
@@ -181,6 +183,7 @@ export type Database = {
           app_fee?: number | null
           assigned_at?: string | null
           base_fare?: number | null
+          cancellation_reason?: string | null
           cod_amount?: number | null
           courier_id?: string | null
           created_at?: string | null
@@ -197,6 +200,7 @@ export type Database = {
           pickup_address: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          platform_fee_charged?: boolean
           proposed_top_up_fare?: number | null
           receiver_name: string
           receiver_phone: string
@@ -210,6 +214,7 @@ export type Database = {
           app_fee?: number | null
           assigned_at?: string | null
           base_fare?: number | null
+          cancellation_reason?: string | null
           cod_amount?: number | null
           courier_id?: string | null
           created_at?: string | null
@@ -226,6 +231,7 @@ export type Database = {
           pickup_address?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          platform_fee_charged?: boolean
           proposed_top_up_fare?: number | null
           receiver_name?: string
           receiver_phone?: string
@@ -710,6 +716,7 @@ export type Database = {
           accepted_at: string | null
           app_fee: number | null
           base_fare: number | null
+          cancellation_reason: string | null
           completed_at: string | null
           created_at: string | null
           driver_id: string | null
@@ -729,6 +736,7 @@ export type Database = {
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string
+          platform_fee_charged: boolean
           proposals: Json | null
           proposed_top_up_fare: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -743,6 +751,7 @@ export type Database = {
           accepted_at?: string | null
           app_fee?: number | null
           base_fare?: number | null
+          cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
@@ -762,6 +771,7 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location: string
+          platform_fee_charged?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -776,6 +786,7 @@ export type Database = {
           accepted_at?: string | null
           app_fee?: number | null
           base_fare?: number | null
+          cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string | null
           driver_id?: string | null
@@ -795,6 +806,7 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string
+          platform_fee_charged?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type?: Database["public"]["Enums"]["ride_type"]

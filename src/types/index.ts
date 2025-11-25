@@ -45,6 +45,8 @@ export interface Ride {
   app_fee: number | null;
   passenger_count: number;
   notes: string | null;
+  cancellation_reason: string | null;
+  platform_fee_charged: boolean;
   created_at: string;
   updated_at: string;
   accepted_at: string | null;
@@ -91,6 +93,8 @@ export interface DeliveryOrder {
   negotiation_status: string | null;
   negotiation_notes: string | null;
   proposed_top_up_fare: number | null;
+  cancellation_reason: string | null;
+  platform_fee_charged: boolean;
   created_at: string;
   updated_at: string;
   assigned_at: string | null;
