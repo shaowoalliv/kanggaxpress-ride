@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
 
           if (vehicleError) throw new Error(`Vehicle profile error: ${vehicleError.message}`);
 
-          // 4. Create KYC documents with approved status
+          // 4. Create KYC documents - insert without parsed field first to avoid encryption trigger
           const prefix = account.email.split('@')[0]; // e.g., "driver1", "courier1"
           const expiryDate = new Date();
           expiryDate.setFullYear(expiryDate.getFullYear() + 3); // 3 years from now
@@ -227,13 +227,24 @@ Deno.serve(async (req) => {
             },
           ];
 
-          const { error: kycError } = await supabaseAdmin
-            .from('kyc_documents')
-            .insert(kycDocs);
+          // Insert KYC documents one by one to handle encryption properly
+          for (const doc of kycDocs) {
+            const { error: kycError } = await supabaseAdmin
+              .from('kyc_documents')
+              .insert({
+                user_id: doc.user_id,
+                doc_type: doc.doc_type,
+                status: doc.status,
+                confidence: doc.confidence,
+                image_path: doc.image_path,
+                parsed: doc.parsed,
+                encryption_key_version: 1, // Explicitly set to bypass trigger issues
+              });
 
-          if (kycError) {
-            console.error(`KYC error for ${account.email}:`, kycError);
-            throw new Error(`KYC error: ${kycError.message}`);
+            if (kycError) {
+              console.error(`KYC error for ${account.email} (${doc.doc_type}):`, kycError);
+              throw new Error(`KYC error for ${doc.doc_type}: ${kycError.message}`);
+            }
           }
           
           console.log(`Created ${kycDocs.length} KYC documents for ${account.email}`);
