@@ -133,11 +133,11 @@ export default function RideStatus() {
   };
 
   const getStatusDisplay = (status: string) => {
-    if (status === 'requested') return 'SEARCHING FOR DRIVER';
-    if (status === 'accepted') return 'DRIVER FOUND - WAITING FOR YOUR CONFIRMATION';
-    if (status === 'in_progress') return 'DRIVER CONFIRMED - RIDE IN PROGRESS';
-    if (status === 'completed') return 'RIDE COMPLETED';
-    if (status === 'cancelled') return 'RIDE CANCELLED';
+    if (status === 'requested') return 'Looking for drivers...';
+    if (status === 'accepted') return 'Driver Assigned';
+    if (status === 'in_progress') return 'Ride In Progress';
+    if (status === 'completed') return 'Ride Completed';
+    if (status === 'cancelled') return 'Ride Cancelled';
     return status.toUpperCase().replace('_', ' ');
   };
 
