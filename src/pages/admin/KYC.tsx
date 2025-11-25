@@ -370,9 +370,13 @@ export default function AdminKYC() {
                           <TableCell>{driver.middleName || '—'}</TableCell>
                           <TableCell>{driver.lastName}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="uppercase text-xs">
-                              {driver.vehicleType || '—'}
-                            </Badge>
+                            {driver.vehicleType ? (
+                              <Badge variant="outline" className="uppercase text-xs">
+                                {driver.vehicleType}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
 
                           {/* Driver License */}
