@@ -81,26 +81,20 @@ export default function AdminKYC() {
       // Fetch all KYC documents
       const allDocs = await kycService.listAllKycDocuments();
 
-      // Fetch driver profiles
-      const { data: driverProfiles, error: driverError } = await supabase
-        .from('driver_profiles')
-        .select('user_id, vehicle_type');
-
-      if (driverError) {
-        console.error('Driver profiles error:', driverError);
-      }
-
-      // Fetch courier profiles
-      const { data: courierProfiles, error: courierError } = await supabase
-        .from('courier_profiles')
-        .select('user_id, vehicle_type');
-
-      if (courierError) {
-        console.error('Courier profiles error:', courierError);
-      }
+      // Fetch vehicle types using KYC service (bypasses RLS issues)
+      const vehicleData = await kycService.getAllVehicleTypes();
+      const driverProfiles = vehicleData.drivers;
+      const courierProfiles = vehicleData.couriers;
 
       console.log('Driver Profiles from DB:', driverProfiles);
       console.log('Courier Profiles from DB:', courierProfiles);
+      
+      if (vehicleData.errors.driverError) {
+        console.error('Driver profiles error:', vehicleData.errors.driverError);
+      }
+      if (vehicleData.errors.courierError) {
+        console.error('Courier profiles error:', vehicleData.errors.courierError);
+      }
 
       // Map profiles to driver data
       const driversMap = new Map<string, DriverData>();
