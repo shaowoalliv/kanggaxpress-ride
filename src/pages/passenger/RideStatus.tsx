@@ -22,8 +22,9 @@ export default function RideStatus() {
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showNegotiationAlert, setShowNegotiationAlert] = useState(false);
 
-  // Real-time updates
+  // Real-time updates - consolidated to avoid duplicate subscriptions
   useRideRealtimeUpdates(rideId || '', (updatedRide) => {
+    console.log('[RideStatus] Real-time update received:', updatedRide);
     setRide(updatedRide);
     
     // Show negotiation alert if pending
@@ -42,27 +43,6 @@ export default function RideStatus() {
     }
 
     fetchRide();
-
-    // Set up realtime subscription for ride updates
-    const rideChannel = supabase
-      .channel(`ride-${rideId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rides',
-          filter: `id=eq.${rideId}`,
-        },
-        (payload) => {
-          setRide(payload.new);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(rideChannel);
-    };
   }, [rideId, navigate]);
 
   // Subscribe to driver location updates
