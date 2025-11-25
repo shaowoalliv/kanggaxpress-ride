@@ -166,10 +166,69 @@ Deno.serve(async (req) => {
 
           if (vehicleError) throw new Error(`Vehicle profile error: ${vehicleError.message}`);
 
-          // Skipping KYC document creation for test accounts to avoid
-          // dependency on KYC encryption setup. Real users must still
-          // complete full KYC via the normal flow.
+          // 4. Create KYC documents with approved status
+          const prefix = account.email.split('@')[0]; // e.g., "driver1", "courier1"
+          const expiryDate = new Date();
+          expiryDate.setFullYear(expiryDate.getFullYear() + 3); // 3 years from now
+          
+          const kycDocs = [
+            {
+              user_id: userId,
+              doc_type: 'DRIVER_LICENSE',
+              status: 'APPROVED',
+              confidence: 1.0,
+              image_path: `test-docs/${prefix}-license.jpg`,
+              parsed: {
+                licenseNumber: account.license_number,
+                fullName: account.full_name,
+                expiryDate: expiryDate.toISOString().split('T')[0],
+              },
+            },
+            {
+              user_id: userId,
+              doc_type: 'OR',
+              status: 'APPROVED',
+              confidence: 1.0,
+              image_path: `test-docs/${prefix}-or.jpg`,
+              parsed: {
+                plateNumber: account.vehicle_plate,
+                vehicleModel: account.vehicle_model,
+                vehicleColor: account.vehicle_color,
+                vehicleType: account.vehicle_type,
+                expiryDate: expiryDate.toISOString().split('T')[0],
+              },
+            },
+            {
+              user_id: userId,
+              doc_type: 'CR',
+              status: 'APPROVED',
+              confidence: 1.0,
+              image_path: `test-docs/${prefix}-cr.jpg`,
+              parsed: {
+                plateNumber: account.vehicle_plate,
+                vehicleModel: account.vehicle_model,
+                vehicleColor: account.vehicle_color,
+                vehicleType: account.vehicle_type,
+                expiryDate: expiryDate.toISOString().split('T')[0],
+              },
+            },
+            {
+              user_id: userId,
+              doc_type: 'SELFIE',
+              status: 'APPROVED',
+              confidence: 1.0,
+              image_path: `test-docs/${prefix}-selfie.jpg`,
+              parsed: {
+                fullName: account.full_name,
+              },
+            },
+          ];
 
+          const { error: kycError } = await supabaseAdmin
+            .from('kyc_documents')
+            .insert(kycDocs);
+
+          if (kycError) throw new Error(`KYC error: ${kycError.message}`);
         }
 
         // 5. Generate account number (only for drivers/couriers)
