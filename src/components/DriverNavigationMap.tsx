@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Navigation, MapPin } from 'lucide-react';
+import { Navigation, MapPin, Volume2, VolumeX } from 'lucide-react';
 import { ThemedCard } from './ui/ThemedCard';
+import { toast } from 'sonner';
 
 interface DriverNavigationMapProps {
   pickupLat: number;
@@ -40,6 +41,9 @@ export const DriverNavigationMap = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [routeDistance, setRouteDistance] = useState<number>(0);
   const [routeDuration, setRouteDuration] = useState<number>(0);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [lastSpokenStep, setLastSpokenStep] = useState<number>(-1);
+  const speechSynthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
   // Initialize map
   useEffect(() => {
@@ -169,34 +173,99 @@ export const DriverNavigationMap = ({
     };
   }, [driverLat, driverLng, pickupLat, pickupLng, dropoffLat, dropoffLng, rideStatus]);
 
-  // Update driver marker
+  // Voice navigation function
+  const speakInstruction = (instruction: string) => {
+    if (!voiceEnabled || !speechSynthesis) return;
+
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(instruction);
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    // Try to use a clear English voice
+    const voices = speechSynthesis.getVoices();
+    const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    speechSynthesis.speak(utterance);
+  };
+
+  // Update driver marker with smooth animation
   useEffect(() => {
     if (!map.current || !driverLat || !driverLng) return;
 
     if (driverMarker.current) {
-      driverMarker.current.setLngLat([driverLng, driverLat]);
+      // Animate marker movement smoothly
+      const currentPos = driverMarker.current.getLngLat();
+      const newPos: [number, number] = [driverLng, driverLat];
+      
+      // Calculate distance to determine if we should animate
+      const distance = Math.sqrt(
+        Math.pow(newPos[0] - currentPos.lng, 2) + 
+        Math.pow(newPos[1] - currentPos.lat, 2)
+      );
+
+      // Only animate if movement is small (< 0.001 degrees, ~100m)
+      if (distance < 0.001) {
+        // Smooth animation using CSS transition
+        const markerElement = driverMarker.current.getElement();
+        markerElement.style.transition = 'transform 1s ease-out';
+      }
+
+      driverMarker.current.setLngLat(newPos);
+
+      // Calculate distance to next step waypoint
+      if (navigationSteps.length > 0 && currentStepIndex < navigationSteps.length) {
+        // Auto-advance to next step if close enough (within ~50 meters)
+        if (distance > 0 && distance < 0.0005) {
+          const nextIndex = currentStepIndex + 1;
+          if (nextIndex < navigationSteps.length) {
+            setCurrentStepIndex(nextIndex);
+            
+            // Speak the instruction if not already spoken
+            if (voiceEnabled && nextIndex !== lastSpokenStep) {
+              speakInstruction(navigationSteps[nextIndex].instruction);
+              setLastSpokenStep(nextIndex);
+            }
+          }
+        }
+      }
     } else {
-      // Create driver marker with custom element
+      // Create driver marker with custom animated element
       const el = document.createElement('div');
       el.className = 'driver-marker';
       el.innerHTML = `
-        <div class="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg border-2 border-white">
-          <span class="text-white text-xl">🚗</span>
+        <div class="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-full shadow-lg border-3 border-white animate-pulse">
+          <span class="text-white text-2xl">🚗</span>
         </div>
       `;
 
-      driverMarker.current = new mapboxgl.Marker({ element: el })
+      driverMarker.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([driverLng, driverLat])
         .setPopup(new mapboxgl.Popup().setHTML('<p class="text-sm font-semibold">You are here</p>'))
         .addTo(map.current);
     }
 
-    // Center map on driver
+    // Smoothly pan map to keep driver centered
     map.current.easeTo({
       center: [driverLng, driverLat],
-      duration: 1000
+      duration: 1000,
+      essential: true
     });
-  }, [driverLat, driverLng]);
+  }, [driverLat, driverLng, navigationSteps, currentStepIndex, voiceEnabled, lastSpokenStep]);
+
+  // Speak first instruction when route loads
+  useEffect(() => {
+    if (navigationSteps.length > 0 && voiceEnabled && lastSpokenStep === -1) {
+      speakInstruction(navigationSteps[0].instruction);
+      setLastSpokenStep(0);
+    }
+  }, [navigationSteps, voiceEnabled, lastSpokenStep]);
 
   return (
     <div className="relative">
@@ -218,10 +287,31 @@ export const DriverNavigationMap = ({
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">
-                  {rideStatus === 'accepted' ? 'To pickup' : 'To destination'}
-                </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setVoiceEnabled(!voiceEnabled);
+                    if (!voiceEnabled) {
+                      toast.success('Voice navigation enabled');
+                    } else {
+                      toast.info('Voice navigation disabled');
+                      speechSynthesis?.cancel();
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                  title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
+                >
+                  {voiceEnabled ? (
+                    <Volume2 className="w-4 h-4 text-primary" />
+                  ) : (
+                    <VolumeX className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">
+                    {rideStatus === 'accepted' ? 'To pickup' : 'To destination'}
+                  </p>
+                </div>
               </div>
             </div>
           </ThemedCard>
