@@ -252,7 +252,7 @@ export default function BookRide() {
       return;
     }
 
-    if (!selectedService || !pickupAddress || !dropoffAddress || !pickupCoords || !dropoffCoords) {
+    if (!selectedService || !pickupAddress || !dropoffAddress) {
       toast.error('Please fill in all required fields');
       return;
     }
