@@ -147,7 +147,7 @@ export default function DriverDashboard() {
       }
 
       if (isTestDriver) {
-        // Seeded test drivers: build a local profile and skip rides loading (RLS-heavy queries)
+        // Seeded test drivers: build a local profile but still load rides
         const now = new Date().toISOString();
         const testVehicle =
           profile.email === 'driver1@test.com'
@@ -187,8 +187,29 @@ export default function DriverDashboard() {
         });
         setAccountNumber(userProfile.data?.account_number || '');
         setWalletBalance(wallet?.balance || 0);
-        setAvailableRides([]);
-        setMyRides([]);
+        
+        // CRITICAL FIX: Load rides for test drivers too (no longer skip)
+        try {
+          const { data: availableRidesData, error: availableError } = await supabase
+            .from('rides')
+            .select('*')
+            .eq('status', 'requested')
+            .is('driver_id', null)
+            .order('created_at', { ascending: false });
+
+          console.log('[Dashboard] Test driver available rides:', { data: availableRidesData, error: availableError, count: availableRidesData?.length });
+
+          if (availableError) throw availableError;
+
+          const myRidesData = await ridesService.getDriverRides(profile.id);
+          
+          setAvailableRides(availableRidesData || []);
+          setMyRides(myRidesData);
+        } catch (ridesError) {
+          console.error('[Dashboard] Error loading rides for test driver:', ridesError);
+          setAvailableRides([]);
+          setMyRides([]);
+        }
         return;
       }
 
@@ -219,6 +240,8 @@ export default function DriverDashboard() {
           .is('driver_id', null)
           .order('created_at', { ascending: false });
 
+        console.log('[Dashboard] Available rides:', { data: availableRidesData, error: availableError, count: availableRidesData?.length });
+
         if (availableError) throw availableError;
 
         const myRidesData = await ridesService.getDriverRides(profile.id);
@@ -226,7 +249,7 @@ export default function DriverDashboard() {
         setAvailableRides(availableRidesData || []);
         setMyRides(myRidesData);
       } catch (ridesError) {
-        console.error('Error loading rides data:', ridesError);
+        console.error('[Dashboard] Error loading rides data:', ridesError);
         setAvailableRides([]);
         setMyRides([]);
       }

@@ -57,10 +57,12 @@ export default function DriverJobs() {
         .is('driver_id', null)
         .order('created_at', { ascending: false });
 
+      console.log('[fetchAvailableRides] Response:', { data, error, count: data?.length });
+      
       if (error) throw error;
       setRides(data || []);
     } catch (error) {
-      console.error('Error fetching rides:', error);
+      console.error('[fetchAvailableRides] Error:', error);
       toast.error('Failed to load available rides');
     } finally {
       setLoading(false);
