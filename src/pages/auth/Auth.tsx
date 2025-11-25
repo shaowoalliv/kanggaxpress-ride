@@ -110,7 +110,7 @@ export default function Auth() {
   // Check if role is locked from /choose-role
   const lockedRole = (() => {
     const urlRole = searchParams.get('role');
-    return (urlRole === 'passenger' || urlRole === 'driver' || urlRole === 'courier')
+    return (urlRole === 'passenger' || urlRole === 'driver' || urlRole === 'courier' || urlRole === 'sender')
       ? urlRole as UserRole
       : null;
   })();

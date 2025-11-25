@@ -2,78 +2,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { walletService } from './wallet';
 
 /**
- * Centralized Platform Fee Service
+ * Centralized Platform Fee Service (ALIGNED WITH SOT)
  * 
- * Business Rule: KanggaXpress charges ₱5 per completed transaction (ride or delivery)
+ * Business Rule: KanggaXpress charges ₱5 per job ONCE at ASSIGNMENT
  * 
  * Fee IS charged when:
- * - Job completed successfully
- * - Cancelled by passenger/sender AFTER acceptance
- * - Cancelled by driver/courier
- * - Timed out / no-show (driver/courier accepted but did not complete)
+ * - Ride: status changes from 'requested' → 'accepted' and driver_id is set
+ * - Delivery: status changes from 'requested' → 'assigned' and courier_id is set
  * 
  * Fee NOT charged when:
- * - Cancelled BEFORE any driver/courier accepts
+ * - Job never assigned (cancelled before acceptance)
  * - Cancelled by system/admin due to technical issues
+ * 
+ * Fee NOT refunded when:
+ * - Job cancelled after assignment (by passenger/sender/driver/courier)
+ * - Driver/courier no-show after acceptance
  */
 
 const PLATFORM_FEE = 5;
 
-export type CancellationReason =
-  | 'cancelled_by_passenger_before_accept'
-  | 'cancelled_by_passenger_after_accept'
-  | 'cancelled_by_sender_before_accept'
-  | 'cancelled_by_sender_after_accept'
-  | 'cancelled_by_driver'
-  | 'cancelled_by_courier'
-  | 'timed_out_driver_no_show'
-  | 'timed_out_courier_no_show'
-  | 'cancelled_by_system';
-
 /**
- * Determines if platform fee should be charged based on status and cancellation reason
- */
-function shouldChargeFee(
-  status: string,
-  cancellationReason: string | null,
-  hasProvider: boolean
-): boolean {
-  // No provider assigned = no fee
-  if (!hasProvider) {
-    return false;
-  }
-
-  // Completed = always charge
-  if (status === 'completed' || status === 'delivered') {
-    return true;
-  }
-
-  // Cancelled - check reason
-  if (status === 'cancelled' && cancellationReason) {
-    const noFeeReasons = [
-      'cancelled_by_passenger_before_accept',
-      'cancelled_by_sender_before_accept',
-      'cancelled_by_system',
-    ];
-    
-    return !noFeeReasons.includes(cancellationReason);
-  }
-
-  return false;
-}
-
-/**
- * Charge platform fee for a ride (if eligible and not already charged)
+ * Charge platform fee for a ride AT ASSIGNMENT (when driver accepts)
  */
 export async function chargePlatformFeeForRide(
   rideId: string,
-  actorUserId: string | null = null
+  driverId: string
 ): Promise<{ charged: boolean; reason: string }> {
   try {
     // Load ride with current state
     const { data: ride, error: fetchError } = await supabase
       .from('rides')
-      .select('id, driver_id, status, cancellation_reason, platform_fee_charged')
+      .select('id, driver_id, platform_fee_charged')
       .eq('id', rideId)
       .single();
 
@@ -85,22 +44,11 @@ export async function chargePlatformFeeForRide(
       return { charged: false, reason: 'Fee already charged for this ride' };
     }
 
-    // Should we charge?
-    const hasDriver = ride.driver_id !== null;
-    const shouldCharge = shouldChargeFee(ride.status, ride.cancellation_reason, hasDriver);
-
-    if (!shouldCharge) {
-      return {
-        charged: false,
-        reason: `No fee for status=${ride.status}, reason=${ride.cancellation_reason}, hasDriver=${hasDriver}`,
-      };
-    }
-
     // Get driver's user_id
     const { data: driver, error: driverError } = await supabase
       .from('driver_profiles')
       .select('user_id')
-      .eq('id', ride.driver_id!)
+      .eq('id', driverId)
       .single();
 
     if (driverError) throw driverError;
@@ -111,9 +59,9 @@ export async function chargePlatformFeeForRide(
       userId: driver.user_id,
       amount: -PLATFORM_FEE,
       type: 'deduct',
-      reference: 'KanggaXpress platform fee (ride)',
+      reference: `KX platform fee for ride ${rideId}`,
       rideId: rideId,
-      actorUserId: actorUserId,
+      actorUserId: driver.user_id,
     });
 
     // Mark as charged
@@ -124,7 +72,7 @@ export async function chargePlatformFeeForRide(
 
     if (updateError) throw updateError;
 
-    return { charged: true, reason: `₱${PLATFORM_FEE} platform fee charged` };
+    return { charged: true, reason: `₱${PLATFORM_FEE} platform fee charged at assignment` };
   } catch (error: any) {
     console.error('Error charging platform fee for ride:', error);
     throw error;
@@ -132,17 +80,17 @@ export async function chargePlatformFeeForRide(
 }
 
 /**
- * Charge platform fee for a delivery (if eligible and not already charged)
+ * Charge platform fee for a delivery AT ASSIGNMENT (when courier accepts)
  */
 export async function chargePlatformFeeForDelivery(
   deliveryId: string,
-  actorUserId: string | null = null
+  courierId: string
 ): Promise<{ charged: boolean; reason: string }> {
   try {
     // Load delivery with current state
     const { data: delivery, error: fetchError } = await supabase
       .from('delivery_orders')
-      .select('id, courier_id, status, cancellation_reason, platform_fee_charged')
+      .select('id, courier_id, platform_fee_charged')
       .eq('id', deliveryId)
       .single();
 
@@ -154,22 +102,11 @@ export async function chargePlatformFeeForDelivery(
       return { charged: false, reason: 'Fee already charged for this delivery' };
     }
 
-    // Should we charge?
-    const hasCourier = delivery.courier_id !== null;
-    const shouldCharge = shouldChargeFee(delivery.status, delivery.cancellation_reason, hasCourier);
-
-    if (!shouldCharge) {
-      return {
-        charged: false,
-        reason: `No fee for status=${delivery.status}, reason=${delivery.cancellation_reason}, hasCourier=${hasCourier}`,
-      };
-    }
-
     // Get courier's user_id
     const { data: courier, error: courierError } = await supabase
       .from('courier_profiles')
       .select('user_id')
-      .eq('id', delivery.courier_id!)
+      .eq('id', courierId)
       .single();
 
     if (courierError) throw courierError;
@@ -180,9 +117,9 @@ export async function chargePlatformFeeForDelivery(
       userId: courier.user_id,
       amount: -PLATFORM_FEE,
       type: 'deduct',
-      reference: 'KanggaXpress platform fee (delivery)',
+      reference: `KX platform fee for delivery ${deliveryId}`,
       deliveryId: deliveryId,
-      actorUserId: actorUserId,
+      actorUserId: courier.user_id,
     });
 
     // Mark as charged
@@ -193,7 +130,7 @@ export async function chargePlatformFeeForDelivery(
 
     if (updateError) throw updateError;
 
-    return { charged: true, reason: `₱${PLATFORM_FEE} platform fee charged` };
+    return { charged: true, reason: `₱${PLATFORM_FEE} platform fee charged at assignment` };
   } catch (error: any) {
     console.error('Error charging platform fee for delivery:', error);
     throw error;
