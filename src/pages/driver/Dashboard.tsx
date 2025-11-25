@@ -207,48 +207,24 @@ export default function DriverDashboard() {
       }
 
       if (isTestDriver) {
-        // Seeded test drivers: build a local profile but still load rides
-        const now = new Date().toISOString();
-        const testVehicle =
-          profile.email === 'driver1@test.com'
-            ? {
-                vehicle_type: 'motor',
-                vehicle_plate: 'ABC-1234',
-                vehicle_model: 'Honda Wave 110',
-                vehicle_color: 'Red',
-                license_number: 'N01-12-345678',
-              }
-            : {
-                vehicle_type: 'tricycle',
-                vehicle_plate: 'XYZ-5678',
-                vehicle_model: 'Honda TMX 155',
-                vehicle_color: 'Blue',
-                license_number: 'N02-13-456789',
-              };
-
-        const [userProfile, wallet] = await Promise.all([
+        // Load actual driver profile from database (not mocked)
+        const [driverData, userProfile, wallet] = await Promise.all([
+          supabase.from('driver_profiles').select('*').eq('user_id', profile.id).single(),
           supabase.from('profiles').select('account_number').eq('id', profile.id).single(),
           import('@/services/wallet').then(({ walletService }) => walletService.getWalletAccount(profile.id)),
         ]);
 
-        setDriverProfile({
-          id: profile.id,
-          user_id: profile.id,
-          vehicle_type: testVehicle.vehicle_type as RideType,
-          vehicle_plate: testVehicle.vehicle_plate,
-          vehicle_model: testVehicle.vehicle_model,
-          vehicle_color: testVehicle.vehicle_color,
-          license_number: testVehicle.license_number,
-          is_available: true,
-          rating: 5,
-          total_rides: 0,
-          created_at: now,
-          updated_at: now,
-        });
+        if (!driverData.data) {
+          toast.error('Driver profile not found. Please complete setup.');
+          setLoading(false);
+          return;
+        }
+
+        setDriverProfile(driverData.data as DriverProfile);
         setAccountNumber(userProfile.data?.account_number || '');
         setWalletBalance(wallet?.balance || 0);
         
-        // CRITICAL FIX: Load rides for test drivers too (no longer skip)
+        // Load rides using the actual driver profile ID
         try {
           const { data: availableRidesData, error: availableError } = await supabase
             .from('rides')
@@ -261,7 +237,7 @@ export default function DriverDashboard() {
 
           if (availableError) throw availableError;
 
-          const myRidesData = await ridesService.getDriverRides(profile.id);
+          const myRidesData = await ridesService.getDriverRides(driverData.data.id);
           
           setAvailableRides(availableRidesData || []);
           setMyRides(myRidesData);
