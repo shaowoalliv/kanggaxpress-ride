@@ -19,6 +19,11 @@ import { KycBlockedAccess } from '@/components/KycBlockedAccess';
 import { LowBalanceWarning } from '@/components/LowBalanceWarning';
 import { ZeroBalanceModal } from '@/components/ZeroBalanceModal';
 import { AvailableRidesMap } from '@/components/AvailableRidesMap';
+import { DriverNavigationMap } from '@/components/DriverNavigationMap';
+import { FareNegotiationAlert } from '@/components/negotiation/FareNegotiationAlert';
+import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
+import { useRideNegotiation } from '@/hooks/useRideNegotiation';
+import { calculateETAFromTo } from '@/lib/etaCalculator';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -36,6 +41,7 @@ export default function DriverDashboard() {
   const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [showMapView, setShowMapView] = useState(false);
+  const [activeRideEta, setActiveRideEta] = useState<{ distanceKm: number; durationMinutes: number; etaText: string } | null>(null);
   
   // Track newly arrived rides for visual highlighting (ride_id -> timestamp)
   const [newRideIds, setNewRideIds] = useState<Set<string>>(new Set());
@@ -650,6 +656,41 @@ export default function DriverDashboard() {
                     <div className="p-3 bg-muted rounded-lg">
                       <p className="text-sm font-medium">Passenger Note:</p>
                       <p className="text-sm text-muted-foreground">{activeRide.notes}</p>
+                    </div>
+                  )}
+
+                  {/* ETA Display */}
+                  {activeRideEta && (
+                    <div className="mb-4 p-3 bg-primary/10 rounded-lg">
+                      <p className="text-sm font-semibold text-foreground">
+                        Arriving in {activeRideEta.etaText}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activeRideEta.distanceKm} km away
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Navigation Map */}
+                  {gpsLocation && (
+                    <div className="mb-4">
+                      <DriverNavigationMap
+                        pickupLat={activeRide.pickup_lat!}
+                        pickupLng={activeRide.pickup_lng!}
+                        dropoffLat={activeRide.dropoff_lat!}
+                        dropoffLng={activeRide.dropoff_lng!}
+                        driverLat={gpsLocation?.lat}
+                        driverLng={gpsLocation?.lng}
+                        rideStatus={activeRide.status as 'accepted' | 'in_progress'}
+                        className="h-96 rounded-lg"
+                        onRouteLoaded={(distance, duration) => {
+                          setActiveRideEta({
+                            distanceKm: distance,
+                            durationMinutes: duration,
+                            etaText: duration < 1 ? 'Less than a minute' : `${Math.ceil(duration)} min`
+                          });
+                        }}
+                      />
                     </div>
                   )}
 
