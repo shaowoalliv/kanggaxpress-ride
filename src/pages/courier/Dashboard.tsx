@@ -266,7 +266,7 @@ export default function CourierDashboard() {
   const handleAcceptDelivery = async (deliveryId: string) => {
     if (!profile || !courierProfile) return;
 
-    // Check balance before accepting delivery
+    // Check balance before accepting delivery (must have ≥ ₱5 but don't deduct yet)
     if (walletBalance < platformFee) {
       toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
@@ -275,21 +275,10 @@ export default function CourierDashboard() {
     try {
       setActionLoading(true);
       
-      // Accept the delivery
+      // Accept the delivery (no wallet deduction yet)
       await deliveriesService.acceptDelivery(deliveryId, courierProfile.id);
       
-      // Deduct platform fee upfront
-      const { walletService } = await import('@/services/wallet');
-      const newBalance = await walletService.applyTransaction({
-        userId: user!.id,
-        amount: -platformFee,
-        type: 'deduct',
-        reference: 'Platform fee - delivery acceptance',
-        deliveryId: deliveryId,
-      });
-      
-      setWalletBalance(newBalance);
-      toast.success(`Delivery accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
+      toast.success(`Delivery accepted! Fee will be deducted upon completion.`);
       await loadCourierData();
     } catch (error: any) {
       console.error('Error accepting delivery:', error);
@@ -302,8 +291,37 @@ export default function CourierDashboard() {
   const handleUpdateStatus = async (deliveryId: string, newStatus: any) => {
     try {
       setActionLoading(true);
+      
+      // If completing delivery, deduct platform fee first
+      if (newStatus === 'delivered') {
+        try {
+          const { walletService } = await import('@/services/wallet');
+          const newBalance = await walletService.applyTransaction({
+            userId: user!.id,
+            amount: -platformFee,
+            type: 'deduct',
+            reference: 'KanggaXpress delivery fee',
+            deliveryId: deliveryId,
+          });
+          setWalletBalance(newBalance);
+        } catch (walletError: any) {
+          console.error('Wallet deduction error:', walletError);
+          if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
+            toast.error('Insufficient funds to complete delivery. Please reload your wallet.');
+            return; // Don't mark as delivered if fee can't be deducted
+          }
+          throw walletError;
+        }
+      }
+      
       await deliveriesService.updateDeliveryStatus(deliveryId, newStatus);
-      toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
+      
+      if (newStatus === 'delivered') {
+        toast.success(`Delivery completed! ₱${platformFee.toFixed(2)} service fee deducted from your wallet`);
+      } else {
+        toast.success(`Delivery status updated to ${statusLabels[newStatus]}`);
+      }
+      
       await loadCourierData();
     } catch (error: any) {
       console.error('Error updating status:', error);

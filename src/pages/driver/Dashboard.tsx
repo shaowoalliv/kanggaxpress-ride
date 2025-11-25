@@ -274,7 +274,7 @@ export default function DriverDashboard() {
   const handleAcceptRide = async (rideId: string) => {
     if (!profile || !driverProfile) return;
 
-    // Check balance before accepting ride
+    // Check balance before accepting ride (must have ≥ ₱5 but don't deduct yet)
     if (walletBalance < platformFee) {
       toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
@@ -283,21 +283,10 @@ export default function DriverDashboard() {
     try {
       setActionLoading(true);
       
-      // Accept the ride
+      // Accept the ride (no wallet deduction yet)
       await ridesService.acceptRide(rideId, driverProfile.id);
       
-      // Deduct platform fee upfront
-      const { walletService } = await import('@/services/wallet');
-      const newBalance = await walletService.applyTransaction({
-        userId: user!.id,
-        amount: -platformFee,
-        type: 'deduct',
-        reference: 'Platform fee - ride acceptance',
-        rideId: rideId,
-      });
-      
-      setWalletBalance(newBalance);
-      toast.success(`Ride accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
+      toast.success(`Ride accepted! Fee will be deducted upon completion.`);
       await loadDriverData();
     } catch (error: any) {
       console.error('Error accepting ride:', error);
