@@ -76,11 +76,25 @@ export const ridesService = {
   },
 
   // Accept a ride (driver) - SOT: charge ₱5 fee ONCE at assignment
-  async acceptRide(rideId: string, driverId: string) {
+  async acceptRide(rideId: string, driverUserId: string) {
+    // Always resolve the driver profile ID from the user ID to satisfy FK rides.driver_id -> driver_profiles.id
+    const { data: driverProfile, error: driverError } = await supabase
+      .from('driver_profiles')
+      .select('id')
+      .eq('user_id', driverUserId)
+      .maybeSingle();
+
+    if (driverError) throw driverError;
+    if (!driverProfile) {
+      throw new Error('Driver profile not found. Please complete driver setup.');
+    }
+
+    const driverProfileId = (driverProfile as any).id as string;
+
     const { data, error } = await supabase
       .from('rides')
       .update({
-        driver_id: driverId,
+        driver_id: driverProfileId,
         status: 'accepted' as RideStatus,
         accepted_at: new Date().toISOString(),
       })
@@ -100,7 +114,7 @@ export const ridesService = {
     // SOT RULE: Charge ₱5 platform fee ONCE at assignment (not completion)
     try {
       const { platformFeeService } = await import('./platformFee');
-      const feeResult = await platformFeeService.chargePlatformFeeForRide(rideId, driverId);
+      const feeResult = await platformFeeService.chargePlatformFeeForRide(rideId, driverProfileId);
       console.log('[Platform Fee]', feeResult.reason);
     } catch (feeError) {
       console.error('[Platform Fee] Failed to charge fee at assignment:', feeError);

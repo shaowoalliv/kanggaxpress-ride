@@ -98,14 +98,15 @@ export default function JobDetail() {
   };
 
   const handleAcceptWithoutBonus = async () => {
-    if (!driverProfileId) {
-      toast.error('Driver profile not found');
+    if (!user) {
+      toast.error('Driver not signed in');
       return;
     }
 
     try {
       setSending(true);
-      await ridesService.acceptRide(rideId!, driverProfileId);
+      // Pass the DRIVER USER ID; ridesService will resolve the driver profile ID
+      await ridesService.acceptRide(rideId!, user.id);
       toast.success('Ride accepted!');
       navigate('/driver/dashboard');
     } catch (error: any) {
