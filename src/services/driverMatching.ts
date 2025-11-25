@@ -131,7 +131,7 @@ export const driverMatchingService = {
           .update({
             search_radius: currentRadius,
             drivers_notified: [...notifiedDrivers, ...drivers.map((d: any) => d.id)] as any,
-            status: 'searching' as any,
+            status: 'requested' as any,
           })
           .eq('id', rideId);
 
@@ -229,7 +229,7 @@ export const driverMatchingService = {
       .from('rides')
       .update({
         proposals: updatedProposals as any,
-        status: 'driver_proposed' as any,
+        status: 'requested' as any,
         negotiation_notes: notes || null,
       })
       .eq('id', rideId);

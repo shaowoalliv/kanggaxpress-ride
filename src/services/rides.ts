@@ -23,7 +23,7 @@ export const ridesService = {
       .insert({
         passenger_id: passengerId,
         ...data,
-        status: 'searching' as RideStatus,
+        status: 'requested' as RideStatus,
       })
       .select()
       .single();
