@@ -363,6 +363,13 @@ export default function DriverDashboard() {
   const handleAcceptRide = async (rideId: string) => {
     if (!profile || !driverProfile) return;
 
+    console.log('[AcceptRide] Attempting to accept ride:', {
+      rideId,
+      driverProfileId: driverProfile.id,
+      userId: profile.id,
+      driverProfile: driverProfile
+    });
+
     // Check balance before accepting ride (₱5 will be deducted at assignment)
     if (walletBalance < platformFee) {
       toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
@@ -374,6 +381,7 @@ export default function DriverDashboard() {
       
       // Accept the ride - update to status='accepted' and set driver_id
       // Platform fee is charged in ridesService.acceptRide
+      console.log('[AcceptRide] Calling ridesService.acceptRide with:', { rideId, driverId: driverProfile.id });
       await ridesService.acceptRide(rideId, driverProfile.id);
       
       toast.success('Job accepted. Proceed to pickup.');
