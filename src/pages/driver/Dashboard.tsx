@@ -72,7 +72,7 @@ export default function DriverDashboard() {
       loadDriverData();
 
       // Subscribe to wallet balance changes (Realtime)
-      const channel = supabase
+      const walletChannel = supabase
         .channel('driver-wallet-changes')
         .on(
           'postgres_changes',
@@ -99,8 +99,46 @@ export default function DriverDashboard() {
         )
         .subscribe();
 
+      // CRITICAL FIX: Subscribe to new ride requests (Realtime)
+      const ridesChannel = supabase
+        .channel('driver-available-rides')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'rides',
+            filter: 'status=eq.requested',
+          },
+          (payload) => {
+            console.log('[Dashboard] New ride created:', payload.new);
+            // Add the new ride to available rides if it's still requested and has no driver
+            if (payload.new.status === 'requested' && !payload.new.driver_id) {
+              setAvailableRides(prev => [payload.new as any, ...prev]);
+              toast.success('New ride request available!');
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+          },
+          (payload) => {
+            console.log('[Dashboard] Ride updated:', payload.new);
+            // Remove from available if accepted by another driver or cancelled
+            if (payload.new.driver_id || payload.new.status !== 'requested') {
+              setAvailableRides(prev => prev.filter(r => r.id !== payload.new.id));
+            }
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(walletChannel);
+        supabase.removeChannel(ridesChannel);
       };
     }
   }, [user, profile, navigate]);
@@ -261,6 +299,24 @@ export default function DriverDashboard() {
     }
   };
 
+  const refreshAvailableRides = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('status', 'requested')
+        .is('driver_id', null)
+        .order('created_at', { ascending: false });
+
+      console.log('[Dashboard] Refreshing available rides:', { data, error, count: data?.length });
+
+      if (error) throw error;
+      setAvailableRides(data || []);
+    } catch (error) {
+      console.error('[Dashboard] Error refreshing rides:', error);
+    }
+  };
+
   const toggleAvailability = async () => {
     if (!profile || !driverProfile) return;
 
@@ -277,6 +333,11 @@ export default function DriverDashboard() {
         !driverProfile.is_available
       );
       setDriverProfile(updated);
+      
+      // CRITICAL FIX: Refresh available rides when going online
+      if (updated.is_available) {
+        await refreshAvailableRides();
+      }
       
       // Realtime presence channel stub (baseline wiring)
       // Contract: presence:CALAPAN channel
