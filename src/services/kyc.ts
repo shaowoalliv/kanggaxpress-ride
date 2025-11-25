@@ -113,6 +113,26 @@ export const kycService = {
     return data as KycDocument[];
   },
 
+  // Get vehicle types for all drivers and couriers (admin only)
+  async getAllVehicleTypes() {
+    const { data: drivers, error: driverError } = await supabase
+      .from('driver_profiles')
+      .select('user_id, vehicle_type');
+
+    const { data: couriers, error: courierError } = await supabase
+      .from('courier_profiles')
+      .select('user_id, vehicle_type');
+
+    return {
+      drivers: drivers || [],
+      couriers: couriers || [],
+      errors: {
+        driverError,
+        courierError
+      }
+    };
+  },
+
   // Upload document image to storage
   async uploadDocumentImage(
     userId: string,
