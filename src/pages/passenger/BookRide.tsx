@@ -275,7 +275,6 @@ export default function BookRide() {
       };
 
       const ride = await ridesService.createRide(user.id, rideData);
-      setCurrentRideId(ride.id);
 
       // Save to recent searches
       const newSearch = {
@@ -287,48 +286,16 @@ export default function BookRide() {
       setRecentSearches(updated);
       localStorage.setItem('kanggaxpress_recent_searches', JSON.stringify(updated));
 
-      // Subscribe to ride updates for proposals
-      const channel = supabase
-        .channel(`ride:${ride.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'rides',
-            filter: `id=eq.${ride.id}`,
-          },
-          (payload) => {
-            const updatedRide = payload.new as any;
-            if (updatedRide.proposals && Array.isArray(updatedRide.proposals)) {
-              setDriverProposals(updatedRide.proposals);
-            }
-          }
-        )
-        .subscribe();
+      // Success - navigate to ride status page
+      toast.success('Ride requested. Waiting for a driver to accept...');
+      navigate(`/passenger/ride-status/${ride.id}`);
 
-      // Start beaming process
-      driverMatchingService.startBeaming(
-        ride.id,
-        pickupCoords.lat,
-        pickupCoords.lng,
-        selectedService.type as RideType
-      ).then((result) => {
-        if (!result.success) {
-          toast.error('No drivers available', {
-            description: 'Please try again in a few moments',
-          });
-          setIsRequestingRide(false);
-          setCurrentRideId(null);
-          supabase.removeChannel(channel);
-        }
-      });
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error requesting ride:', error);
       toast.error('Failed to request ride', {
-        description: 'Please try again',
+        description: error.message || 'Please try again',
       });
+    } finally {
       setIsRequestingRide(false);
     }
   };

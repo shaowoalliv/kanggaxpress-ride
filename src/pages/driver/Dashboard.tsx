@@ -210,14 +210,21 @@ export default function DriverDashboard() {
         return;
       }
 
-      // Load rides data separately so dashboard still works even if rides query fails
+      // Load rides data separately - fetch ALL requested rides (no distance filtering)
       try {
-        const [available, my] = await Promise.all([
-          ridesService.getAvailableRides(),
-          profile.id ? ridesService.getDriverRides(profile.id) : Promise.resolve([]),
-        ]);
-        setAvailableRides(available);
-        setMyRides(my);
+        const { data: availableRidesData, error: availableError } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('status', 'requested')
+          .is('driver_id', null)
+          .order('created_at', { ascending: false });
+
+        if (availableError) throw availableError;
+
+        const myRidesData = await ridesService.getDriverRides(profile.id);
+        
+        setAvailableRides(availableRidesData || []);
+        setMyRides(myRidesData);
       } catch (ridesError) {
         console.error('Error loading rides data:', ridesError);
         setAvailableRides([]);
@@ -274,7 +281,7 @@ export default function DriverDashboard() {
   const handleAcceptRide = async (rideId: string) => {
     if (!profile || !driverProfile) return;
 
-    // SOT RULE: Check balance before accepting ride (₱5 will be deducted at assignment)
+    // Check balance before accepting ride (₱5 will be deducted at assignment)
     if (walletBalance < platformFee) {
       toast.error(`Insufficient balance. You need at least ₱${platformFee.toFixed(2)} to accept jobs. Please reload to continue.`);
       return;
@@ -283,10 +290,11 @@ export default function DriverDashboard() {
     try {
       setActionLoading(true);
       
-      // Accept the ride - SOT: ₱5 fee deducted at assignment (in ridesService.acceptRide)
+      // Accept the ride - update to status='accepted' and set driver_id
+      // Platform fee is charged in ridesService.acceptRide
       await ridesService.acceptRide(rideId, driverProfile.id);
       
-      toast.success(`Ride accepted! ₱${platformFee.toFixed(2)} platform fee deducted.`);
+      toast.success('Job accepted. Proceed to pickup.');
       await loadDriverData();
     } catch (error: any) {
       console.error('Error accepting ride:', error);
