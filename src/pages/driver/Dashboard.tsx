@@ -10,7 +10,7 @@ import { driversService } from '@/services/drivers';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { DriverProfile, RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon } from 'lucide-react';
+import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon, Map as MapIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { kycService } from '@/services/kyc';
@@ -18,6 +18,7 @@ import { KycDocument } from '@/types/kyc';
 import { KycBlockedAccess } from '@/components/KycBlockedAccess';
 import { LowBalanceWarning } from '@/components/LowBalanceWarning';
 import { ZeroBalanceModal } from '@/components/ZeroBalanceModal';
+import { AvailableRidesMap } from '@/components/AvailableRidesMap';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -34,6 +35,7 @@ export default function DriverDashboard() {
   const [platformFee, setPlatformFee] = useState<number>(5);
   const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
   const [greeting, setGreeting] = useState('');
+  const [showMapView, setShowMapView] = useState(false);
   
   // Track newly arrived rides for visual highlighting (ride_id -> timestamp)
   const [newRideIds, setNewRideIds] = useState<Set<string>>(new Set());
@@ -488,6 +490,9 @@ export default function DriverDashboard() {
         is_available: true,
         rating: 5,
         total_rides: 0,
+        current_lat: null,
+        current_lng: null,
+        location_updated_at: null,
         created_at: now,
         updated_at: now,
       });
@@ -680,7 +685,17 @@ export default function DriverDashboard() {
           {/* Available Rides */}
           {!activeRide && driverProfile.is_available && (
             <div className="space-y-3">
-              <h2 className="text-xl font-heading font-bold">Available Rides</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-heading font-bold">Available Rides</h2>
+                <button
+                  onClick={() => setShowMapView(!showMapView)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                >
+                  <MapIcon className="w-4 h-4" />
+                  {showMapView ? 'List View' : 'Map View'}
+                </button>
+              </div>
+              
               {availableRides.length === 0 ? (
                 <ThemedCard>
                   <div className="text-center py-8">
@@ -689,6 +704,30 @@ export default function DriverDashboard() {
                       No rides available. Waiting for requests...
                     </p>
                   </div>
+                </ThemedCard>
+              ) : showMapView ? (
+                <ThemedCard className="p-0 overflow-hidden">
+                  <AvailableRidesMap
+                    rides={availableRides.map(ride => ({
+                      id: ride.id,
+                      pickup_lat: ride.pickup_lat,
+                      pickup_lng: ride.pickup_lng,
+                      dropoff_lat: ride.dropoff_lat,
+                      dropoff_lng: ride.dropoff_lng,
+                      pickup_location: ride.pickup_location,
+                      dropoff_location: ride.dropoff_location,
+                      fare_estimate: ride.fare_estimate
+                    }))}
+                    driverLat={driverProfile.current_lat || undefined}
+                    driverLng={driverProfile.current_lng || undefined}
+                    onRideClick={(rideId) => {
+                      const ride = availableRides.find(r => r.id === rideId);
+                      if (ride) {
+                        handleAcceptRide(rideId);
+                      }
+                    }}
+                    className="h-[500px]"
+                  />
                 </ThemedCard>
               ) : (
                 <div className="space-y-3">

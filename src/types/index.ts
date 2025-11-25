@@ -25,6 +25,9 @@ export interface DriverProfile {
   is_available: boolean;
   rating: number;
   total_rides: number;
+  current_lat: number | null;
+  current_lng: number | null;
+  location_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -70,6 +73,9 @@ export interface CourierProfile {
   is_available: boolean;
   rating: number;
   total_deliveries: number;
+  current_lat: number | null;
+  current_lng: number | null;
+  location_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }

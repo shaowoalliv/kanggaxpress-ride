@@ -177,6 +177,9 @@ export default function CourierDashboard() {
         is_available: true,
         rating: 5,
         total_deliveries: 0,
+        current_lat: null,
+        current_lng: null,
+        location_updated_at: null,
         created_at: now,
         updated_at: now,
       });
@@ -375,6 +378,9 @@ export default function CourierDashboard() {
         is_available: true,
         rating: 5,
         total_deliveries: 0,
+        current_lat: null,
+        current_lng: null,
+        location_updated_at: null,
         created_at: now,
         updated_at: now,
       });
