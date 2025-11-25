@@ -8,6 +8,7 @@ import { InstallPromptBanner } from "@/components/InstallPromptBanner";
 import { ChatWidget } from "@/components/ChatWidget";
 import { useSessionValidator } from "@/hooks/useSessionValidator";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAutoLogout } from "@/hooks/useAutoLogout";
 import "@/styles/animations.css";
 import Landing from "./pages/Landing";
 import ChooseRole from "./pages/ChooseRole";
@@ -58,10 +59,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Wrapper component for session validation and push notifications
+// Wrapper component for session validation, push notifications, and auto-logout
 function SessionValidatorWrapper() {
   useSessionValidator();
   usePushNotifications();
+  useAutoLogout();
   return null;
 }
 
