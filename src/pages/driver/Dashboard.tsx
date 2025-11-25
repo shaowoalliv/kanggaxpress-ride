@@ -80,8 +80,6 @@ export default function DriverDashboard() {
     } else if (profile?.role === 'passenger') {
       navigate('/passenger/book-ride');
     } else if (profile?.role === 'driver') {
-      loadDriverData();
-
       // Subscribe to wallet balance changes (Realtime)
       const walletChannel = supabase
         .channel('driver-wallet-changes')
@@ -126,7 +124,17 @@ export default function DriverDashboard() {
             // Add the new ride to available rides if it's still requested and has no driver
             if (payload.new.status === 'requested' && !payload.new.driver_id) {
               const rideId = payload.new.id as string;
-              setAvailableRides(prev => [payload.new as any, ...prev]);
+              
+              // Use functional update to avoid stale state
+              setAvailableRides(prev => {
+                // Check if ride already exists (prevent duplicates)
+                if (prev.some(r => r.id === rideId)) {
+                  console.log('[Dashboard] Ride already in list, skipping');
+                  return prev;
+                }
+                return [payload.new as any, ...prev];
+              });
+              
               setNewRideIds(prev => new Set(prev).add(rideId));
               
               // Play notification sound
@@ -161,6 +169,11 @@ export default function DriverDashboard() {
             // Remove from available if accepted by another driver or cancelled
             if (payload.new.driver_id || payload.new.status !== 'requested') {
               setAvailableRides(prev => prev.filter(r => r.id !== payload.new.id));
+              setNewRideIds(prev => {
+                const updated = new Set(prev);
+                updated.delete(payload.new.id as string);
+                return updated;
+              });
             }
           }
         )
@@ -172,6 +185,13 @@ export default function DriverDashboard() {
       };
     }
   }, [user, profile, navigate]);
+
+  // Separate effect to load initial data (runs once on mount)
+  useEffect(() => {
+    if (profile?.role === 'driver') {
+      loadDriverData();
+    }
+  }, [profile?.id]); // Only re-run if profile ID changes
 
   // Show zero balance modal on page load if balance is 0 and not dismissed
   useEffect(() => {
