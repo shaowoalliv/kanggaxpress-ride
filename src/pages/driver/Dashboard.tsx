@@ -381,8 +381,8 @@ export default function DriverDashboard() {
       
       // Accept the ride - update to status='accepted' and set driver_id
       // Platform fee is charged in ridesService.acceptRide
-      console.log('[AcceptRide] Calling ridesService.acceptRide with:', { rideId, driverId: driverProfile.id });
-      await ridesService.acceptRide(rideId, driverProfile.id);
+      console.log('[AcceptRide] Calling ridesService.acceptRide with userId:', { rideId, driverUserId: profile.id });
+      await ridesService.acceptRide(rideId, profile.id);
       
       toast.success('Job accepted. Proceed to pickup.');
       await loadDriverData();
