@@ -66,9 +66,27 @@ export default function AdminKYC() {
   const loadDriversData = async () => {
     setLoading(true);
     try {
-      // Check current user
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.email);
+      // Check current user authentication
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast.error('You must be logged in to view this page');
+        return;
+      }
+
+      console.log('Current authenticated user:', user.email);
+
+      // Check if user has admin role
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      console.log('User roles:', userRoles);
+
+      if (rolesError || !userRoles?.some(r => r.role === 'kx_admin')) {
+        toast.error('You do not have permission to access this page');
+        return;
+      }
 
       // Fetch all profiles with driver or courier role
       const { data: profiles, error: profilesError } = await supabase
@@ -76,12 +94,18 @@ export default function AdminKYC() {
         .select('id, full_name, email, role, account_number, phone')
         .in('role', ['driver', 'courier']);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Profiles error:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Profiles loaded:', profiles?.length);
 
       // Fetch all KYC documents
       const allDocs = await kycService.listAllKycDocuments();
+      console.log('KYC docs loaded:', allDocs.length);
 
-      // Fetch vehicle types directly - RLS should allow admin access
+      // Fetch vehicle types directly
       const { data: driverProfiles, error: driverError } = await supabase
         .from('driver_profiles')
         .select('user_id, vehicle_type');
@@ -91,16 +115,16 @@ export default function AdminKYC() {
         .select('user_id, vehicle_type');
 
       if (driverError) {
-        console.error('Driver profiles error:', driverError);
-        toast.error(`Failed to load driver profiles: ${driverError.message}`);
+        console.error('Driver profiles fetch error:', driverError);
+        toast.error(`Driver profiles: ${driverError.message}`);
       }
       if (courierError) {
-        console.error('Courier profiles error:', courierError);
-        toast.error(`Failed to load courier profiles: ${courierError.message}`);
+        console.error('Courier profiles fetch error:', courierError);
+        toast.error(`Courier profiles: ${courierError.message}`);
       }
 
-      console.log('Driver Profiles loaded:', driverProfiles);
-      console.log('Courier Profiles loaded:', courierProfiles);
+      console.log('Driver profiles fetched:', driverProfiles);
+      console.log('Courier profiles fetched:', courierProfiles);
 
       // Map profiles to driver data
       const driversMap = new Map<string, DriverData>();
@@ -119,12 +143,7 @@ export default function AdminKYC() {
         const courierProfile = courierProfiles?.find((cp) => cp.user_id === profile.id);
         const vehicleType = driverProfile?.vehicle_type || courierProfile?.vehicle_type || null;
 
-        console.log(`Profile ${profile.email}:`, {
-          driverProfile,
-          courierProfile,
-          vehicleType,
-          role: profile.role
-        });
+        console.log(`${profile.email} - Role: ${profile.role}, Vehicle: ${vehicleType}`);
 
         driversMap.set(profile.id, {
           userId: profile.id,
@@ -144,8 +163,11 @@ export default function AdminKYC() {
         });
       });
 
-      setDriversData(Array.from(driversMap.values()));
+      const dataArray = Array.from(driversMap.values());
+      console.log('Final driver data array:', dataArray.map(d => ({ email: d.email, vehicle: d.vehicleType })));
+      setDriversData(dataArray);
     } catch (error: any) {
+      console.error('Load data error:', error);
       toast.error(`Failed to load data: ${error.message ?? 'Unknown error'}`);
     } finally {
       setLoading(false);
