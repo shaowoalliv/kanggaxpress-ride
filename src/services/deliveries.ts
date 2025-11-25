@@ -84,14 +84,23 @@ export const deliveriesService = {
     return data as DeliveryOrder;
   },
 
-  // Update delivery status
-  async updateDeliveryStatus(deliveryId: string, status: DeliveryStatus) {
+  // Update delivery status (now with centralized fee logic)
+  async updateDeliveryStatus(
+    deliveryId: string, 
+    status: DeliveryStatus,
+    cancellationReason?: string | null,
+    actorUserId?: string | null
+  ) {
     const updates: any = { status };
     
     if (status === 'picked_up') {
       updates.picked_up_at = new Date().toISOString();
     } else if (status === 'delivered') {
       updates.delivered_at = new Date().toISOString();
+    }
+
+    if (cancellationReason !== undefined) {
+      updates.cancellation_reason = cancellationReason;
     }
 
     const { data, error } = await supabase
@@ -102,11 +111,23 @@ export const deliveriesService = {
       .single();
 
     if (error) throw error;
+
+    // Charge platform fee if applicable (centralized logic)
+    if (status === 'delivered' || status === 'cancelled') {
+      const { platformFeeService } = await import('./platformFee');
+      try {
+        await platformFeeService.chargePlatformFeeForDelivery(deliveryId, actorUserId || null);
+      } catch (feeError) {
+        console.error('Platform fee error (non-blocking):', feeError);
+        // Don't block status update if fee charge fails
+      }
+    }
+
     return data as DeliveryOrder;
   },
 
-  // Cancel a delivery
-  async cancelDelivery(deliveryId: string) {
-    return this.updateDeliveryStatus(deliveryId, 'cancelled');
+  // Cancel a delivery with reason tracking
+  async cancelDelivery(deliveryId: string, reason?: string, actorUserId?: string) {
+    return this.updateDeliveryStatus(deliveryId, 'cancelled', reason || null, actorUserId || null);
   },
 };

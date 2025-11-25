@@ -292,29 +292,8 @@ export default function CourierDashboard() {
     try {
       setActionLoading(true);
       
-      // If completing delivery, deduct platform fee first
-      if (newStatus === 'delivered') {
-        try {
-          const { walletService } = await import('@/services/wallet');
-          const newBalance = await walletService.applyTransaction({
-            userId: user!.id,
-            amount: -platformFee,
-            type: 'deduct',
-            reference: 'KanggaXpress delivery fee',
-            deliveryId: deliveryId,
-          });
-          setWalletBalance(newBalance);
-        } catch (walletError: any) {
-          console.error('Wallet deduction error:', walletError);
-          if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
-            toast.error('Insufficient funds to complete delivery. Please reload your wallet.');
-            return; // Don't mark as delivered if fee can't be deducted
-          }
-          throw walletError;
-        }
-      }
-      
-      await deliveriesService.updateDeliveryStatus(deliveryId, newStatus);
+      // Update status via centralized service (handles fee deduction automatically)
+      await deliveriesService.updateDeliveryStatus(deliveryId, newStatus, null, user!.id);
       
       if (newStatus === 'delivered') {
         toast.success(`Delivery completed! ₱${platformFee.toFixed(2)} service fee deducted from your wallet`);
@@ -325,7 +304,11 @@ export default function CourierDashboard() {
       await loadCourierData();
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error(error.message || 'Failed to update status');
+      if (error.message?.includes('INSUFFICIENT_FUNDS')) {
+        toast.error('Insufficient funds to complete delivery. Please reload your wallet.');
+      } else {
+        toast.error(error.message || 'Failed to update status');
+      }
     } finally {
       setActionLoading(false);
     }

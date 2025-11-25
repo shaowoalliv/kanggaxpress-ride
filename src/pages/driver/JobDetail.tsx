@@ -153,11 +153,13 @@ export default function JobDetail() {
       const appFee = settingData?.setting_value ?? 5;
       const fareFinal = ride.total_fare || ride.base_fare || 0;
 
+      // Complete ride with fare info (centralized fee logic will handle wallet deduction)
+      await ridesService.updateRideStatus(rideId!, 'completed', null, user!.id);
+
+      // Update local state with new values
       const { error } = await supabase
         .from('rides')
         .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
           fare_final: fareFinal,
           app_fee: appFee,
         })
@@ -165,30 +167,15 @@ export default function JobDetail() {
 
       if (error) throw error;
 
-      // Deduct ₱5 from driver's wallet
-      try {
-        const { walletService } = await import('@/services/wallet');
-        await walletService.applyTransaction({
-          userId: user!.id,
-          amount: -5,
-          type: 'deduct',
-          reference: 'Ride fee',
-          rideId: rideId,
-        });
-        toast.success('Ride completed! ₱5 service fee deducted from your wallet');
-      } catch (walletError: any) {
-        console.error('Wallet deduction error:', walletError);
-        if (walletError.message?.includes('INSUFFICIENT_FUNDS')) {
-          toast.error('Ride completed but wallet deduction failed due to insufficient funds');
-        } else {
-          toast.success('Ride completed!');
-        }
-      }
-
+      toast.success('Ride completed! ₱5 service fee deducted from your wallet');
       await fetchRide();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing ride:', error);
-      toast.error('Failed to complete ride');
+      if (error.message?.includes('INSUFFICIENT_FUNDS')) {
+        toast.error('Insufficient funds to complete ride. Please reload your wallet.');
+      } else {
+        toast.error('Failed to complete ride');
+      }
     } finally {
       setSending(false);
     }
