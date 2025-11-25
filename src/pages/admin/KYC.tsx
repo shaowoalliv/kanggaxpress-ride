@@ -66,6 +66,10 @@ export default function AdminKYC() {
   const loadDriversData = async () => {
     setLoading(true);
     try {
+      // Check current user
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.email);
+
       // Fetch all profiles with driver or courier role
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -78,14 +82,22 @@ export default function AdminKYC() {
       const allDocs = await kycService.listAllKycDocuments();
 
       // Fetch driver profiles
-      const { data: driverProfiles } = await supabase
+      const { data: driverProfiles, error: driverError } = await supabase
         .from('driver_profiles')
         .select('user_id, vehicle_type');
 
+      if (driverError) {
+        console.error('Driver profiles error:', driverError);
+      }
+
       // Fetch courier profiles
-      const { data: courierProfiles } = await supabase
+      const { data: courierProfiles, error: courierError } = await supabase
         .from('courier_profiles')
         .select('user_id, vehicle_type');
+
+      if (courierError) {
+        console.error('Courier profiles error:', courierError);
+      }
 
       console.log('Driver Profiles from DB:', driverProfiles);
       console.log('Courier Profiles from DB:', courierProfiles);
