@@ -7,9 +7,13 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PassengerRideMap } from '@/components/PassengerRideMap';
 import { FareNegotiationAlert } from '@/components/negotiation/FareNegotiationAlert';
+import { RatingModal } from '@/components/ratings/RatingModal';
+import { DriverRatingDisplay } from '@/components/ratings/DriverRatingDisplay';
 import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { useRideRealtimeUpdates } from '@/hooks/useRideRealtimeUpdates';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ratingsService } from '@/services/ratings';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft, Clock } from 'lucide-react';
 import { calculateETAFromTo } from '@/lib/etaCalculator';
@@ -17,12 +21,16 @@ import { calculateETAFromTo } from '@/lib/etaCalculator';
 export default function RideStatus() {
   const { rideId } = useParams<{ rideId: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showNegotiationAlert, setShowNegotiationAlert] = useState(false);
   const [eta, setEta] = useState<{ distanceKm: number; durationMinutes: number; etaText: string } | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [driverProfile, setDriverProfile] = useState<any>(null);
 
   // Real-time updates - consolidated to avoid duplicate subscriptions
   useRideRealtimeUpdates(rideId || '', (updatedRide) => {
@@ -32,6 +40,11 @@ export default function RideStatus() {
     // Show negotiation alert if pending
     if ((updatedRide as any).negotiation_status === 'pending' && !showNegotiationAlert) {
       setShowNegotiationAlert(true);
+    }
+
+    // Show rating modal when ride is completed
+    if (updatedRide.status === 'completed' && !hasRated) {
+      checkAndShowRatingModal(updatedRide);
     }
   });
 
@@ -46,6 +59,22 @@ export default function RideStatus() {
 
     fetchRide();
   }, [rideId, navigate]);
+
+  // Check if ride has been rated when component mounts
+  useEffect(() => {
+    if (rideId) {
+      checkIfRated();
+    }
+  }, [rideId]);
+
+  const checkIfRated = async () => {
+    try {
+      const rating = await ratingsService.getRatingForRide(rideId!);
+      setHasRated(!!rating);
+    } catch (error) {
+      console.error('Error checking rating:', error);
+    }
+  };
 
   // Subscribe to driver location updates
   useEffect(() => {
@@ -108,19 +137,72 @@ export default function RideStatus() {
       setLoading(true);
       const { data, error } = await supabase
         .from('rides')
-        .select('*')
+        .select(`
+          *,
+          driver:driver_profiles!rides_driver_id_fkey(
+            rating,
+            total_rides,
+            vehicle_type,
+            vehicle_plate
+          )
+        `)
         .eq('id', rideId)
         .single();
 
       if (error) throw error;
 
       setRide(data);
+      
+      // Check if completed and should show rating
+      if (data.status === 'completed' && !hasRated) {
+        checkAndShowRatingModal(data);
+      }
     } catch (error) {
       console.error('Error fetching ride:', error);
       toast.error('Failed to load ride details');
       navigate('/passenger/book-ride');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAndShowRatingModal = async (completedRide: any) => {
+    try {
+      const rating = await ratingsService.getRatingForRide(completedRide.id);
+      if (!rating) {
+        // Fetch driver profile for rating modal
+        const { data: driverData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', completedRide.driver_id)
+          .maybeSingle();
+        
+        setDriverProfile(driverData);
+        setShowRatingModal(true);
+      } else {
+        setHasRated(true);
+      }
+    } catch (error) {
+      console.error('Error checking rating:', error);
+    }
+  };
+
+  const handleSubmitRating = async (rating: number, review: string) => {
+    if (!profile || !ride) return;
+
+    try {
+      await ratingsService.submitRating(profile.id, {
+        ride_id: ride.id,
+        driver_id: ride.driver_id,
+        rating,
+        review_text: review,
+      });
+      
+      setHasRated(true);
+      setShowRatingModal(false);
+    } catch (error: any) {
+      console.error('Error submitting rating:', error);
+      throw error;
     }
   };
 
@@ -187,6 +269,18 @@ export default function RideStatus() {
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Ride Completed!</h2>
               <p className="text-sm text-muted-foreground">Thank you for riding with KanggaXpress</p>
+              
+              {/* Driver Rating Display */}
+              {ride.driver && (
+                <div className="flex items-center justify-center gap-2 p-3 mt-4 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Driver Rating:</span>
+                  <DriverRatingDisplay 
+                    rating={ride.driver.rating || 5}
+                    totalRatings={ride.driver.total_rides || 0}
+                    size="sm"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mb-6">
@@ -238,9 +332,28 @@ export default function RideStatus() {
               </p>
             </div>
 
-            <PrimaryButton onClick={() => navigate('/passenger/my-rides')} className="w-full">
+            {/* Rating Button */}
+            {!hasRated && (
+              <PrimaryButton
+                onClick={() => {
+                  setDriverProfile({ full_name: 'Your Driver' });
+                  setShowRatingModal(true);
+                }}
+                className="w-full mb-3"
+              >
+                Rate Your Driver
+              </PrimaryButton>
+            )}
+
+            {hasRated && (
+              <div className="p-3 bg-success/10 rounded-lg text-center mb-3">
+                <p className="text-sm text-success font-medium">✓ You've rated this ride</p>
+              </div>
+            )}
+
+            <SecondaryButton onClick={() => navigate('/passenger/my-rides')} className="w-full">
               Back to My Rides
-            </PrimaryButton>
+            </SecondaryButton>
           </ThemedCard>
         </div>
       </PageLayout>
@@ -397,13 +510,14 @@ export default function RideStatus() {
               </PrimaryButton>
             </div>
           </div>
-        </div>
-      </PageLayout>
-    );
-  }
+      </div>
+    </PageLayout>
+  );
+}
 
   // Active ride view (requested, accepted, in_progress)
   return (
+    <>
     <PageLayout>
       <div className="flex-1 w-full bg-background">
         <div className="bg-primary px-4 py-6 text-primary-foreground">
@@ -534,5 +648,16 @@ export default function RideStatus() {
 
       </div>
     </PageLayout>
+
+    {/* Rating Modal */}
+    {showRatingModal && (
+      <RatingModal
+        open={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        onSubmit={handleSubmitRating}
+        driverName={driverProfile?.full_name || 'Your Driver'}
+      />
+    )}
+    </>
   );
 }
