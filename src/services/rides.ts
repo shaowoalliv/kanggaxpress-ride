@@ -88,9 +88,14 @@ export const ridesService = {
       .eq('status', 'requested')
       .is('driver_id', null)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    
+    // If no data returned, ride was already accepted by another driver or cancelled
+    if (!data) {
+      throw new Error('This ride is no longer available. It may have been accepted by another driver.');
+    }
 
     // SOT RULE: Charge ₱5 platform fee ONCE at assignment (not completion)
     try {
