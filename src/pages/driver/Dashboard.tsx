@@ -34,6 +34,9 @@ export default function DriverDashboard() {
   const [platformFee, setPlatformFee] = useState<number>(5);
   const [showZeroBalanceModal, setShowZeroBalanceModal] = useState(false);
   const [greeting, setGreeting] = useState('');
+  
+  // Track newly arrived rides for visual highlighting (ride_id -> timestamp)
+  const [newRideIds, setNewRideIds] = useState<Set<string>>(new Set());
 
   // Check if zero balance modal was dismissed this session
   const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
@@ -114,8 +117,27 @@ export default function DriverDashboard() {
             console.log('[Dashboard] New ride created:', payload.new);
             // Add the new ride to available rides if it's still requested and has no driver
             if (payload.new.status === 'requested' && !payload.new.driver_id) {
+              const rideId = payload.new.id as string;
               setAvailableRides(prev => [payload.new as any, ...prev]);
-              toast.success('New ride request available!');
+              setNewRideIds(prev => new Set(prev).add(rideId));
+              
+              // Play notification sound
+              const audio = new Audio('/notification-bell.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(err => console.log('Audio play failed:', err));
+              
+              toast.success('🚗 New ride request available!', {
+                duration: 5000,
+              });
+              
+              // Remove highlight after 15 seconds
+              setTimeout(() => {
+                setNewRideIds(prev => {
+                  const updated = new Set(prev);
+                  updated.delete(rideId);
+                  return updated;
+                });
+              }, 15000);
             }
           }
         )
@@ -686,43 +708,62 @@ export default function DriverDashboard() {
                 </ThemedCard>
               ) : (
                 <div className="space-y-3">
-                  {availableRides.map((ride) => (
-                    <ThemedCard key={ride.id}>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold">
-                              {ride.passenger?.full_name || 'Passenger'}
-                            </p>
-                            <p className="text-sm text-muted-foreground capitalize">
-                              {ride.ride_type} • {ride.passenger_count} passenger(s)
-                            </p>
+                  {availableRides.map((ride) => {
+                    const isNew = newRideIds.has(ride.id);
+                    return (
+                      <div 
+                        key={ride.id}
+                        className={`relative ${isNew ? 'animate-pulse' : ''}`}
+                      >
+                        {isNew && (
+                          <div className="absolute -top-2 -right-2 z-10">
+                            <span className="relative flex h-6 w-6">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-6 w-6 bg-primary items-center justify-center">
+                                <span className="text-[10px] font-bold text-primary-foreground">NEW</span>
+                              </span>
+                            </span>
                           </div>
-                          <p className="text-xl font-bold text-primary">
-                            ₱{ride.fare_estimate}
-                          </p>
-                        </div>
+                        )}
+                        <ThemedCard className={isNew ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}>
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-semibold">
+                                  {ride.passenger?.full_name || 'Passenger'}
+                                </p>
+                                <p className="text-sm text-muted-foreground capitalize">
+                                  {ride.ride_type} • {ride.passenger_count} passenger(s)
+                                </p>
+                              </div>
+                              <p className="text-xl font-bold text-primary">
+                                ₱{ride.fare_estimate}
+                              </p>
+                            </div>
 
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-primary mt-0.5" />
-                            <span className="text-muted-foreground">{ride.pickup_location}</span>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-destructive mt-0.5" />
-                            <span className="text-muted-foreground">{ride.dropoff_location}</span>
-                          </div>
-                        </div>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                                <span className="text-muted-foreground">{ride.pickup_location}</span>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-destructive mt-0.5" />
+                                <span className="text-muted-foreground">{ride.dropoff_location}</span>
+                              </div>
+                            </div>
 
-                        <PrimaryButton
-                          onClick={() => handleAcceptRide(ride.id)}
-                          disabled={actionLoading}
-                        >
-                          Accept Ride
-                        </PrimaryButton>
+                            <PrimaryButton
+                              onClick={() => handleAcceptRide(ride.id)}
+                              disabled={actionLoading}
+                              className={isNew ? 'animate-pulse' : ''}
+                            >
+                              {isNew ? '🔔 Accept New Ride' : 'Accept Ride'}
+                            </PrimaryButton>
+                          </div>
+                        </ThemedCard>
                       </div>
-                    </ThemedCard>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
