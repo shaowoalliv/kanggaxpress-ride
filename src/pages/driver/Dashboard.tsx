@@ -10,7 +10,7 @@ import { driversService } from '@/services/drivers';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { DriverProfile, RideType } from '@/types';
 import { toast } from 'sonner';
-import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon, Map as MapIcon } from 'lucide-react';
+import { MapPin, User, Clock, Power, PowerOff, Navigation, Wallet as WalletIcon, Map as MapIcon, X, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { kycService } from '@/services/kyc';
@@ -24,6 +24,7 @@ import { FareNegotiationAlert } from '@/components/negotiation/FareNegotiationAl
 import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
 import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { calculateETAFromTo } from '@/lib/etaCalculator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -45,6 +46,14 @@ export default function DriverDashboard() {
   
   // Track newly arrived rides for visual highlighting (ride_id -> timestamp)
   const [newRideIds, setNewRideIds] = useState<Set<string>>(new Set());
+  
+  // Cancel confirmation state
+  const [cancelConfirmRideId, setCancelConfirmRideId] = useState<string | null>(null);
+  const [cancelledRides, setCancelledRides] = useState<any[]>([]);
+  
+  // Counter offer modal state
+  const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
+  const [selectedRideForCounter, setSelectedRideForCounter] = useState<string | null>(null);
 
   // Check if zero balance modal was dismissed this session
   const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
@@ -435,6 +444,65 @@ export default function DriverDashboard() {
     } catch (error: any) {
       console.error('Error updating status:', error);
       toast.error(error.message || 'Failed to update status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelRideRequest = async (rideId: string) => {
+    try {
+      setActionLoading(true);
+      
+      // Cancel the ride with reason
+      await ridesService.cancelRide(rideId, 'Driver declined the request', profile?.id);
+      
+      // Move to cancelled rides list
+      const cancelledRide = availableRides.find(r => r.id === rideId);
+      if (cancelledRide) {
+        setCancelledRides(prev => [{ ...cancelledRide, cancelled_at: new Date().toISOString() }, ...prev]);
+      }
+      
+      // Remove from available rides
+      setAvailableRides(prev => prev.filter(r => r.id !== rideId));
+      setNewRideIds(prev => {
+        const updated = new Set(prev);
+        updated.delete(rideId);
+        return updated;
+      });
+      
+      toast.success('Ride request cancelled');
+      setCancelConfirmRideId(null);
+    } catch (error: any) {
+      console.error('Error cancelling ride:', error);
+      toast.error(error.message || 'Failed to cancel ride');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleProposeCounterOffer = (rideId: string) => {
+    setSelectedRideForCounter(rideId);
+    setShowCounterOfferModal(true);
+  };
+
+  const handleSubmitCounterOffer = async (additionalFare: number, notes: string) => {
+    if (!selectedRideForCounter || !driverProfile) return;
+    
+    try {
+      setActionLoading(true);
+      await ridesService.proposeFareNegotiation(
+        selectedRideForCounter,
+        driverProfile.id,
+        additionalFare,
+        notes
+      );
+      toast.success('Counter offer sent to passenger');
+      setShowCounterOfferModal(false);
+      setSelectedRideForCounter(null);
+      await loadDriverData();
+    } catch (error: any) {
+      console.error('Error proposing counter offer:', error);
+      toast.error(error.message || 'Failed to send counter offer');
     } finally {
       setActionLoading(false);
     }
@@ -836,13 +904,29 @@ export default function DriverDashboard() {
                               </div>
                             </div>
 
-                            <PrimaryButton
-                              onClick={() => handleAcceptRide(ride.id)}
-                              disabled={actionLoading}
-                              className={isNew ? 'animate-pulse' : ''}
-                            >
-                              {isNew ? '🔔 Accept New Ride' : 'Accept Ride'}
-                            </PrimaryButton>
+                            <div className="flex gap-2">
+                              <PrimaryButton
+                                onClick={() => handleAcceptRide(ride.id)}
+                                disabled={actionLoading}
+                                className={`flex-1 ${isNew ? 'animate-pulse' : ''}`}
+                              >
+                                {isNew ? '🔔 Accept' : 'Accept Ride'}
+                              </PrimaryButton>
+                              <SecondaryButton
+                                onClick={() => handleProposeCounterOffer(ride.id)}
+                                disabled={actionLoading}
+                                className="flex-shrink-0"
+                              >
+                                <DollarSign className="w-4 h-4" />
+                              </SecondaryButton>
+                              <SecondaryButton
+                                onClick={() => setCancelConfirmRideId(ride.id)}
+                                disabled={actionLoading}
+                                className="flex-shrink-0"
+                              >
+                                <X className="w-4 h-4" />
+                              </SecondaryButton>
+                            </div>
                           </div>
                         </ThemedCard>
                       </div>
@@ -850,6 +934,35 @@ export default function DriverDashboard() {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Cancelled Requests */}
+          {cancelledRides.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-xl font-heading font-bold text-muted-foreground">Cancelled Requests</h2>
+              <div className="space-y-2">
+                {cancelledRides.slice(0, 3).map((ride) => (
+                  <ThemedCard key={ride.id} className="opacity-60">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-muted-foreground">
+                          {ride.passenger?.full_name || 'Passenger'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Cancelled {format(new Date(ride.cancelled_at), 'h:mm a')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-muted-foreground">
+                          ₱{ride.fare_estimate}
+                        </p>
+                        <p className="text-xs text-destructive">Cancelled</p>
+                      </div>
+                    </div>
+                  </ThemedCard>
+                ))}
+              </div>
             </div>
           )}
 
@@ -886,6 +999,38 @@ export default function DriverDashboard() {
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={!!cancelConfirmRideId} onOpenChange={(open) => !open && setCancelConfirmRideId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Ride Request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel the passenger's ride request. Consider proposing a counter-offer instead to negotiate the fare.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Request</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelConfirmRideId && handleCancelRideRequest(cancelConfirmRideId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Counter Offer Modal */}
+      <CounterOfferModal
+        open={showCounterOfferModal}
+        onClose={() => {
+          setShowCounterOfferModal(false);
+          setSelectedRideForCounter(null);
+        }}
+        onSubmit={handleSubmitCounterOffer}
+        baseFare={availableRides.find(r => r.id === selectedRideForCounter)?.fare_estimate || 0}
+      />
     </PageLayout>
   );
 }
