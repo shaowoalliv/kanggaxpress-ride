@@ -7,9 +7,11 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { DriverRideMap } from '@/components/DriverRideMap';
 import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
+import { RatingModal } from '@/components/ratings/RatingModal';
 import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { supabase } from '@/integrations/supabase/client';
 import { ridesService } from '@/services/rides';
+import { ratingsService } from '@/services/ratings';
 import { useDriverLocationPublisher } from '@/hooks/useDriverLocationPublisher';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft } from 'lucide-react';
@@ -23,6 +25,8 @@ export default function JobDetail() {
   const [sending, setSending] = useState(false);
   const [driverProfileId, setDriverProfileId] = useState<string | null>(null);
   const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasRatedPassenger, setHasRatedPassenger] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const { proposeCounterOffer } = useRideNegotiation(rideId || '');
@@ -71,12 +75,24 @@ export default function JobDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from('rides')
-        .select('*')
+        .select(`
+          *,
+          passenger:profiles!rides_passenger_id_fkey(full_name, phone)
+        `)
         .eq('id', rideId)
         .single();
 
       if (error) throw error;
       setRide(data);
+
+      // Check if passenger has been rated
+      if (data.status === 'completed') {
+        const rating = await ratingsService.getPassengerRatingForRide(rideId!);
+        setHasRatedPassenger(!!rating);
+        if (!rating) {
+          setShowRatingModal(true);
+        }
+      }
     } catch (error) {
       console.error('Error fetching ride:', error);
       toast.error('Failed to load ride details');
@@ -170,6 +186,9 @@ export default function JobDetail() {
 
       toast.success('Ride completed! ₱5 service fee deducted from your wallet');
       await fetchRide();
+      
+      // Show rating modal after completion
+      setShowRatingModal(true);
     } catch (error: any) {
       console.error('Error completing ride:', error);
       if (error.message?.includes('INSUFFICIENT_FUNDS')) {
@@ -179,6 +198,26 @@ export default function JobDetail() {
       }
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSubmitPassengerRating = async (rating: number, review: string) => {
+    if (!user?.id || !ride) return;
+
+    try {
+      await ratingsService.submitPassengerRating(user.id, {
+        ride_id: ride.id,
+        passenger_id: ride.passenger_id,
+        rating,
+        review_text: review,
+      });
+
+      setHasRatedPassenger(true);
+      setShowRatingModal(false);
+      toast.success('Rating submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      toast.error('Failed to submit rating');
     }
   };
 
@@ -237,6 +276,14 @@ export default function JobDetail() {
             onClose={() => setShowCounterOfferModal(false)}
             baseFare={ride?.base_fare || 0}
             onSubmit={handleCounterOfferSubmit}
+          />
+
+          {/* Passenger Rating Modal */}
+          <RatingModal
+            open={showRatingModal}
+            onClose={() => setShowRatingModal(false)}
+            onSubmit={handleSubmitPassengerRating}
+            driverName={ride?.passenger?.full_name || 'Passenger'}
           />
 
           {/* Map for Active Ride */}

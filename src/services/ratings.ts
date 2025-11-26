@@ -11,6 +11,17 @@ export interface RideRating {
   updated_at: string;
 }
 
+export interface PassengerRating {
+  id: string;
+  ride_id: string;
+  driver_id: string;
+  passenger_id: string;
+  rating: number;
+  review_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CreateRatingData {
   ride_id: string;
   driver_id: string;
@@ -77,5 +88,35 @@ export const ratingsService = {
 
     if (error) throw error;
     return data as RideRating[];
+  },
+
+  // Submit a rating for a passenger
+  async submitPassengerRating(driverId: string, data: { ride_id: string; passenger_id: string; rating: number; review_text?: string }): Promise<PassengerRating> {
+    const { data: rating, error } = await supabase
+      .from('passenger_ratings')
+      .insert({
+        driver_id: driverId,
+        passenger_id: data.passenger_id,
+        ride_id: data.ride_id,
+        rating: data.rating,
+        review_text: data.review_text || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return rating as PassengerRating;
+  },
+
+  // Check if a passenger has been rated for a ride
+  async getPassengerRatingForRide(rideId: string): Promise<PassengerRating | null> {
+    const { data, error } = await supabase
+      .from('passenger_ratings')
+      .select('*')
+      .eq('ride_id', rideId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data as PassengerRating | null;
   },
 };
