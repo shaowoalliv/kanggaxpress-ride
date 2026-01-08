@@ -229,4 +229,23 @@ export const ridesService = {
     if (error) throw error;
     return data as Ride;
   },
+
+  // Passenger proposes counter-offer without changing driver assignment
+  async passengerProposeFareNegotiation(rideId: string, topUpFare: number, notes: string) {
+    const { data, error } = await supabase
+      .from('rides')
+      .update({
+        proposed_top_up_fare: topUpFare,
+        negotiation_status: 'pending',
+        negotiation_notes: notes,
+      })
+      .eq('id', rideId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data as Ride;
+  },
 };
+
+

@@ -17,6 +17,21 @@ import { ratingsService } from '@/services/ratings';
 import { toast } from 'sonner';
 import { MapPin, Car, Loader2, ArrowLeft, Clock } from 'lucide-react';
 import { calculateETAFromTo } from '@/lib/etaCalculator';
+import { ridesService } from '@/services/rides';
+import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
+
+
+/**
+ * WIP: Timeout & Cancellation UI (FE only)
+ * - Implemented 5 minute timeout for driver search (UI)
+ * - Displays "No drivers available" and "Try again" button
+ * - Allows passenger to cancel ride before driver accepts ride
+ * 
+ * Known gaps:
+ * - Passenger counter-offer flow does not yet reflect on driver's side
+ * 
+ * Not intended for production release yet.
+ */
 
 export default function RideStatus() {
   const { rideId } = useParams<{ rideId: string }>();
@@ -32,10 +47,47 @@ export default function RideStatus() {
   const [hasRated, setHasRated] = useState(false);
   const [driverProfile, setDriverProfile] = useState<any>(null);
 
+  // For search timeout
+  const [searchStart, setSearchStart] = useState<number | null>(null);
+  const [searchTimedOut, setSearchTimedOut] = useState(false);
+  const MAX_WAIT_TIME = 5 * 60 * 1000;
+
+  // Counter offer modal state
+  const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
+
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Auto cancel trigger
+  // TODO IN BACKEND: refund P5 once, Log audit
+  const triggerDriverNoShowCancel = async () => {
+    try {
+      await ridesService.cancelRide(
+        ride.id,
+        'Driver no-show timeout',
+        ride.driver_id
+      );
+    } catch (error) {
+      console.error('Auto-cancel failed: ', error);
+    }
+  }
+
   // Real-time updates - consolidated to avoid duplicate subscriptions
   useRideRealtimeUpdates(rideId || '', (updatedRide) => {
     console.log('[RideStatus] Real-time update received:', updatedRide);
     setRide(updatedRide);
+
+    useEffect(() => {
+      if (!ride || ride.status !== "accepted") return;
+      if (!ride.accepted_at) return;
+
+      const acceptedAt = new Date(ride.accepted_at).getTime();
+      const now = Date.now();
+      const elapsed = now - acceptedAt;
+
+      if (elapsed >= 15 * 60 * 1000) {
+        triggerDriverNoShowCancel();
+      }
+    }, [ride]);
     
     // Show negotiation alert if pending
     if ((updatedRide as any).negotiation_status === 'pending' && !showNegotiationAlert) {
@@ -132,6 +184,34 @@ export default function RideStatus() {
     }
   }, [driverLocation, ride]);
 
+  // Timeout
+
+    useEffect(() => {
+    if (ride?.status === 'requested') {
+      setSearchStart(Date.now());
+      setSearchTimedOut(false);
+    }
+   }, [ride?.id, ride?.status]);
+
+    useEffect(() => {
+    if (!ride || ride.status !== 'requested'|| searchStart === null) return;
+    
+
+    const timeoutId = setTimeout(() => {
+      console.log('Search timed out after 5 minutes');
+      setSearchTimedOut(true);
+    }, MAX_WAIT_TIME);
+
+    return () => clearTimeout(timeoutId);
+
+  }, [searchStart, ride?.status]);
+
+  useEffect(() => {
+    console.log('Ride status:', ride?.status);
+    console.log('searchTimedOut:', searchTimedOut);
+  }, [ride?.status, searchTimedOut]);
+
+
   const fetchRide = async () => {
     try {
       setLoading(true);
@@ -215,8 +295,10 @@ export default function RideStatus() {
     return map[rideType] || rideType.toUpperCase();
   };
 
-  const getStatusDisplay = (status: string) => {
-    if (status === 'requested') return 'Looking for drivers...';
+  const getStatusDisplay = (status: string, searchTimedOut?: boolean) => {
+    if (status === 'requested') {
+      return searchTimedOut ? 'No drivers available' : 'Looking for drivers...';
+    }
     if (status === 'accepted') return 'Driver Assigned';
     if (status === 'in_progress') return 'Ride In Progress';
     if (status === 'completed') return 'Ride Completed';
@@ -403,6 +485,44 @@ export default function RideStatus() {
     }
   };
 
+  // For Cancel button
+  const handleCancelRide = async () => {
+    if (!ride) return;
+
+    try {
+      await ridesService.cancelRide(
+        ride.id,
+        'Passenger cancelled',
+        profile?.id
+      );
+      navigate('/passenger/my-rides');
+      toast.success('Ride cancelled successfully');
+    } catch (error) {
+      toast.error('Failed to cancel ride');
+    }
+  };
+
+  // Passenger submits counter-offer
+  const handleSubmitCounterOffer = async (additionalFare: number, notes: string) => {
+    if (!rideId) return;
+    try {
+      setActionLoading(true);
+      await ridesService.passengerProposeFareNegotiation(
+        rideId, 
+        additionalFare, 
+        notes
+      );
+      toast.success('Counter offer sent to driver');
+      setShowCounterOfferModal(false);
+    } catch (error: any) {
+      console.error('Error proposing counter offer:', error);
+      toast.error(error.message || 'Failed to send counter offer');
+      throw error;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageLayout>
@@ -541,15 +661,44 @@ export default function RideStatus() {
               topUpAmount={ride.proposed_top_up_fare || 0}
               reason={ride.negotiation_notes || 'Driver counter-offer'}
               onAccept={async () => {
-                await acceptNegotiation();
+                try {
+                  await acceptNegotiation();
+                  setShowNegotiationAlert(false);
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+              onCounterOffer={() => {
                 setShowNegotiationAlert(false);
+                setTimeout(() => setShowCounterOfferModal(true), 0);
               }}
               onReject={async () => {
-                await rejectNegotiation();
-                setShowNegotiationAlert(false);
+                try {
+                  await rejectNegotiation();
+                  setShowNegotiationAlert(false);
+                } catch (error) {
+                  console.error(error);
+                }
               }}
             />
           )}
+
+          {/* Counter Offer Modal */}
+            <CounterOfferModal
+              open={showCounterOfferModal}
+              onClose={() => {
+                setShowCounterOfferModal(false);
+              }}
+              onSubmit={async (topUpAmount, reason, notes) => {
+                try {
+                  await handleSubmitCounterOffer(topUpAmount, notes || reason);
+                  setShowCounterOfferModal(false);
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+              baseFare={ride?.base_fare || 0}
+            />
 
           {/* ETA Display */}
           {eta && driverLocation && (ride?.status === 'accepted' || ride?.status === 'in_progress') && (
@@ -592,11 +741,36 @@ export default function RideStatus() {
           <ThemedCard className="bg-secondary/5 border-secondary/20">
             <div className="text-center py-4">
               <p className="text-lg font-semibold text-secondary mb-2">
-                {getStatusDisplay(ride.status)}
+                {getStatusDisplay(ride.status, searchTimedOut)}
               </p>
               <div className="flex justify-center mt-4">
-                <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+                {!searchTimedOut && ( 
+                  <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+                )}
               </div>
+
+            {/* TRY AGAIN button */}
+            {searchTimedOut && (
+              <PrimaryButton
+                onClick={() => {
+                  setSearchStart(Date.now());
+                  setSearchTimedOut(false);
+                  fetchRide();
+                  toast.info('Retrying to find drivers...');
+                }}
+                className="mt-4 w-full">
+                  Try Again
+                </PrimaryButton>
+            )}
+
+            {/* CANCEL BUTTON (only show if ride.status === "requested") */}
+              {ride.status === 'requested' && (
+                <SecondaryButton
+                  onClick={handleCancelRide}
+                  className="mt-4 w-full">
+                    Cancel Ride
+                </SecondaryButton>
+              )}
             </div>
           </ThemedCard>
 
