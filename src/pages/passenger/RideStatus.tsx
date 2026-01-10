@@ -57,37 +57,10 @@ export default function RideStatus() {
 
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Auto cancel trigger
-  // TODO IN BACKEND: refund P5 once, Log audit
-  const triggerDriverNoShowCancel = async () => {
-    try {
-      await ridesService.cancelRide(
-        ride.id,
-        'Driver no-show timeout',
-        ride.driver_id
-      );
-    } catch (error) {
-      console.error('Auto-cancel failed: ', error);
-    }
-  }
-
   // Real-time updates - consolidated to avoid duplicate subscriptions
   useRideRealtimeUpdates(rideId || '', (updatedRide) => {
     console.log('[RideStatus] Real-time update received:', updatedRide);
     setRide(updatedRide);
-
-    useEffect(() => {
-      if (!ride || ride.status !== "accepted") return;
-      if (!ride.accepted_at) return;
-
-      const acceptedAt = new Date(ride.accepted_at).getTime();
-      const now = Date.now();
-      const elapsed = now - acceptedAt;
-
-      if (elapsed >= 15 * 60 * 1000) {
-        triggerDriverNoShowCancel();
-      }
-    }, [ride]);
     
     // Show negotiation alert if pending
     if ((updatedRide as any).negotiation_status === 'pending' && !showNegotiationAlert) {
@@ -502,26 +475,26 @@ export default function RideStatus() {
     }
   };
 
-  // Passenger submits counter-offer
-  const handleSubmitCounterOffer = async (additionalFare: number, notes: string) => {
-    if (!rideId) return;
-    try {
-      setActionLoading(true);
-      await ridesService.passengerProposeFareNegotiation(
-        rideId, 
-        additionalFare, 
-        notes
-      );
-      toast.success('Counter offer sent to driver');
-      setShowCounterOfferModal(false);
-    } catch (error: any) {
-      console.error('Error proposing counter offer:', error);
-      toast.error(error.message || 'Failed to send counter offer');
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  // // Passenger submits counter-offer
+  // const handleSubmitCounterOffer = async (additionalFare: number, notes: string) => {
+  //   if (!rideId) return;
+  //   try {
+  //     setActionLoading(true);
+  //     await ridesService.passengerProposeFareNegotiation(
+  //       rideId, 
+  //       additionalFare, 
+  //       notes
+  //     );
+  //     toast.success('Counter offer sent to driver');
+  //     setShowCounterOfferModal(false);
+  //   } catch (error: any) {
+  //     console.error('Error proposing counter offer:', error);
+  //     toast.error(error.message || 'Failed to send counter offer');
+  //     throw error;
+  //   } finally {
+  //     setActionLoading(false);
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -668,10 +641,6 @@ export default function RideStatus() {
                   console.error(error);
                 }
               }}
-              onCounterOffer={() => {
-                setShowNegotiationAlert(false);
-                setTimeout(() => setShowCounterOfferModal(true), 0);
-              }}
               onReject={async () => {
                 try {
                   await rejectNegotiation();
@@ -683,7 +652,7 @@ export default function RideStatus() {
             />
           )}
 
-          {/* Counter Offer Modal */}
+          {/* Counter Offer Modal
             <CounterOfferModal
               open={showCounterOfferModal}
               onClose={() => {
@@ -698,7 +667,7 @@ export default function RideStatus() {
                 }
               }}
               baseFare={ride?.base_fare || 0}
-            />
+            /> */}
 
           {/* ETA Display */}
           {eta && driverLocation && (ride?.status === 'accepted' || ride?.status === 'in_progress') && (

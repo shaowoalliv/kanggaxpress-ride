@@ -1062,10 +1062,6 @@ export default function DriverDashboard() {
             await acceptNegotiation();
             setShowNegotiationAlert(false);
           }}
-          onCounterOffer={() => {
-            setShowNegotiationAlert(false);
-            setTimeout(() => setShowCounterOfferModal(true), 0);
-          }}
           onReject={async () => {
             await rejectNegotiation();
             setShowNegotiationAlert(false);

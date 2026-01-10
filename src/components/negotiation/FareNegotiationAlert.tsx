@@ -10,7 +10,6 @@ interface FareNegotiationAlertProps {
   driverName?: string;
   onAccept: () => void;
   onReject: () => void;
-  onCounterOffer: () => void;
 }
 
 export const FareNegotiationAlert = ({
@@ -22,7 +21,6 @@ export const FareNegotiationAlert = ({
   notes,
   driverName,
   onAccept,
-  onCounterOffer,
   onReject
 }: FareNegotiationAlertProps) => {
   return (
@@ -65,7 +63,6 @@ export const FareNegotiationAlert = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onReject}>Reject</AlertDialogCancel>
-          <AlertDialogAction onClick={onCounterOffer}>Counter-Offer</AlertDialogAction>
           <AlertDialogAction onClick={onAccept}>Accept ₱{proposedFare.toFixed(2)}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
