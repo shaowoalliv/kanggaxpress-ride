@@ -230,3 +230,5 @@ export const ridesService = {
     return data as Ride;
   },
 };
+
+

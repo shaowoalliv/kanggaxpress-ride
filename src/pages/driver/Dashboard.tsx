@@ -55,8 +55,14 @@ export default function DriverDashboard() {
   const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
   const [selectedRideForCounter, setSelectedRideForCounter] = useState<string | null>(null);
 
+  // For Negotiation Alert
+  const [ride, setRide] = useState<any>(null);
+  const [showNegotiationAlert, setShowNegotiationAlert] = useState(false);
+
   // Check if zero balance modal was dismissed this session
   const [zeroBalanceDismissed, setZeroBalanceDismissed] = useState(false);
+
+  const { acceptNegotiation, rejectNegotiation } = useRideNegotiation(ride?.id || '');
 
   // Get greeting based on time of day
   useEffect(() => {
@@ -184,6 +190,18 @@ export default function DriverDashboard() {
                 return updated;
               });
             }
+
+            // Handles negotiation
+            if (payload.new.driver_id === profile?.id 
+              && payload.new.negotiation_status === 'pending'
+              && payload.old.negotiation_status !== 'pending') {
+              console.log('[Dashboard] Passenger proposed a counter-offer', payload.new);
+              setRide(payload.new);
+              setShowNegotiationAlert(true);
+            }
+
+            console.log('Updated ride:', payload.new.id);
+            console.log('Negotiation status:', payload.new.negotiation_status);
           }
         )
         .subscribe();
@@ -915,14 +933,14 @@ export default function DriverDashboard() {
                               <SecondaryButton
                                 onClick={() => handleProposeCounterOffer(ride.id)}
                                 disabled={actionLoading}
-                                className="flex-shrink-0"
+                                className="flex-1"
                               >
                                 <DollarSign className="w-4 h-4" />
                               </SecondaryButton>
                               <SecondaryButton
                                 onClick={() => setCancelConfirmRideId(ride.id)}
                                 disabled={actionLoading}
-                                className="flex-shrink-0"
+                                className="flex-1"
                               >
                                 <X className="w-4 h-4" />
                               </SecondaryButton>
@@ -1031,6 +1049,25 @@ export default function DriverDashboard() {
         onSubmit={handleSubmitCounterOffer}
         baseFare={availableRides.find(r => r.id === selectedRideForCounter)?.fare_estimate || 0}
       />
+
+      {/* Negotiation Alert */}
+      {showNegotiationAlert && ride && (
+        <FareNegotiationAlert
+          open={showNegotiationAlert}
+          baseFare={ride.base_fare || 0}
+          proposedFare={(ride.base_fare || 0) + (ride.proposed_top_up_fare || 0)}
+          topUpAmount={ride.proposed_top_up_fare || 0}
+          reason={ride.negotiation_notes || 'Driver counter-offer'}
+          onAccept={async () => {
+            await acceptNegotiation();
+            setShowNegotiationAlert(false);
+          }}
+          onReject={async () => {
+            await rejectNegotiation();
+            setShowNegotiationAlert(false);
+          }}
+          />
+        )}
     </PageLayout>
   );
 }
