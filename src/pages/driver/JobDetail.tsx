@@ -136,15 +136,12 @@ export default function JobDetail() {
   const handleStartRide = async () => {
     try {
       setSending(true);
-      const { error } = await supabase
-        .from('rides')
-        .update({
-          status: 'in_progress',
-          started_at: new Date().toISOString(),
-        })
-        .eq('id', rideId);
-
-      if (error) throw error;
+      await ridesService.updateRideStatus(
+        rideId!,
+        'in_progress',
+        null,
+        user!.id
+      )
 
       toast.success('Ride started!');
       await fetchRide();

@@ -317,16 +317,18 @@ export default function BookRide() {
   };
 
   // Cancel ride request
-  const handleCancelRideRequest = () => {
-    if (currentRideId) {
-      supabase
-        .from('rides')
-        .update({ status: 'cancelled' as any })
-        .eq('id', currentRideId);
-    }
+  const handleCancelRideRequest = async () => {
+    if (!currentRideId) return;
+
+    try {
+      await ridesService.updateRideStatus(currentRideId, 'cancelled');
+    } catch (error) {
+      console.log('Failed to cancel ride:', error);
+    } finally {
     setIsRequestingRide(false);
     setCurrentRideId(null);
     setDriverProposals([]);
+    }
   };
 
   if (!user || !profile || profile.role !== 'passenger') {

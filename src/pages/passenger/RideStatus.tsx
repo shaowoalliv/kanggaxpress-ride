@@ -416,15 +416,11 @@ export default function RideStatus() {
   };
 
   const handleAcceptFare = async () => {
+    if (!rideId) return;
+
     try {
       setAccepting(true);
-      const { error } = await supabase
-        .from('rides')
-        .update({ status: 'in_progress' })
-        .eq('id', rideId);
-
-      if (error) throw error;
-
+      await ridesService.updateRideStatus(rideId, 'in_progress');
       toast.success('Ride confirmed! Your driver is on the way.');
     } catch (error) {
       console.error('Error accepting fare:', error);

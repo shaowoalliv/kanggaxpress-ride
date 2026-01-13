@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Ride, RideType, RideStatus } from '@/types';
+import { canTransition } from '@/lib/rideStateMachine';
 
 export interface CreateRideData {
   pickup_location: string;
@@ -131,6 +132,24 @@ export const ridesService = {
     cancellationReason?: string | null,
     actorUserId?: string | null
   ) {
+
+    const { data: ride, error: fetchError} = await supabase
+    .from('rides')
+    .select('status')
+    .eq('id', rideId)
+    .single();
+
+    if (fetchError) throw fetchError;
+    if (!ride) throw new Error('Ride not found');
+
+    // Enforce centralized ride state machine transitions
+    if (!canTransition(ride.status as RideStatus, status)) {
+      throw new Error(
+        `Invalid ride status transition: ${ride.status} -> ${status}`
+      );
+    }
+
+
     const updates: any = { status };
     
     if (status === 'in_progress') {
@@ -147,6 +166,7 @@ export const ridesService = {
       .from('rides')
       .update(updates)
       .eq('id', rideId)
+      .eq('status', ride.status)
       .select()
       .single();
 
