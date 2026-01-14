@@ -1357,6 +1357,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+        | "arrived"
       ride_type: "motor" | "tricycle" | "car"
       user_role: "passenger" | "driver" | "sender" | "courier"
     }
@@ -1502,6 +1503,7 @@ export const Constants = {
         "in_progress",
         "completed",
         "cancelled",
+        "arrived",
       ],
       ride_type: ["motor", "tricycle", "car"],
       user_role: ["passenger", "driver", "sender", "courier"],
