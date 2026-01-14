@@ -828,6 +828,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           app_fee: number | null
+          arrived_at: string | null
           base_fare: number | null
           cancellation_reason: string | null
           completed_at: string | null
@@ -850,6 +851,7 @@ export type Database = {
           pickup_lng: number | null
           pickup_location: string
           platform_fee_charged: boolean
+          platform_fee_refunded: boolean
           proposals: Json | null
           proposed_top_up_fare: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -863,6 +865,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           app_fee?: number | null
+          arrived_at?: string | null
           base_fare?: number | null
           cancellation_reason?: string | null
           completed_at?: string | null
@@ -885,6 +888,7 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location: string
           platform_fee_charged?: boolean
+          platform_fee_refunded?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -898,6 +902,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           app_fee?: number | null
+          arrived_at?: string | null
           base_fare?: number | null
           cancellation_reason?: string | null
           completed_at?: string | null
@@ -920,6 +925,7 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location?: string
           platform_fee_charged?: boolean
+          platform_fee_refunded?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type?: Database["public"]["Enums"]["ride_type"]
