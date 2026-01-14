@@ -1300,8 +1300,8 @@ export type Database = {
         }[]
       }
       get_kyc_encryption_key:
-        | { Args: { key_version?: number }; Returns: string }
         | { Args: never; Returns: string }
+        | { Args: { key_version?: number }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
