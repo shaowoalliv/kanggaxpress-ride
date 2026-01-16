@@ -21,18 +21,6 @@ import { ridesService } from '@/services/rides';
 import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
 
 
-/**
- * WIP: Timeout & Cancellation UI (FE only)
- * - Implemented 5 minute timeout for driver search (UI)
- * - Displays "No drivers available" and "Try again" button
- * - Allows passenger to cancel ride before driver accepts ride
- * 
- * Known gaps:
- * - Passenger counter-offer flow does not yet reflect on driver's side
- * 
- * Not intended for production release yet.
- */
-
 export default function RideStatus() {
   const { rideId } = useParams<{ rideId: string }>();
   const navigate = useNavigate();
@@ -268,10 +256,14 @@ export default function RideStatus() {
     return map[rideType] || rideType.toUpperCase();
   };
 
-  const getStatusDisplay = (status: string, searchTimedOut?: boolean) => {
+  const getStatusDisplay = (status: string, searchTimedOut?: boolean, cancellation_reason?: string) => {
     if (status === 'requested') {
       return searchTimedOut ? 'No drivers available' : 'Looking for drivers...';
     }
+    if (status === 'cancelled' && ride.cancellation_reason === 'Driver no-show timeout') {
+      return 'Ride cancelled. Driver did not arrive.';
+    }
+    if (status === 'arrived') return 'Driver Arrived';
     if (status === 'accepted') return 'Driver Assigned';
     if (status === 'in_progress') return 'Ride In Progress';
     if (status === 'completed') return 'Ride Completed';
@@ -666,7 +658,7 @@ export default function RideStatus() {
             /> */}
 
           {/* ETA Display */}
-          {eta && driverLocation && (ride?.status === 'accepted' || ride?.status === 'in_progress') && (
+          {eta && driverLocation && (ride?.status === 'accepted' || ride?.status === 'arrived' || ride?.status === 'in_progress') && (
             <ThemedCard className="bg-primary/5 border-primary/20">
               <div className="flex items-center gap-3 py-3">
                 <Clock className="w-6 h-6 text-primary" />
@@ -683,7 +675,7 @@ export default function RideStatus() {
           )}
 
           {/* Map */}
-          {(ride?.status === 'accepted' || ride?.status === 'in_progress') && (
+          {(ride?.status === 'accepted' || ride?.status === 'arrived' || ride?.status === 'in_progress') && (
             <ThemedCard className="p-0 overflow-hidden">
               <PassengerRideMap
                 pickupLat={ride.pickup_lat}
@@ -709,7 +701,7 @@ export default function RideStatus() {
                 {getStatusDisplay(ride.status, searchTimedOut)}
               </p>
               <div className="flex justify-center mt-4">
-                {!searchTimedOut && ( 
+                {ride.status === 'requested' && !searchTimedOut && ( 
                   <Loader2 className="w-8 h-8 animate-spin text-secondary" />
                 )}
               </div>

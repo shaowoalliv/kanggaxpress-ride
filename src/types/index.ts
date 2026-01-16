@@ -1,6 +1,6 @@
 export type UserRole = 'passenger' | 'driver' | 'sender' | 'courier';
 export type RideType = 'motor' | 'tricycle' | 'car';
-export type RideStatus = 'requested' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+export type RideStatus = 'requested' | 'accepted' | 'arrived' | 'in_progress' | 'completed' | 'cancelled';
 export type PackageSize = 'small' | 'medium' | 'large';
 export type DeliveryStatus = 'requested' | 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
 
