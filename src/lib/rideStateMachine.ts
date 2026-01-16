@@ -1,14 +1,14 @@
 // Centralized Ride State Machine
 
-export type RideStatus = 
-| 'requested'
-| 'accepted'
-| 'arrived'
-| 'in_progress'
-| 'completed'
-| 'cancelled';
+export type RideState =
+    | 'requested'
+    | 'accepted'
+    | 'arrived'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled';
 
-export const RideStateMachine: Record<RideStatus, RideStatus[]> = {
+export const RideStateMachine: Record<RideState, RideState[]> = {
     requested: ['accepted', 'cancelled'],
     accepted: ['arrived', 'cancelled'],
     arrived: ['in_progress', 'cancelled'],
@@ -18,8 +18,8 @@ export const RideStateMachine: Record<RideStatus, RideStatus[]> = {
 };
 
 export function canTransition(
-    from: RideStatus,
-    to: RideStatus
+    from: RideState,
+    to: RideState
 ): boolean {
     return RideStateMachine[from]?.includes(to) ?? false;
 }

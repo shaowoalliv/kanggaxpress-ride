@@ -137,8 +137,67 @@ export async function chargePlatformFeeForDelivery(
   }
 }
 
+export async function refundPlatformFee(rideId: string): Promise<{refunded: boolean; reason: string}> {
+  const {data: ride, error} = await supabase
+  .from('rides')
+  .select('id, driver_id, status, cancellation_reason, platform_fee_charged, platform_fee_refunded')
+  .eq('id', rideId)
+  .single();
+  
+  if (error) throw error;
+  if (!ride) throw new Error('Ride not found');
+
+  if (ride.status !== 'cancelled') {
+    return {refunded: false, reason: 'Ride is not cancelled'};
+  }
+
+  if (ride.cancellation_reason !== 'Driver no-show timeout') {
+    return {refunded: false, reason: 'Reason for cancellation is not driver no-show timeout'};
+  }
+
+  if(!ride.platform_fee_charged) {
+    return {refunded: false, reason: 'Platform fee was never chraged'};
+  }
+
+  // this block prevents double refund
+  if (ride.platform_fee_refunded) {
+    return {refunded: false, reason: 'Platform fee already refunded'};
+  }
+
+  const {data: driver} = await supabase
+  .from('driver_profiles')
+  .select('user_id')
+  .eq('id', ride.driver_id)
+  .single();
+
+  if (!driver) throw new Error('Driver not found');
+
+  // Refund
+  await walletService.applyTransaction({
+    userId: driver.user_id!,
+    amount: PLATFORM_FEE,
+    type:'adjust',
+    reference: 'Driver no-show refund',
+    rideId: rideId,
+    actorUserId: driver.user_id,
+  });
+
+  const {error: updateError} = await supabase
+  .from('rides')
+  .update({platform_fee_refunded: true})
+  .eq('id', rideId);
+
+  if (updateError) throw updateError;
+
+  return {
+    refunded: true,
+    reason: 'Platform fee refunded for ride',
+  };
+}
+
 export const platformFeeService = {
   chargePlatformFeeForRide,
   chargePlatformFeeForDelivery,
+  refundPlatformFee,
   PLATFORM_FEE,
 };

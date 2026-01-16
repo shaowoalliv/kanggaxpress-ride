@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Ride, RideType, RideStatus } from '@/types';
-import { canTransition } from '@/lib/rideStateMachine';
+import { canTransition, RideState } from '@/lib/rideStateMachine';
+import { platformFeeService } from './platformFee';
 
 export interface CreateRideData {
   pickup_location: string;
@@ -13,8 +14,8 @@ export interface CreateRideData {
 
 export const ridesService = {
   // Create a new ride request with location coordinates
-  async createRide(passengerId: string, data: CreateRideData & { 
-    pickup_lat?: number; 
+  async createRide(passengerId: string, data: CreateRideData & {
+    pickup_lat?: number;
     pickup_lng?: number;
     dropoff_lat?: number;
     dropoff_lng?: number;
@@ -24,9 +25,9 @@ export const ridesService = {
       ...data,
       status: 'requested' as RideStatus,
     };
-    
+
     console.log('[createRide] Payload:', payload);
-    
+
     const { data: ride, error } = await supabase
       .from('rides')
       .insert(payload)
@@ -34,7 +35,7 @@ export const ridesService = {
       .single();
 
     console.log('[createRide] Result:', { ride, error });
-    
+
     if (error) throw error;
     return ride as Ride;
   },
@@ -106,7 +107,7 @@ export const ridesService = {
       .maybeSingle();
 
     if (error) throw error;
-    
+
     // If no data returned, ride was already accepted by another driver or cancelled
     if (!data) {
       throw new Error('This ride is no longer available. It may have been accepted by another driver.');
@@ -127,17 +128,17 @@ export const ridesService = {
 
   // Update ride status - SOT: NO fee charged here (fee charged at assignment)
   async updateRideStatus(
-    rideId: string, 
-    status: RideStatus, 
+    rideId: string,
+    status: RideState,
     cancellationReason?: string | null,
     actorUserId?: string | null
   ) {
 
-    const { data: ride, error: fetchError} = await supabase
-    .from('rides')
-    .select('status')
-    .eq('id', rideId)
-    .single();
+    const { data: ride, error: fetchError } = await supabase
+      .from('rides')
+      .select('status')
+      .eq('id', rideId)
+      .single();
 
     if (fetchError) throw fetchError;
     if (!ride) throw new Error('Ride not found');
@@ -151,7 +152,7 @@ export const ridesService = {
 
 
     const updates: any = { status };
-    
+
     if (status === 'in_progress') {
       updates.started_at = new Date().toISOString();
     } else if (status === 'completed') {
@@ -174,6 +175,15 @@ export const ridesService = {
 
     // SOT RULE: Platform fee charged at ASSIGNMENT (acceptRide), NOT at completion
     // No fee logic here
+
+    if (status === 'cancelled' && cancellationReason === 'Driver no-show timeout') {
+      try {
+        await platformFeeService.refundPlatformFee(rideId);
+        console.log('Platform refunded successfully');
+      } catch (error) {
+        console.log('Platform refund failed:', error);
+      }
+    }
 
     return data as Ride;
   },

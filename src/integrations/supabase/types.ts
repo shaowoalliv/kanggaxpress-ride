@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           id: string
           role: string
+          sample: string | null
           user_id: string
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           role: string
+          sample?: string | null
           user_id: string
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: string
+          sample?: string | null
           user_id?: string
         }
         Relationships: []
@@ -825,6 +828,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           app_fee: number | null
+          arrived_at: string | null
           base_fare: number | null
           cancellation_reason: string | null
           completed_at: string | null
@@ -847,6 +851,7 @@ export type Database = {
           pickup_lng: number | null
           pickup_location: string
           platform_fee_charged: boolean
+          platform_fee_refunded: boolean
           proposals: Json | null
           proposed_top_up_fare: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -860,6 +865,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           app_fee?: number | null
+          arrived_at?: string | null
           base_fare?: number | null
           cancellation_reason?: string | null
           completed_at?: string | null
@@ -882,6 +888,7 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location: string
           platform_fee_charged?: boolean
+          platform_fee_refunded?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type: Database["public"]["Enums"]["ride_type"]
@@ -895,6 +902,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           app_fee?: number | null
+          arrived_at?: string | null
           base_fare?: number | null
           cancellation_reason?: string | null
           completed_at?: string | null
@@ -917,6 +925,7 @@ export type Database = {
           pickup_lng?: number | null
           pickup_location?: string
           platform_fee_charged?: boolean
+          platform_fee_refunded?: boolean
           proposals?: Json | null
           proposed_top_up_fare?: number | null
           ride_type?: Database["public"]["Enums"]["ride_type"]
@@ -1300,8 +1309,8 @@ export type Database = {
         }[]
       }
       get_kyc_encryption_key:
-        | { Args: { key_version?: number }; Returns: string }
         | { Args: never; Returns: string }
+        | { Args: { key_version?: number }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1354,6 +1363,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+        | "arrived"
       ride_type: "motor" | "tricycle" | "car"
       user_role: "passenger" | "driver" | "sender" | "courier"
     }
@@ -1499,6 +1509,7 @@ export const Constants = {
         "in_progress",
         "completed",
         "cancelled",
+        "arrived",
       ],
       ride_type: ["motor", "tricycle", "car"],
       user_role: ["passenger", "driver", "sender", "courier"],

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -25,6 +25,7 @@ import { CounterOfferModal } from '@/components/negotiation/CounterOfferModal';
 import { useRideNegotiation } from '@/hooks/useRideNegotiation';
 import { calculateETAFromTo } from '@/lib/etaCalculator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { RideState } from '@/lib/rideStateMachine';
 
 export default function DriverDashboard() {
   const { user, profile } = useAuth();
@@ -64,6 +65,10 @@ export default function DriverDashboard() {
 
   const { acceptNegotiation, rejectNegotiation } = useRideNegotiation(ride?.id || '');
 
+  const NO_SHOW_TIMEOUT = 15 * 60 * 1000;
+  const [timeLeft, setTimeLeft] = useState<number|null>(null);
+  const activeRide = myRides.find(r => r.status === 'accepted' || r.status === 'arrived' || r.status === 'in_progress');
+  const noShowHandledRef = useRef<Record<string, boolean>>({});
   // Get greeting based on time of day
   useEffect(() => {
     const hour = new Date().getHours();
@@ -139,7 +144,7 @@ export default function DriverDashboard() {
             // Add the new ride to available rides if it's still requested and has no driver
             if (payload.new.status === 'requested' && !payload.new.driver_id) {
               const rideId = payload.new.id as string;
-              
+
               // Use functional update to avoid stale state
               setAvailableRides(prev => {
                 // Check if ride already exists (prevent duplicates)
@@ -227,8 +232,31 @@ export default function DriverDashboard() {
     }
   }, [walletBalance, zeroBalanceDismissed]);
 
+  // For driver no-show timeout
+  useEffect(() => {
+    if (!activeRide || !activeRide.accepted_at || activeRide.status !== "accepted" || noShowHandledRef.current[activeRide.id]) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const acceptedAt = new Date(activeRide.accepted_at).getTime();
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeRemaining = NO_SHOW_TIMEOUT - (now - acceptedAt);
+
+      setTimeLeft(Math.max(0, timeRemaining));
+
+      if (timeRemaining <= 0) {
+        clearInterval(interval);
+        handleDriverNoShow(activeRide.id);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeRide?.id,, activeRide?.status]);
+
   // GPS location publishing - calculate active ride status
-  const hasActiveRide = myRides.some(r => r.status === 'in_progress' || r.status === 'accepted');
+  const hasActiveRide = myRides.some(r => r.status === 'arrived' || r.status === 'in_progress' || r.status === 'accepted');
   const { location: gpsLocation, error: gpsError } = useDriverLocationPublisher({
     driverId: user?.id || null,
     isAvailable: driverProfile?.is_available || false,
@@ -453,7 +481,7 @@ export default function DriverDashboard() {
     }
   };
 
-  const handleUpdateStatus = async (rideId: string, newStatus: any) => {
+  const handleUpdateStatus = async (rideId: string, newStatus: RideState) => {
     try {
       setActionLoading(true);
       await ridesService.updateRideStatus(rideId, newStatus);
@@ -523,6 +551,18 @@ export default function DriverDashboard() {
       toast.error(error.message || 'Failed to send counter offer');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDriverNoShow = async (rideId: string) => {
+    if (noShowHandledRef.current[rideId]) return;
+    noShowHandledRef.current[rideId] = true;
+    try {
+      await ridesService.updateRideStatus(rideId, 'cancelled', 'Driver no-show timeout');
+      toast.error('Ride cancelled', {description: 'Driver did not arrive on time'});
+      await loadDriverData();
+    } catch (error) {
+      console.error('Auto-cancel failed:', error);
     }
   };
 
@@ -645,7 +685,6 @@ export default function DriverDashboard() {
   );
 
 
-  const activeRide = myRides.find(r => r.status === 'accepted' || r.status === 'in_progress');
   const transactionCapacity = platformFee > 0 ? walletBalance / platformFee : 0;
   const firstName = profile?.full_name?.split(' ')[0] || 'Driver';
 
@@ -803,6 +842,14 @@ export default function DriverDashboard() {
                   <div className="space-y-2">
                     {activeRide.status === 'accepted' && (
                       <PrimaryButton
+                        onClick={() => handleUpdateStatus(activeRide.id, 'arrived')}
+                        disabled={actionLoading}
+                      >
+                        I've Arrived
+                      </PrimaryButton>
+                    )}
+                    {activeRide.status === 'arrived' && (
+                      <PrimaryButton
                         onClick={() => handleUpdateStatus(activeRide.id, 'in_progress')}
                         disabled={actionLoading}
                       >
@@ -818,7 +865,11 @@ export default function DriverDashboard() {
                       </PrimaryButton>
                     )}
                     <SecondaryButton
-                      onClick={() => ridesService.cancelRide(activeRide.id).then(loadDriverData)}
+                      onClick={async () => {
+                        if (activeRide.status === 'cancelled') return;
+                        await ridesService.cancelRide(activeRide.id);
+                        await loadDriverData();
+                      }}
                       disabled={actionLoading}
                     >
                       Cancel Ride
