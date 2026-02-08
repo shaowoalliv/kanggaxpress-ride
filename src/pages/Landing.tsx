@@ -90,19 +90,13 @@ export default function Landing() {
               Want to drive or deliver and earn?
             </p>
             <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => navigate('/auth?role=driver')}
-                className="text-xs text-secondary font-medium hover:underline"
-              >
+              <span className="text-xs text-secondary font-medium">
                 Become a Driver →
-              </button>
+              </span>
               <span className="text-muted-foreground">|</span>
-              <button
-                onClick={() => navigate('/auth?role=courier')}
-                className="text-xs text-secondary font-medium hover:underline"
-              >
+              <span className="text-xs text-secondary font-medium">
                 Become a Courier →
-              </button>
+              </span>
             </div>
           </div>
         </div>
