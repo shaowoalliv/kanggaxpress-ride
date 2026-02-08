@@ -15,8 +15,8 @@ export default function Landing() {
       {/* Watermark */}
       <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
         <p
-          className="text-[clamp(2rem,8vw,5rem)] font-heading font-extrabold text-foreground/10 whitespace-nowrap select-none"
-          style={{ transform: 'rotate(-30deg)' }}
+          className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-heading font-extrabold text-foreground/10 whitespace-nowrap select-none leading-tight"
+          style={{ transform: 'rotate(-30deg)', maxWidth: '150vw' }}
         >
           Soon to Serve You, Fellow Filipinos!
         </p>
