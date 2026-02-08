@@ -12,6 +12,16 @@ export default function Landing() {
 
   return (
     <PageLayout showHeader={false}>
+      {/* Watermark */}
+      <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
+        <p
+          className="text-[clamp(2rem,8vw,5rem)] font-heading font-extrabold text-foreground/10 whitespace-nowrap select-none"
+          style={{ transform: 'rotate(-30deg)' }}
+        >
+          Soon to Serve You, Fellow Filipinos!
+        </p>
+      </div>
+
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center px-4 py-4 text-center min-h-screen">
         <div className="max-w-md w-full space-y-4">
