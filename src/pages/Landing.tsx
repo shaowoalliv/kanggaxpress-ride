@@ -30,6 +30,7 @@ export default function Landing() {
             <div className="inline-flex items-center justify-center">
               <KanggaLogo width={240} height={240} className="w-48 h-48" />
             </div>
+            <div className="h-8" />
             <h1 className="text-2xl font-heading font-bold text-foreground">
               KanggaXpress
             </h1>
