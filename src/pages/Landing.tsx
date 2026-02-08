@@ -66,21 +66,8 @@ export default function Landing() {
             <button
               type="button"
               data-testid="get-started-btn"
-              onClick={(e) => {
-                e?.preventDefault?.();
-                e?.stopPropagation?.();
-                try {
-                  navigate('/choose-role');
-                } catch (err) {
-                  console.error('Navigation error:', err);
-                }
-                setTimeout(() => {
-                  if (window.location.pathname !== '/choose-role') {
-                    window.location.href = '/choose-role';
-                  }
-                }, 400);
-              }}
-              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 h-14 px-8"
+              disabled
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-xl h-14 px-8"
             >
               Get Started
             </button>
@@ -198,9 +185,9 @@ export default function Landing() {
           &copy; 2025 KanggaXpress. All rights reserved.
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          <a href="/admin-sign-in" className="hover:text-primary transition-colors">
+          <span className="text-muted-foreground/50 cursor-default">
             Admin
-          </a>
+          </span>
         </p>
       </footer>
     </PageLayout>
