@@ -18,7 +18,7 @@ export default function Landing() {
           className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-heading font-extrabold text-foreground/15 select-none leading-tight text-center"
           style={{ transform: 'rotate(-30deg)' }}
         >
-          Nalalapit na,<br />Fellow Mindoreños!
+          Nalalapit na,<br />Kabayan!
         </p>
       </div>
 
