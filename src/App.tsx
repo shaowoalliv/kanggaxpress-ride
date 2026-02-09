@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { InstallPromptBanner } from "@/components/InstallPromptBanner";
+
 import { ChatWidget } from "@/components/ChatWidget";
 import { useSessionValidator } from "@/hooks/useSessionValidator";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -75,7 +75,7 @@ const App = () => (
           <SessionValidatorWrapper />
           <Toaster />
           <Sonner />
-          <InstallPromptBanner />
+          
           <ChatWidget />
           <Routes>
             <Route path="/" element={<Landing />} />
