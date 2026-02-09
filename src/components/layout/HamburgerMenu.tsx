@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Home, Smartphone, User as UserIcon, LogOut, LogIn, HelpCircle, Settings } from 'lucide-react';
+import { Menu, Home, User as UserIcon, LogOut, LogIn, HelpCircle, Settings } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -59,45 +59,6 @@ export function HamburgerMenu() {
             <span>Home</span>
           </Button>
 
-          {/* Install App */}
-          <Button
-            variant="ghost"
-            className="justify-start gap-3 h-12 text-base"
-            onClick={() => {
-              setOpen(false);
-              // Check if app is already installed
-              if (window.matchMedia('(display-mode: standalone)').matches) {
-                alert('App is already installed!');
-                return;
-              }
-              
-              // For iOS Safari
-              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-              const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-              
-              if (isIOS && isSafari) {
-                alert('To install: Tap the Share button, then tap "Add to Home Screen"');
-                return;
-              }
-              
-              // For Android/Chrome - trigger PWA install prompt
-              const installPromptEvent = (window as any).deferredPrompt;
-              if (installPromptEvent) {
-                installPromptEvent.prompt();
-                installPromptEvent.userChoice.then((choiceResult: any) => {
-                  if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                  }
-                  (window as any).deferredPrompt = null;
-                });
-              } else {
-                alert('To install: Open browser menu and select "Install App" or "Add to Home Screen"');
-              }
-            }}
-          >
-            <Smartphone className="h-5 w-5" />
-            <span>Install App</span>
-          </Button>
 
           {/* Choose Role */}
           <Button
