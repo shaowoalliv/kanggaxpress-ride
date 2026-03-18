@@ -25,7 +25,7 @@ export function DestinationMapPicker({ mode = 'dropoff', initialCenter, onConfir
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   
-  const reverseGeocodeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const reverseGeocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize map
   useEffect(() => {
