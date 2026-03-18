@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-
-import { ChatWidget } from "@/components/ChatWidget";
 import { useSessionValidator } from "@/hooks/useSessionValidator";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
@@ -75,8 +73,7 @@ const App = () => (
           <SessionValidatorWrapper />
           <Toaster />
           <Sonner />
-          
-          <ChatWidget />
+
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/choose-role" element={<ChooseRole />} />
@@ -84,37 +81,37 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-            
+
             {/* Legacy redirects */}
             <Route path="/login" element={<LoginRedirect />} />
             <Route path="/signup" element={<SignupRedirect />} />
-            
+
             {/* Passenger Routes */}
             <Route path="/passenger/book-ride" element={<BookRide />} />
             <Route path="/passenger/ride-status/:rideId" element={<RideStatus />} />
             <Route path="/passenger/my-rides" element={<MyRides />} />
-            
+
             {/* Driver Routes */}
             <Route path="/driver/dashboard" element={<DriverDashboard />} />
             <Route path="/driver/setup" element={<DriverSetup />} />
             <Route path="/driver/jobs" element={<DriverJobs />} />
             <Route path="/driver/jobs/:rideId" element={<JobDetail />} />
             <Route path="/driver/wallet" element={<DriverWallet />} />
-            
+
             {/* Sender Routes */}
             <Route path="/sender/dashboard" element={<SenderDashboard />} />
             <Route path="/sender/create-delivery" element={<CreateDelivery />} />
             <Route path="/sender/my-deliveries" element={<MyDeliveries />} />
-            
+
             {/* Courier Routes */}
             <Route path="/courier/dashboard" element={<CourierDashboard />} />
             <Route path="/courier/setup" element={<CourierSetup />} />
             <Route path="/courier/wallet" element={<CourierWallet />} />
-            
+
             {/* Account Routes */}
             <Route path="/account/kyc" element={<KycStatus />} />
             <Route path="/account/profile-settings" element={<ProfileSettings />} />
-            
+
             {/* Admin Routes */}
             <Route path="/admin-sign-in" element={<AdminSignIn />} />
             <Route path="/admin" element={<AdminDashboard />}>
@@ -138,7 +135,7 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
               <Route path="test-data-seeder" element={<TestDataSeeder />} />
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
