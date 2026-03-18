@@ -76,22 +76,22 @@ export function LaunchCountdown({
   return (
     <div
       className={[
-        'w-full rounded-[2rem] border border-border/60 bg-card/14 p-4 shadow-2xl backdrop-blur-xl',
+        'w-full rounded-[2rem] border border-secondary/15 bg-card/14 p-4 shadow-2xl backdrop-blur-xl',
         'animate-in fade-in duration-700',
         className,
       ].join(' ')}
     >
-      <div className="rounded-[1.6rem] border border-border/40 bg-background/10 p-4 sm:p-6">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-foreground/80 sm:text-xs">
+      <div className="rounded-[1.6rem] border border-secondary/15 bg-primary/70 p-4 shadow-[0_0_0_1px_hsl(var(--primary)/0.18)] sm:p-6">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary/80 sm:text-xs">
           {launchLabel}
         </p>
 
         {timeLeft.isLive ? (
           <div
             aria-live="polite"
-            className="mt-5 rounded-[1.4rem] border border-border/50 bg-card/18 px-5 py-8 text-center shadow-lg"
+            className="mt-5 rounded-[1.4rem] border border-secondary/15 bg-card/30 px-5 py-8 text-center shadow-lg"
           >
-            <p className="text-balance text-xl font-heading font-bold text-card sm:text-2xl">
+            <p className="text-balance text-xl font-heading font-bold text-secondary sm:text-2xl">
               {liveMessage}
             </p>
           </div>
@@ -104,12 +104,12 @@ export function LaunchCountdown({
             {countdownUnits.map((unit) => (
               <div
                 key={unit.label}
-                className="rounded-[1.35rem] border border-border/50 bg-card/20 px-3 py-4 text-center shadow-lg transition-transform duration-300 hover:-translate-y-0.5"
+                className="rounded-[1.35rem] border border-secondary/15 bg-card/32 px-3 py-4 text-center shadow-lg transition-transform duration-300 hover:-translate-y-0.5"
               >
-                <div className="text-[clamp(2rem,8vw,4rem)] font-heading font-extrabold leading-none tracking-tight text-card">
+                <div className="text-[clamp(2rem,8vw,4rem)] font-heading font-extrabold leading-none tracking-tight text-secondary">
                   {unit.value}
                 </div>
-                <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-foreground/80 sm:text-xs">
+                <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-secondary/70 sm:text-xs">
                   {unit.label}
                 </div>
               </div>
