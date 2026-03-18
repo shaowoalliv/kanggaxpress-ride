@@ -1,29 +1,85 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { KanggaLogo } from '@/components/KanggaLogo';
 import { MapPin, Shield, Zap, Package, Heart, Users, Clock } from 'lucide-react';
 
+const COUNTDOWN_TARGET = new Date('2026-04-30T00:00:00');
+
+function getTimeLeft(targetDate: Date) {
+  const difference = targetDate.getTime() - Date.now();
+
+  if (difference <= 0) {
+    return {
+      isComplete: true,
+      days: '00',
+      hours: '00',
+      minutes: '00',
+      seconds: '00',
+    };
+  }
+
+  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((difference / (1000 * 60)) % 60);
+  const seconds = Math.floor((difference / 1000) % 60);
+
+  return {
+    isComplete: false,
+    days: String(days).padStart(2, '0'),
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0'),
+  };
+}
+
 export default function Landing() {
-  const navigate = useNavigate();
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(COUNTDOWN_TARGET));
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setTimeLeft(getTimeLeft(COUNTDOWN_TARGET));
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const countdownUnits = [
+    { label: 'Days', value: timeLeft.days },
+    { label: 'Hours', value: timeLeft.hours },
+    { label: 'Minutes', value: timeLeft.minutes },
+    { label: 'Seconds', value: timeLeft.seconds },
+  ];
 
   return (
     <PageLayout showHeader={false}>
-      {/* Watermark */}
-      <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
-        <p
-          className="text-5xl font-heading font-extrabold text-foreground/25 select-none leading-tight text-center"
-          style={{ transform: 'rotate(-30deg)' }}
-        >
-          Nalalapit na...<br />Kabayan!
-        </p>
+      {/* Countdown Overlay */}
+      <div className="fixed inset-x-0 top-6 z-50 pointer-events-none px-3 sm:px-6">
+        <div className="mx-auto w-full max-w-5xl rounded-2xl border border-border/60 bg-background/72 px-3 py-3 shadow-xl backdrop-blur-md sm:px-5 sm:py-4">
+          <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground sm:text-xs">
+              {timeLeft.isComplete ? 'Now Live' : 'Countdown to April 30, 2026'}
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+              {countdownUnits.map((unit) => (
+                <div
+                  key={unit.label}
+                  className="rounded-xl border border-border/60 bg-card/75 px-2 py-3 shadow-sm"
+                >
+                  <div className="text-[clamp(1.5rem,8vw,3.5rem)] font-heading font-extrabold leading-none text-foreground">
+                    {unit.value}
+                  </div>
+                  <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
+                    {unit.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Hero Section */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 py-4 text-center min-h-screen">
+      <section className="flex-1 flex flex-col items-center justify-center px-4 py-4 pt-40 text-center min-h-screen sm:pt-44">
         <div className="max-w-md w-full space-y-4">
           {/* Logo & Branding */}
           <div className="space-y-1">
